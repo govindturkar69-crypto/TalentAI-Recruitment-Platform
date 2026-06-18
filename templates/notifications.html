@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">🔔 Notifications</h3>
+    <p class="text-muted mb-0">Stay updated on your applications and activity</p>
+  </div>
+  {% if notifications %}
+  <form method="POST" action="{{ url_for('mark_all_read') }}">
+    <button type="submit" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-check2-all"></i> Mark all as read
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if notifications %}
+  {% for notif in notifications %}
+  <div class="notif-item {% if not notif.is_read %}unread{% endif %}">
+    <div class="notif-icon
+      {% if notif.type == 'shortlisted' %}bg-success-light
+      {% elif notif.type == 'rejected' %}bg-danger-light
+      {% elif notif.type == 'hired' %}bg-primary-light
+      {% elif notif.type == 'job_match' %}bg-primary-light
+      {% else %}bg-light{% endif %}">
+      {% if notif.type == 'shortlisted' %}✅
+      {% elif notif.type == 'rejected' %}❌
+      {% elif notif.type == 'hired' %}🎉
+      {% elif notif.type == 'applied' %}📨
+      {% elif notif.type == 'job_match' %}⭐
+      {% else %}🔔{% endif %}
+    </div>
+    <div class="flex-fill">
+      <div class="d-flex justify-content-between">
+        <strong>{{ notif.title }}</strong>
+        <small class="text-muted">{{ notif.created_at.strftime('%d %b, %I:%M %p') if notif.created_at else '' }}</small>
+      </div>
+      <p class="text-muted mb-0 small">{{ notif.message }}</p>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="text-center text-muted py-5 border rounded-3">
+  <i class="bi bi-bell-slash" style="font-size:3rem"></i>
+  <p class="mt-3">No notifications yet.</p>
+</div>
+{% endif %}
+{% endblock %}

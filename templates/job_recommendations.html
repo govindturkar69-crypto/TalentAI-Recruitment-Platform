@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Recommended Jobs{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h3 class="fw-bold mb-1">⭐ Recommended For You</h3>
+  <p class="text-muted mb-0">Jobs ranked by how well they match your resume's skills</p>
+</div>
+
+{% if not resume %}
+<div class="text-center text-muted py-5 border rounded-3">
+  <i class="bi bi-file-earmark-x" style="font-size:3rem"></i>
+  <p class="mt-3">Upload a resume first to get personalized recommendations.</p>
+  <a href="{{ url_for('upload_resume') }}" class="btn btn-primary">Upload Resume</a>
+</div>
+{% elif recommendations %}
+<div class="row g-3">
+  {% for rec in recommendations %}
+  <div class="col-md-6">
+    <div class="card job-card h-100 border-0 shadow-sm">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h5 class="fw-bold mb-0">{{ rec.job.job_title }}</h5>
+          <span class="match-badge"><i class="bi bi-stars"></i> {{ rec.match_score }}% match</span>
+        </div>
+        <p class="text-muted small mb-2">
+          <i class="bi bi-geo-alt"></i> {{ rec.job.location or 'Not specified' }} &nbsp;|&nbsp;
+          <i class="bi bi-clock"></i> {{ rec.job.experience or 'Any' }}
+        </p>
+        <p class="text-muted small mb-3">{{ rec.job.description[:100] if rec.job.description else '' }}...</p>
+
+        <div class="mb-3">
+          <div class="small text-muted mb-1">Matched skills:</div>
+          {% for skill in rec.matched[:5] %}
+            <span class="badge bg-success-light me-1 mb-1">✓ {{ skill }}</span>
+          {% endfor %}
+        </div>
+
+        {% if rec.already_applied %}
+          <button class="btn btn-success btn-sm w-100" disabled>
+            <i class="bi bi-check-circle"></i> Already Applied
+          </button>
+        {% else %}
+          <form method="POST" action="{{ url_for('apply_job', job_id=rec.job.id) }}">
+            <button type="submit" class="btn btn-primary btn-sm w-100">
+              <i class="bi bi-send"></i> Apply Now
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted py-5 border rounded-3">
+  <i class="bi bi-emoji-frown" style="font-size:3rem"></i>
+  <p class="mt-3">No matching jobs found yet. Check back when more jobs are posted.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">📊 Analytics Dashboard</h3>
+    <p class="text-muted mb-0">Real-time recruitment insights and trends</p>
+  </div>
+  <a href="{{ url_for('recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Back
+  </a>
+</div>
+
+<!-- Top Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem">📨</div>
+      <div class="display-6 fw-bold text-primary">{{ stats.total }}</div>
+      <div class="text-muted small">Total Applications</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem">📈</div>
+      <div class="display-6 fw-bold text-info">{{ stats.avg_score }}%</div>
+      <div class="text-muted small">Average Score</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem">✅</div>
+      <div class="display-6 fw-bold text-success">{{ stats.shortlisted }}</div>
+      <div class="text-muted small">Shortlisted</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem">🎉</div>
+      <div class="display-6 fw-bold text-warning">{{ stats.hired }}</div>
+      <div class="text-muted small">Hired</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+  <div class="col-md-8">
+    <div class="card border-0 shadow-sm p-3">
+      {% if chart1 %}
+        <div id="chart1"></div>
+      {% else %}
+        <div class="text-center text-muted py-5">No data available yet</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3">
+      {% if chart3 %}
+        <div id="chart3"></div>
+      {% else %}
+        <div class="text-center text-muted py-5">No data available yet</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm p-3">
+      {% if chart2 %}
+        <div id="chart2"></div>
+      {% else %}
+        <div class="text-center text-muted py-5">No data available yet</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm p-3">
+      {% if chart5 %}
+        <div id="chart5"></div>
+      {% else %}
+        <div class="text-center text-muted py-5">No data available yet</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Top Candidates Chart -->
+{% if chart4 %}
+<div class="card border-0 shadow-sm p-3 mb-4">
+  <div id="chart4"></div>
+</div>
+{% endif %}
+
+<script>
+  function plotlyTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      paper_bgcolor: isDark ? '#1a1d29' : '#ffffff',
+      plot_bgcolor: isDark ? '#1a1d29' : '#f8fafc',
+      font: { color: isDark ? '#e2e8f0' : '#1e293b' }
+    };
+  }
+
+  function renderChart(divId, chartJson) {
+    const data = JSON.parse(chartJson);
+    Object.assign(data.layout, plotlyTheme());
+    Plotly.newPlot(divId, data.data, data.layout, {responsive:true});
+  }
+
+  {% if chart1 %}renderChart('chart1', {{ chart1|tojson }});{% endif %}
+  {% if chart2 %}renderChart('chart2', {{ chart2|tojson }});{% endif %}
+  {% if chart3 %}renderChart('chart3', {{ chart3|tojson }});{% endif %}
+  {% if chart4 %}renderChart('chart4', {{ chart4|tojson }});{% endif %}
+  {% if chart5 %}renderChart('chart5', {{ chart5|tojson }});{% endif %}
+</script>
+{% endblock %}

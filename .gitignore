@@ -1,0 +1,28 @@
+# Environment variables (contains real passwords - never push this)
+.env
+
+# Virtual environment
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Uploaded resumes (user data, shouldn't be in version control)
+uploads/*
+!uploads/.gitkeep
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Flask
+*.log
+instance/

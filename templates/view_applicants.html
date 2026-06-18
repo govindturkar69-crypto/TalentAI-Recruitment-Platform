@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Applicants{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">📋 {{ job.job_title }} — Applicants</h3>
+    <p class="text-muted mb-0">
+      <i class="bi bi-geo-alt"></i> {{ job.location }} &nbsp;|&nbsp;
+      <i class="bi bi-clock"></i> {{ job.experience }} &nbsp;|&nbsp;
+      <strong>{{ applicants|length }}</strong> applications
+    </p>
+  </div>
+  <a href="{{ url_for('recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Back
+  </a>
+  <a href="{{ url_for('export_applicants', job_id=job.id) }}" class="btn btn-success btn-sm">
+    <i class="bi bi-file-earmark-excel"></i> Export to Excel
+  </a>
+</div>
+
+<!-- Required Skills -->
+<div class="alert alert-light border mb-4">
+  <strong><i class="bi bi-check2-square"></i> Required Skills:</strong>
+  {% for skill in job.required_skills.split(',') %}
+    <span class="badge bg-primary ms-1">{{ skill.strip() }}</span>
+  {% endfor %}
+</div>
+
+<!-- Applicants Table -->
+{% if applicants %}
+<form method="POST" action="{{ url_for('bulk_update_status') }}" id="bulkForm">
+  <input type="hidden" name="job_id" value="{{ job.id }}">
+
+  <!-- Bulk Action Bar -->
+  <div class="filter-bar d-flex align-items-center gap-2 flex-wrap">
+    <span class="small fw-semibold text-muted"><i class="bi bi-check2-square"></i> Bulk actions:</span>
+    <select name="bulk_status" class="form-select form-select-sm" style="width:auto;" required>
+      <option value="">Choose status...</option>
+      <option value="shortlisted">Shortlist ✓</option>
+      <option value="rejected">Reject ✗</option>
+      <option value="hired">Hired 🎉</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Apply this status to all selected candidates?');">
+      Apply to Selected
+    </button>
+    <span class="text-muted small ms-auto" id="selectedCount">0 selected</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th><input type="checkbox" id="selectAllCheckbox" class="form-check-input"></th>
+          <th>Rank</th>
+          <th>Candidate</th>
+          <th>Score</th>
+          <th>Matched Skills</th>
+          <th>Missing Skills</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applicants %}
+        <tr class="{% if loop.index == 1 %}table-success{% endif %}">
+          <td>
+            <input type="checkbox" name="selected_apps" value="{{ app.id }}" class="form-check-input row-checkbox">
+          </td>
+          <td>
+            {% if loop.index == 1 %}
+              <span class="badge bg-warning text-dark">🏆 #1</span>
+            {% elif loop.index == 2 %}
+              <span class="badge bg-secondary">🥈 #2</span>
+            {% elif loop.index == 3 %}
+              <span class="badge bg-secondary">🥉 #3</span>
+            {% else %}
+              <span class="text-muted">#{{ loop.index }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar-circle">{{ app.candidate_name[0]|upper }}</div>
+              <div>
+                <div class="fw-bold">{{ app.candidate_name }}</div>
+                <small class="text-muted">{{ app.email }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="score-pill
+              {% if app.score >= 75 %}score-high
+              {% elif app.score >= 50 %}score-medium
+              {% else %}score-low{% endif %}">
+              {{ '%.1f'|format(app.score) }}%
+            </div>
+            <div class="progress mt-1" style="height:4px;width:80px">
+              <div class="progress-bar
+                {% if app.score >= 75 %}bg-success
+                {% elif app.score >= 50 %}bg-warning
+                {% else %}bg-danger{% endif %}"
+                style="width:{{ app.score }}%"></div>
+            </div>
+          </td>
+          <td>
+            {% if app.matched_skills %}
+              {% for skill in app.matched_skills.split(',')[:4] %}
+                <span class="badge bg-success-light me-1 mb-1">✓ {{ skill }}</span>
+              {% endfor %}
+            {% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td>
+            {% if app.missing_skills %}
+              {% for skill in app.missing_skills.split(',')[:3] %}
+                <span class="badge bg-danger-light me-1 mb-1">✗ {{ skill }}</span>
+              {% endfor %}
+            {% else %}<span class="text-success">✓ All matched!</span>{% endif %}
+          </td>
+          <td>
+            <span class="badge
+              {% if app.status == 'shortlisted' %}bg-success
+              {% elif app.status == 'rejected' %}bg-danger
+              {% elif app.status == 'hired' %}bg-warning text-dark
+              {% elif app.status == 'withdrawn' %}bg-secondary
+              {% else %}bg-primary{% endif %}">
+              {{ app.status|title }}
+            </span>
+          </td>
+          <td>
+            <select name="status_{{ app.id }}" class="form-select form-select-sm d-inline w-auto me-1"
+                    onchange="updateSingleStatus({{ app.id }}, this.value)">
+              <option value="applied"     {% if app.status=='applied' %}selected{% endif %}>Applied</option>
+              <option value="shortlisted" {% if app.status=='shortlisted' %}selected{% endif %}>Shortlist ✓</option>
+              <option value="rejected"    {% if app.status=='rejected' %}selected{% endif %}>Reject ✗</option>
+              <option value="hired"       {% if app.status=='hired' %}selected{% endif %}>Hired 🎉</option>
+              <option value="withdrawn"   {% if app.status=='withdrawn' %}selected{% endif %} disabled>Withdrawn</option>
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+
+<!-- Hidden single-status form (reused by the dropdown above) -->
+<form method="POST" id="singleStatusForm" action="" class="d-none">
+  <input type="hidden" name="status" id="singleStatusValue">
+</form>
+
+<script>
+function updateSingleStatus(appId, statusValue) {
+  if (!confirm(`Set status to "${statusValue}"?`)) {
+    location.reload();
+    return;
+  }
+  const form = document.getElementById('singleStatusForm');
+  form.action = "{{ url_for('update_status', app_id=0) }}".replace('/0/', `/${appId}/`);
+  document.getElementById('singleStatusValue').value = statusValue;
+  form.submit();
+}
+
+// Select-all checkbox logic
+document.addEventListener('DOMContentLoaded', function () {
+  const selectAll = document.getElementById('selectAllCheckbox');
+  const rowChecks = document.querySelectorAll('.row-checkbox');
+  const countLabel = document.getElementById('selectedCount');
+
+  function updateCount() {
+    const checked = document.querySelectorAll('.row-checkbox:checked').length;
+    countLabel.textContent = `${checked} selected`;
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      rowChecks.forEach(cb => cb.checked = selectAll.checked);
+      updateCount();
+    });
+  }
+  rowChecks.forEach(cb => cb.addEventListener('change', updateCount));
+});
+</script>
+{% else %}
+<div class="text-center text-muted py-5 border rounded-3">
+  <i class="bi bi-inbox" style="font-size:3rem"></i>
+  <p class="mt-3">No applications for this job yet.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}Candidate Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">👋 Welcome, {{ session.name }}!</h2>
+    <p class="text-muted mb-0">Track your applications and apply for new jobs</p>
+  </div>
+  <a href="{{ url_for('upload_resume') }}" class="btn btn-primary">
+    <i class="bi bi-cloud-upload"></i> Upload Resume
+  </a>
+</div>
+
+<!-- Resume Status -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-mini-card p-3 rounded-3 border">
+      {% if resume %}
+        <div class="d-flex align-items-center gap-3">
+          <div style="font-size:2rem">📄</div>
+          <div>
+            <div class="fw-bold text-success">Resume Uploaded ✓</div>
+            <small class="text-muted">{{ resume.skills.split(',')|length if resume.skills else 0 }} skills extracted</small>
+          </div>
+        </div>
+        <div class="mt-2">
+          {% if resume.skills %}
+            {% for skill in resume.skills.split(',')[:6] %}
+              <span class="badge bg-primary-light me-1">{{ skill }}</span>
+            {% endfor %}
+            {% if resume.skills.split(',')|length > 6 %}
+              <span class="badge bg-secondary">+{{ resume.skills.split(',')|length - 6 }} more</span>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="d-flex align-items-center gap-3">
+          <div style="font-size:2rem">⚠️</div>
+          <div>
+            <div class="fw-bold text-warning">No Resume Yet</div>
+            <small class="text-muted">Upload a resume before applying</small>
+          </div>
+        </div>
+        <a href="{{ url_for('upload_resume') }}" class="btn btn-sm btn-outline-primary mt-2">Upload Now</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-mini-card p-3 rounded-3 border text-center">
+      <div class="stat-number-sm">{{ applications|length }}</div>
+      <div class="text-muted small">Total Applications</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-mini-card p-3 rounded-3 border text-center">
+      <div class="stat-number-sm text-success">
+        {{ applications|selectattr('status','eq','shortlisted')|list|length }}
+      </div>
+      <div class="text-muted small">Shortlisted</div>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="filter-bar">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label small fw-semibold mb-1">Search Jobs</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" id="jobSearchInput" class="form-control" placeholder="Search by title or skill...">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold mb-1">Location</label>
+      <input type="text" id="jobLocationFilter" class="form-control" placeholder="e.g. Remote, Mumbai">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold mb-1">Skill</label>
+      <input type="text" id="jobSkillFilter" class="form-control" placeholder="e.g. python">
+    </div>
+    <div class="col-md-1">
+      <button id="clearFiltersBtn" class="btn btn-outline-secondary w-100" title="Clear filters">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Available Jobs -->
+<h4 class="fw-bold mb-3">🔍 Available Jobs</h4>
+<div id="noJobsFound" class="alert alert-light border text-center" style="display:none;">
+  <i class="bi bi-search"></i> No jobs match your filters.
+</div>
+<div class="row g-3 mb-5">
+  {% for job in jobs %}
+  <div class="col-md-6 job-card-wrapper"
+       data-title="{{ job.job_title }}"
+       data-location="{{ job.location or '' }}"
+       data-skills="{{ job.required_skills }}">
+    <div class="card job-card h-100 border-0 shadow-sm">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h5 class="fw-bold mb-0">{{ job.job_title }}</h5>
+          <span class="badge bg-primary-light">{{ job.experience or 'Any' }}</span>
+        </div>
+        <p class="text-muted small mb-2">
+          <i class="bi bi-geo-alt"></i> {{ job.location or 'Not specified' }}
+        </p>
+        <p class="text-muted small mb-3">{{ job.description[:100] if job.description else '' }}...</p>
+
+        <!-- Required Skills -->
+        <div class="mb-3">
+          {% for skill in job.required_skills.split(',')[:5] %}
+            <span class="badge bg-light text-dark me-1 mb-1">{{ skill.strip() }}</span>
+          {% endfor %}
+        </div>
+
+        <!-- Apply / Save Buttons -->
+        {% set applied = namespace(found=false) %}
+        {% for app in applications %}
+          {% if app.job_id == job.id and app.status != 'withdrawn' %}{% set applied.found = true %}{% endif %}
+        {% endfor %}
+
+        <div class="d-flex gap-2">
+          {% if applied.found %}
+            <button class="btn btn-success btn-sm flex-fill" disabled>
+              <i class="bi bi-check-circle"></i> Already Applied
+            </button>
+          {% elif resume %}
+            <form method="POST" action="{{ url_for('apply_job', job_id=job.id) }}" class="flex-fill">
+              <button type="submit" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-send"></i> Apply Now
+              </button>
+            </form>
+          {% else %}
+            <button class="btn btn-secondary btn-sm flex-fill" disabled>
+              Upload Resume First
+            </button>
+          {% endif %}
+
+          {% if job.id in saved_job_ids %}
+            <form method="POST" action="{{ url_for('unsave_job', job_id=job.id) }}">
+              <button type="submit" class="btn btn-outline-warning btn-sm" title="Remove from saved">
+                <i class="bi bi-bookmark-fill"></i>
+              </button>
+            </form>
+          {% else %}
+            <form method="POST" action="{{ url_for('save_job', job_id=job.id) }}">
+              <button type="submit" class="btn btn-outline-secondary btn-sm" title="Save for later">
+                <i class="bi bi-bookmark"></i>
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="text-center text-muted py-4">
+      <i class="bi bi-briefcase" style="font-size:2rem"></i>
+      <p class="mt-2">No jobs available right now. Check back later.</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- My Applications -->
+<h4 class="fw-bold mb-3">📋 My Applications</h4>
+{% if applications %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Job</th>
+        <th>Score</th>
+        <th>Matched Skills</th>
+        <th>Status</th>
+        <th>Applied On</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><strong>{{ app.job_title }}</strong><br><small class="text-muted">{{ app.location }}</small></td>
+        <td>
+          <div class="score-pill
+            {% if app.score >= 75 %}score-high
+            {% elif app.score >= 50 %}score-medium
+            {% else %}score-low{% endif %}">
+            {{ '%.1f'|format(app.score) }}%
+          </div>
+        </td>
+        <td>
+          {% if app.matched_skills %}
+            {% for skill in app.matched_skills.split(',')[:3] %}
+              <span class="badge bg-success-light me-1">{{ skill }}</span>
+            {% endfor %}
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <span class="badge
+            {% if app.status == 'shortlisted' %}bg-success
+            {% elif app.status == 'rejected' %}bg-danger
+            {% elif app.status == 'hired' %}bg-warning text-dark
+            {% elif app.status == 'withdrawn' %}bg-secondary
+            {% else %}bg-primary{% endif %}">
+            {{ app.status|title }}
+          </span>
+        </td>
+        <td><small class="text-muted">{{ app.applied_at.strftime('%d %b %Y') if app.applied_at else '—' }}</small></td>
+        <td>
+          {% if app.status not in ['withdrawn', 'hired'] %}
+            <form method="POST" action="{{ url_for('withdraw_application', app_id=app.id) }}"
+                  onsubmit="return confirm('Withdraw this application?');">
+              <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-x-circle"></i> Withdraw
+              </button>
+            </form>
+          {% else %}
+            <span class="text-muted small">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center text-muted py-4 border rounded-3">
+  <i class="bi bi-inbox" style="font-size:2rem"></i>
+  <p class="mt-2">No applications yet. Apply to a job above to get started.</p>
+</div>
+{% endif %}
+{% endblock %}

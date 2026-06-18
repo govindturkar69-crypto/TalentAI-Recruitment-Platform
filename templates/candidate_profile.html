@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="profile-header mb-4">
+  <div class="row align-items-center">
+    <div class="col-auto">
+      <div class="avatar-circle-lg">{{ session.name[0]|upper }}</div>
+    </div>
+    <div class="col">
+      <h3 class="fw-bold mb-1">{{ session.name }}</h3>
+      <p class="mb-2" style="opacity:0.9">{{ profile.location if profile and profile.location else 'Location not set' }}</p>
+      {% if profile %}
+      <div class="d-flex gap-2 flex-wrap">
+        {% if profile.linkedin_url %}
+          <a href="{{ profile.linkedin_url }}" target="_blank" class="social-link-btn"><i class="bi bi-linkedin"></i> LinkedIn</a>
+        {% endif %}
+        {% if profile.github_url %}
+          <a href="{{ profile.github_url }}" target="_blank" class="social-link-btn"><i class="bi bi-github"></i> GitHub</a>
+        {% endif %}
+        {% if profile.portfolio_url %}
+          <a href="{{ profile.portfolio_url }}" target="_blank" class="social-link-btn"><i class="bi bi-globe"></i> Portfolio</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm p-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square"></i> Edit Profile</h5>
+      <form method="POST" action="{{ url_for('candidate_profile') }}">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Bio</label>
+          <textarea name="bio" class="form-control" rows="3" placeholder="Tell recruiters about yourself...">{{ profile.bio if profile else '' }}</textarea>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Phone</label>
+            <input type="text" name="phone" class="form-control" placeholder="+91 9876543210" value="{{ profile.phone if profile else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Location</label>
+            <input type="text" name="location" class="form-control" placeholder="Bangalore, India" value="{{ profile.location if profile else '' }}">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Years of Experience</label>
+          <select name="experience_years" class="form-select">
+            <option value="">Select...</option>
+            <option value="Fresher" {% if profile and profile.experience_years == 'Fresher' %}selected{% endif %}>Fresher (0 years)</option>
+            <option value="1-2 years" {% if profile and profile.experience_years == '1-2 years' %}selected{% endif %}>1-2 years</option>
+            <option value="2-4 years" {% if profile and profile.experience_years == '2-4 years' %}selected{% endif %}>2-4 years</option>
+            <option value="4-6 years" {% if profile and profile.experience_years == '4-6 years' %}selected{% endif %}>4-6 years</option>
+            <option value="6+ years" {% if profile and profile.experience_years == '6+ years' %}selected{% endif %}>6+ years</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold"><i class="bi bi-linkedin"></i> LinkedIn URL</label>
+          <input type="url" name="linkedin_url" class="form-control" placeholder="https://linkedin.com/in/yourname" value="{{ profile.linkedin_url if profile else '' }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold"><i class="bi bi-github"></i> GitHub URL</label>
+          <input type="url" name="github_url" class="form-control" placeholder="https://github.com/yourname" value="{{ profile.github_url if profile else '' }}">
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold"><i class="bi bi-globe"></i> Portfolio URL</label>
+          <input type="url" name="portfolio_url" class="form-control" placeholder="https://yourportfolio.com" value="{{ profile.portfolio_url if profile else '' }}">
+        </div>
+        <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+          <i class="bi bi-check-circle"></i> Save Profile
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm p-4 mb-3">
+      <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-text"></i> Resume</h5>
+      {% if resume %}
+        <p class="text-success fw-semibold mb-2"><i class="bi bi-check-circle"></i> Resume on file</p>
+        <div class="mb-3">
+          {% for skill in resume.skills.split(',') %}
+            <span class="badge bg-primary-light me-1 mb-1">{{ skill }}</span>
+          {% endfor %}
+        </div>
+        <a href="{{ url_for('upload_resume') }}" class="btn btn-outline-primary btn-sm w-100">
+          <i class="bi bi-arrow-repeat"></i> Update Resume
+        </a>
+      {% else %}
+        <p class="text-muted">No resume uploaded yet.</p>
+        <a href="{{ url_for('upload_resume') }}" class="btn btn-primary btn-sm w-100">
+          <i class="bi bi-cloud-upload"></i> Upload Resume
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="card border-0 shadow-sm p-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-graph-up"></i> Quick Stats</h5>
+      <div class="d-flex justify-content-between py-2 border-bottom">
+        <span class="text-muted">Applications Sent</span>
+        <strong>{{ application_count }}</strong>
+      </div>
+      <div class="d-flex justify-content-between py-2">
+        <span class="text-muted">Profile Completion</span>
+        <strong>{{ profile_completion }}%</strong>
+      </div>
+      <div class="progress mt-2" style="height:8px;">
+        <div class="progress-bar bg-success" style="width:{{ profile_completion }}%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Resume Upload{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <div style="font-size:3rem">📤</div>
+          <h3 class="fw-bold">Upload Your Resume</h3>
+          <p class="text-muted small">PDF format only (max 5MB)</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_resume') }}">
+          <!-- Drag & Drop Zone -->
+          <div class="upload-zone p-5 text-center rounded-3 mb-4" id="dropZone">
+            <input type="file" name="resume" id="resumeFile" accept=".pdf" class="d-none" required>
+            <div id="uploadIcon" style="font-size:3rem">📄</div>
+            <p class="fw-bold mb-1" id="uploadText">Drag and drop your PDF here</p>
+            <p class="text-muted small mb-3">or</p>
+            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('resumeFile').click()">
+              <i class="bi bi-folder2-open"></i> Choose File
+            </button>
+            <div id="fileName" class="mt-3 text-success fw-bold d-none"></div>
+          </div>
+
+          <!-- What AI Extracts -->
+          <div class="alert alert-info border-0 mb-4">
+            <strong><i class="bi bi-robot"></i> What the AI will do:</strong>
+            <ul class="mb-0 mt-2 small">
+              <li>Automatically extract text from your PDF</li>
+              <li>Identify programming skills, tools, and frameworks</li>
+              <li>Calculate a match score against every job</li>
+              <li>Suggest the best-fit jobs for you</li>
+            </ul>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="uploadBtn" disabled>
+            <i class="bi bi-cloud-upload"></i> Upload & Analyze
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('resumeFile');
+const uploadBtn = document.getElementById('uploadBtn');
+const fileNameDiv = document.getElementById('fileName');
+const dropZone = document.getElementById('dropZone');
+
+fileInput.addEventListener('change', function() {
+  if (this.files.length > 0) {
+    fileNameDiv.textContent = '✓ ' + this.files[0].name;
+    fileNameDiv.classList.remove('d-none');
+    uploadBtn.disabled = false;
+  }
+});
+
+// Drag & Drop
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.pdf')) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    fileInput.files = dt.files;
+    fileNameDiv.textContent = '✓ ' + file.name;
+    fileNameDiv.classList.remove('d-none');
+    uploadBtn.disabled = false;
+  } else {
+    alert('Only PDF files are allowed!');
+  }
+});
+</script>
+{% endblock %}

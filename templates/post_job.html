@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Post Job{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <div style="font-size:2.5rem">💼</div>
+          <h3 class="fw-bold">Post a New Job</h3>
+          <p class="text-muted small">Fill in the details — the AI will automatically rank candidates</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('post_job') }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Job Title *</label>
+            <input type="text" name="job_title" class="form-control"
+                   placeholder="e.g. Python Developer, Data Scientist" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Required Skills * <small class="text-muted">(comma separated)</small></label>
+            <input type="text" name="required_skills" class="form-control"
+                   placeholder="python, flask, mysql, javascript, react">
+            <small class="text-muted">Separate skills with commas — the AI matches candidates against these</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Job Description</label>
+            <textarea name="description" class="form-control" rows="4"
+                      placeholder="Job details, responsibilities, company info..."></textarea>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Location</label>
+              <input type="text" name="location" class="form-control" placeholder="Remote / Bangalore / Mumbai">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Experience Required</label>
+              <select name="experience" class="form-select">
+                <option value="Fresher">Fresher (0 years)</option>
+                <option value="1-2 years">1-2 years</option>
+                <option value="2-4 years" selected>2-4 years</option>
+                <option value="4-6 years">4-6 years</option>
+                <option value="6+ years">6+ years</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+            <i class="bi bi-send"></i> Post Job
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

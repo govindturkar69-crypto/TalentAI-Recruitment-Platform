@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="hero-section text-center py-5 mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="hero-icon mb-4">🤖</div>
+      <h1 class="display-4 fw-bold">AI-Powered Recruitment</h1>
+      <p class="lead text-muted mb-4">
+        Resume parsing, skill extraction, automatic scoring — all in one place.
+        A smart platform for smart hiring.
+      </p>
+      <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4">
+          <i class="bi bi-person-plus"></i> Get Started
+        </a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg px-4">
+          <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="row g-4 mb-5">
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-4 border-0">
+      <div class="feature-icon">📄</div>
+      <h5 class="fw-bold mt-3">Resume Parsing</h5>
+      <p class="text-muted small">Automatically extract text and skills from any PDF resume</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-4 border-0">
+      <div class="feature-icon">🎯</div>
+      <h5 class="fw-bold mt-3">Smart Scoring</h5>
+      <p class="text-muted small">Candidates are scored against each job's exact requirements</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-4 border-0">
+      <div class="feature-icon">🏆</div>
+      <h5 class="fw-bold mt-3">Auto Ranking</h5>
+      <p class="text-muted small">The best-fit candidates automatically rise to the top</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card feature-card h-100 text-center p-4 border-0">
+      <div class="feature-icon">📊</div>
+      <h5 class="fw-bold mt-3">Analytics</h5>
+      <p class="text-muted small">Real-time charts and insights for better hiring decisions</p>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 text-center">
+  <div class="col-md-4">
+    <div class="stat-box p-4 rounded-3">
+      <div class="stat-number">50+</div>
+      <div class="text-muted">Skills Detected</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-box p-4 rounded-3">
+      <div class="stat-number">100%</div>
+      <div class="text-muted">Automatic Scoring</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-box p-4 rounded-3">
+      <div class="stat-number">5x</div>
+      <div class="text-muted">Faster Hiring Process</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

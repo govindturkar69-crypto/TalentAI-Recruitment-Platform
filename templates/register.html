@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card auth-card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <div style="font-size:2.5rem">✍️</div>
+          <h3 class="fw-bold mt-2">Create New Account</h3>
+          <p class="text-muted small">Register to join the platform</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('register') }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Full Name</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-person"></i></span>
+              <input type="text" name="name" class="form-control" placeholder="Your full name" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+              <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" name="password" class="form-control" placeholder="Min. 6 characters" minlength="6" required>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Account Type</label>
+            <div class="d-flex gap-3">
+              <div class="role-card flex-fill text-center p-3 rounded-3 border" onclick="selectRole('candidate')" id="card-candidate">
+                <input type="radio" name="role" value="candidate" id="r-candidate" class="d-none" required>
+                <div style="font-size:1.8rem">👤</div>
+                <div class="fw-bold small mt-1">Candidate</div>
+                <div class="text-muted" style="font-size:11px">Looking for a job</div>
+              </div>
+              <div class="role-card flex-fill text-center p-3 rounded-3 border" onclick="selectRole('recruiter')" id="card-recruiter">
+                <input type="radio" name="role" value="recruiter" id="r-recruiter" class="d-none">
+                <div style="font-size:1.8rem">🏢</div>
+                <div class="fw-bold small mt-1">Recruiter</div>
+                <div class="text-muted" style="font-size:11px">Looking for candidates</div>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+            <i class="bi bi-person-check"></i> Register
+          </button>
+        </form>
+
+        <hr class="my-3">
+        <p class="text-center text-muted small mb-0">
+          Already have an account?
+          <a href="{{ url_for('login') }}" class="text-decoration-none fw-bold">Login here</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectRole(role) {
+  document.getElementById('r-' + role).checked = true;
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected-role'));
+  document.getElementById('card-' + role).classList.add('selected-role');
+}
+</script>
+{% endblock %}

@@ -3,9 +3,7 @@ PyMySQL==1.1.0
 cryptography==41.0.7
 Werkzeug==2.3.7
 PyPDF2==3.0.1
-pandas==2.2.2
 plotly==5.17.0
-scikit-learn==1.4.2
 python-dotenv==1.0.0
 openpyxl==3.1.2
 gunicorn==21.2.0

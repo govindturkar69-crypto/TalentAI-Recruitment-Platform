@@ -396,3 +396,66 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #0f1117; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2d3142; border-radius: 10px; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3d4356; }
+/* ============================================
+   DARK MODE TEXT FIX
+   ============================================ */
+
+[data-theme="dark"] body { color: #e2e8f0; }
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 { color: #e2e8f0; }
+
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] label,
+[data-theme="dark"] li { color: #e2e8f0; }
+
+[data-theme="dark"] .text-muted { color: #94a3b8 !important; }
+
+[data-theme="dark"] .card-body,
+[data-theme="dark"] .card-body p,
+[data-theme="dark"] .card-body h5,
+[data-theme="dark"] .card-body span,
+[data-theme="dark"] .card-body small { color: #e2e8f0; }
+
+[data-theme="dark"] .display-6,
+[data-theme="dark"] .stat-number,
+[data-theme="dark"] .stat-number-sm { color: #818cf8; }
+
+[data-theme="dark"] .table td,
+[data-theme="dark"] .table th { color: #e2e8f0; }
+
+[data-theme="dark"] .alert { color: #e2e8f0; }
+
+[data-theme="dark"] .badge { color: #fff; }
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: #64748b; }
+
+[data-theme="dark"] small { color: #94a3b8; }
+
+[data-theme="dark"] .fw-bold { color: #e2e8f0; }
+
+[data-theme="dark"] .score-high { color: #4ade80 !important; }
+[data-theme="dark"] .score-medium { color: #fbbf24 !important; }
+[data-theme="dark"] .score-low { color: #f87171 !important; }
+
+[data-theme="dark"] .navbar * { color: inherit; }
+
+[data-theme="dark"] .job-card .card-body h5,
+[data-theme="dark"] .job-card .card-body p,
+[data-theme="dark"] .job-card .card-body small { color: #e2e8f0; }
+
+[data-theme="dark"] .avatar-circle { color: #fff !important; }
+
+[data-theme="dark"] .filter-bar label,
+[data-theme="dark"] .filter-bar span { color: #94a3b8; }
+
+[data-theme="dark"] .notif-item strong { color: #e2e8f0; }
+
+[data-theme="dark"] .profile-header,
+[data-theme="dark"] .profile-header * { color: #fff; }

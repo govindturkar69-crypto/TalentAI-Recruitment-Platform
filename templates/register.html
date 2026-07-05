@@ -27,28 +27,11 @@
               <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
             </div>
           </div>
-          <div class="mb-3">
+          <div class="mb-4">
             <label class="form-label fw-semibold">Password</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-lock"></i></span>
               <input type="password" name="password" class="form-control" placeholder="Min. 6 characters" minlength="6" required>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label class="form-label fw-semibold">Account Type</label>
-            <div class="d-flex gap-3">
-              <div class="role-card flex-fill text-center p-3 rounded-3 border" onclick="selectRole('candidate')" id="card-candidate">
-                <input type="radio" name="role" value="candidate" id="r-candidate" class="d-none" required>
-                <div style="font-size:1.8rem">👤</div>
-                <div class="fw-bold small mt-1">Candidate</div>
-                <div class="text-muted" style="font-size:11px">Looking for a job</div>
-              </div>
-              <div class="role-card flex-fill text-center p-3 rounded-3 border" onclick="selectRole('recruiter')" id="card-recruiter">
-                <input type="radio" name="role" value="recruiter" id="r-recruiter" class="d-none">
-                <div style="font-size:1.8rem">🏢</div>
-                <div class="fw-bold small mt-1">Recruiter</div>
-                <div class="text-muted" style="font-size:11px">Looking for candidates</div>
-              </div>
             </div>
           </div>
           <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
@@ -65,12 +48,4 @@
     </div>
   </div>
 </div>
-
-<script>
-function selectRole(role) {
-  document.getElementById('r-' + role).checked = true;
-  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected-role'));
-  document.getElementById('card-' + role).classList.add('selected-role');
-}
-</script>
 {% endblock %}

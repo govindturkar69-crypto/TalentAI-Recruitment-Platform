@@ -1,227 +1,122 @@
-# 🤖 TalentAI — AI-Powered Recruitment & Talent Analytics Platform
-
 <div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
-![Flask](https://img.shields.io/badge/Flask-2.3.3-black?style=for-the-badge&logo=flask)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-orange?style=for-the-badge&logo=mysql)
-![Plotly](https://img.shields.io/badge/Plotly-5.17-purple?style=for-the-badge&logo=plotly)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-violet?style=for-the-badge&logo=bootstrap)
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=32&pause=1000&color=6366F1&center=true&vCenter=true&width=650&lines=%F0%9F%A4%96+TalentAI;AI-Powered+Recruitment+Platform;Smart+Hiring+for+Modern+Teams" alt="TalentAI" />
 
-**HR team ke liye AI-powered recruitment system — resumes automatically parse karo, skills extract karo, candidates rank karo.**
+<br/>
+
+### Automate your entire hiring pipeline with AI — parse resumes, extract skills, score candidates, and rank them instantly.
+
+<br/>
+
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-2.3-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![Railway](https://img.shields.io/badge/Deployed_on-Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app)
+
+<br/>
+
+[![Live Demo](https://img.shields.io/badge/🚀_LIVE_DEMO-Click_Here-22c55e?style=for-the-badge)](https://talentai-recruitment-platform-production.up.railway.app)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+<br/>
+
+**[🌐 Live Demo](#-live-demo) · [✨ Features](#-features) · [📸 Screenshots](#-screenshots) · [⚙️ Setup](#%EF%B8%8F-installation) · [📬 Contact](#-contact)**
 
 </div>
 
 ---
 
-## 📌 Problem Statement
+## 🌐 Live Demo
 
-Aaj kal HR teams ko **hundreds of resumes manually** check karne padte hain, jo:
-- ⏳ Bahut time leta hai
-- 😓 Human bias aata hai
-- ❌ Best candidates miss ho jaate hain
+> ### 🔗 **[https://talentai-recruitment-platform-production.up.railway.app](https://talentai-recruitment-platform-production.up.railway.app)**
 
-**TalentAI** is samasya ka solution hai — ek fully automated, AI-driven recruitment platform.
+Register with any email to explore as a **Candidate**. The **Recruiter** dashboard is restricted to the admin account only, keeping the platform secure and realistic.
+
+---
+
+## 📖 About The Project
+
+Hiring teams waste countless hours manually screening **hundreds of resumes** — a process that's slow, biased, and error-prone. **TalentAI** solves this by using **AI and Machine Learning** to automatically read resumes, extract skills, and score every candidate against a job's requirements — surfacing the best-fit people in seconds.
+
+The platform has two sides:
+- **Candidates** upload their resume, get AI-matched to jobs, and track applications in real time.
+- **Recruiters** post jobs and receive an automatically ranked list of applicants, complete with match scores, analytics, and Excel export.
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+### 🏠 Homepage
+<img src="screenshots/homepage.png" width="800" alt="Homepage" />
+
+### 👤 Candidate Dashboard
+<img src="screenshots/candidate-dashboard.png" width="800" alt="Candidate Dashboard" />
+
+### 📄 Resume Upload
+<img src="screenshots/upload-resume.png" width="800" alt="Resume Upload" />
+
+### ⭐ AI Job Recommendations
+<img src="screenshots/recommendations.png" width="800" alt="Job Recommendations" />
+
+### 🏢 Recruiter Dashboard
+<img src="screenshots/recruiter-dashboard.png" width="800" alt="Recruiter Dashboard" />
+
+### 🏆 Ranked Applicants
+<img src="screenshots/applicants.png" width="800" alt="Ranked Applicants" />
+
+### 📊 Analytics Dashboard
+<img src="screenshots/analytics.png" width="800" alt="Analytics" />
+
+### 🌙 Dark Mode
+<img src="screenshots/dark-mode.png" width="800" alt="Dark Mode" />
+
+</div>
 
 ---
 
 ## ✨ Features
 
-### 👤 Candidate Side
-- ✅ Register / Login
-- ✅ PDF Resume Upload (drag & drop)
-- ✅ Automatic skill extraction from resume
-- ✅ Job listings dekho aur apply karo
-- ✅ Application status track karo (Applied / Shortlisted / Hired / Rejected)
+### 👤 For Candidates
+- 📄 **Resume Upload** — drag & drop PDF, AI extracts skills automatically
+- 🎯 **Smart Apply** — instant AI match score when applying to any job
+- ⭐ **AI Job Recommendations** — best-fit jobs ranked by resume match %
+- 🔖 **Saved Jobs** — bookmark jobs to apply later
+- ↩️ **Withdraw Applications** — cancel anytime (except hired)
+- 👤 **Profile Page** — bio, experience, LinkedIn / GitHub / portfolio links
+- 🔔 **Real-time Notifications** — get alerts on shortlist / rejection / hire
+- 🔍 **Search & Filter** — find jobs by title, location, or skill
 
-### 🏢 Recruiter Side
-- ✅ Job postings create karo (required skills ke saath)
-- ✅ Candidates automatically ranked milte hain (AI score ke basis par)
-- ✅ One-click status update (Shortlist / Reject / Hire)
-- ✅ Analytics dashboard with 5 interactive charts
+### 🏢 For Recruiters (Admin Only)
+- 💼 **Post & Manage Jobs** — create, edit, close, reopen, or delete listings
+- 🏆 **AI-Ranked Candidates** — applicants auto-sorted by match score
+- ☑️ **Bulk Actions** — shortlist / reject / hire multiple candidates at once
+- 📥 **Export to Excel** — download the full applicant list as `.xlsx`
+- 📊 **Analytics Dashboard** — 5 interactive charts (skill demand, scores, trends)
+- 🔔 **Application Alerts** — notified instantly when someone applies
 
-### 🤖 AI / ML Module
-- ✅ **PDF Parsing** — PyPDF2 se text extract
-- ✅ **Skill Extraction** — 50+ skills ka database, regex matching
-- ✅ **Skill Match Score** — required vs candidate skills (70% weight)
-- ✅ **TF-IDF Similarity** — resume vs job description cosine similarity (30% weight)
-- ✅ **Auto Ranking** — score ke basis par candidates rank
+### 🤖 AI / ML Engine
+- 📑 **PDF Parsing** — extracts raw text from resumes (PyPDF2)
+- 🧠 **Skill Extraction** — matches against a 50+ skills database
+- 📐 **Skill Match Score** — `matched / required × 100` (70% weight)
+- 🔍 **TF-IDF Similarity** — resume vs job cosine similarity (30% weight)
+- 🏅 **Final Score** — `(Skill × 0.7) + (TF-IDF × 0.3)`
 
-### 📊 Analytics Dashboard
-- ✅ Top Skills in Demand (bar chart)
-- ✅ Candidate Score Distribution (histogram)
-- ✅ Applicants per Job Role (pie chart)
-- ✅ Top Candidates by Score (bar chart)
-- ✅ Application Status Overview (bar chart)
-
----
-
-## 🛠️ Tech Stack
-
-| Category | Technology |
-|----------|------------|
-| **Backend** | Python 3.10+, Flask 2.3 |
-| **Database** | MySQL 8.0 |
-| **AI / NLP** | scikit-learn (TF-IDF, Cosine Similarity) |
-| **PDF Processing** | PyPDF2 |
-| **Data Analysis** | Pandas |
-| **Charts** | Plotly |
-| **Frontend** | HTML5, CSS3, Bootstrap 5.3, JavaScript |
-| **Auth** | Werkzeug (password hashing) |
-| **Deployment** | Render / Railway (optional) |
+### 🎨 Platform
+- 🌙 **Dark Mode** — full dark theme with smooth transitions
+- 🔐 **Admin-Only Recruiter** — only the admin email can be a recruiter
+- 🔑 **Forgot Password** — secure token-based password reset
+- 🛡️ **Secure Config** — all secrets stored in environment variables
 
 ---
 
-## 📁 Project Structure
-
-```
-Recruitment_Analytics/
-│
-├── app.py                        ← Main Flask application (all routes)
-├── requirements.txt              ← Python dependencies
-├── SETUP_GUIDE.md                ← Detailed setup instructions
-├── README.md                     ← Ye file
-│
-├── static/
-│   ├── css/
-│   │   └── style.css             ← Custom styles
-│   └── js/
-│       └── main.js               ← Frontend JavaScript
-│
-├── templates/
-│   ├── base.html                 ← Navbar + layout (parent template)
-│   ├── index.html                ← Homepage
-│   ├── login.html                ← Login page
-│   ├── register.html             ← Registration (Candidate / Recruiter)
-│   ├── candidate_dashboard.html  ← Candidate portal
-│   ├── upload_resume.html        ← PDF drag & drop upload
-│   ├── recruiter_dashboard.html  ← Recruiter portal
-│   ├── post_job.html             ← Create job posting
-│   ├── view_applicants.html      ← Ranked candidates list
-│   └── analytics.html           ← Plotly charts dashboard
-│
-├── uploads/                      ← Uploaded PDFs (auto-created)
-│
-├── models/
-│   └── resume_parser.py          ← PDF parsing, skill extraction, scoring
-│
-├── analytics/
-│   └── dashboard.py              ← Plotly chart generation functions
-│
-└── database/
-    └── schema.sql                ← MySQL tables + sample data
-```
-
----
-
-## ⚙️ Installation & Setup
-
-### Prerequisites
-- Python 3.10 ya usse upar
-- MySQL 8.0
-- pip
-
----
-
-### Step 1 — Repository Clone Karo
-
-```bash
-git clone https://github.com/yourusername/TalentAI.git
-cd TalentAI
-```
-
----
-
-### Step 2 — Virtual Environment Banao
-
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# Mac / Linux
-python3 -m venv venv
-source venv/bin/activate
-```
-
----
-
-### Step 3 — Dependencies Install Karo
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### Step 4 — MySQL Database Setup Karo
-
-```bash
-mysql -u root -p
-```
-
-MySQL prompt mein:
-
-```sql
-source database/schema.sql;
-```
-
----
-
-### Step 5 — app.py Configure Karo
-
-`app.py` mein apna MySQL password dalo:
+## 📊 How The Scoring Works
 
 ```python
-app.config["MYSQL_PASSWORD"] = "apna_password_yahan"  # ← change karo
-```
-
----
-
-### Step 6 — App Run Karo
-
-```bash
-python app.py
-```
-
-Browser mein kholo: **http://localhost:5000** 🎉
-
----
-
-## 🔄 System Flow
-
-```
-Candidate → PDF Upload
-               ↓
-         PyPDF2 Text Extraction
-               ↓
-         Skill Extraction (50+ skills regex match)
-               ↓
-         Skills saved in MySQL
-               ↓
-         Apply for Job
-               ↓
-    ┌──────────────────────────┐
-    │  AI Scoring Algorithm    │
-    │  • Skill Match  → 70%   │
-    │  • TF-IDF Score → 30%   │
-    └──────────────────────────┘
-               ↓
-    Recruiter → Ranked Candidates
-    • Score ≥ 75% → ✅ Shortlist
-    • Score 50–74% → ⚠️ Review
-    • Score < 50%  → ❌ Reject
-               ↓
-    Analytics Dashboard (Charts)
-```
-
----
-
-## 📊 Scoring Algorithm
-
-```python
-# Skill Match Score (70% weight)
-skill_score = matched_skills / required_skills * 100
+# Skill Match (70% weight)
+skill_score = len(matched_skills) / len(required_skills) * 100
 
 # TF-IDF Cosine Similarity (30% weight)
 tfidf_score = cosine_similarity(resume_text, job_description) * 100
@@ -232,118 +127,191 @@ final_score = (skill_score * 0.70) + (tfidf_score * 0.30)
 
 **Example:**
 ```
-Required Skills : python, flask, mysql, javascript, html  (5 total)
-Candidate Skills: python, mysql, html, react              (3 matched)
+Job requires : python, flask, mysql, javascript, html   →  5 skills
+Resume has   : python, mysql, html, react               →  3 matched
 
-Skill Score  = 3/5 × 100 = 60%
-TF-IDF Score = 45%
-Final Score  = (60 × 0.7) + (45 × 0.3) = 42 + 13.5 = 55.5%  → ⚠️ Review
+Skill Score  = 3/5 × 100          = 60.0%
+TF-IDF Score = (auto-calculated)   = 45.0%
+Final Score  = (60×0.7)+(45×0.3)   = 55.5%   →  ⚠️ Review
+```
+
+| Score | Decision |
+|:-----:|:--------:|
+| ≥ 75% | ✅ Shortlist |
+| 50–74% | ⚠️ Review |
+| < 50% | ❌ Reject |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Python 3.13, Flask, PyMySQL |
+| **Database** | MySQL 8.0 |
+| **AI / ML** | scikit-learn (TF-IDF + Cosine Similarity), PyPDF2 |
+| **Analytics** | Plotly, Pandas |
+| **Frontend** | Bootstrap 5.3, Vanilla JavaScript |
+| **Auth** | Werkzeug (password hashing), Flask sessions |
+| **Export** | openpyxl (Excel) |
+| **Deployment** | Railway (app + database), Gunicorn |
+| **Security** | python-dotenv (.env for secrets) |
+
+---
+
+## 📁 Project Structure
+
+```
+TalentAI/
+├── app.py                     # Main Flask app (29 routes)
+├── requirements.txt           # Python dependencies
+├── Procfile                   # Deployment start command
+├── runtime.txt                # Python version
+├── .env.example               # Environment variable template
+├── .gitignore
+│
+├── models/
+│   └── resume_parser.py       # PDF parsing + skill extraction + scoring
+├── analytics/
+│   └── dashboard.py           # 5 Plotly chart generators
+├── database/
+│   └── schema.sql             # 8 MySQL tables
+│
+├── templates/                 # 17 Jinja2 HTML templates
+│   ├── base.html              # Navbar, dark mode, notifications
+│   ├── index.html             # Landing page
+│   ├── login.html / register.html
+│   ├── forgot_password.html / reset_password.html
+│   ├── candidate_dashboard.html
+│   ├── candidate_profile.html
+│   ├── upload_resume.html
+│   ├── job_recommendations.html
+│   ├── saved_jobs.html
+│   ├── notifications.html
+│   ├── recruiter_dashboard.html
+│   ├── post_job.html / edit_job.html
+│   ├── view_applicants.html
+│   └── analytics.html
+│
+├── static/
+│   ├── css/style.css          # Dark mode + animations
+│   └── js/main.js             # Theme toggle + filters
+└── uploads/                   # Uploaded resumes
 ```
 
 ---
 
-## 🌐 API Endpoints
+## ⚙️ Installation
 
-| Method | URL | Description |
-|--------|-----|-------------|
-| GET | `/` | Homepage |
-| GET/POST | `/register` | New account banao |
-| GET/POST | `/login` | Login karo |
-| GET | `/logout` | Logout |
-| GET | `/candidate/dashboard` | Candidate portal |
-| GET/POST | `/candidate/upload_resume` | PDF upload |
-| POST | `/candidate/apply/<job_id>` | Job apply |
-| GET | `/recruiter/dashboard` | Recruiter portal |
-| GET/POST | `/recruiter/post_job` | Job post karo |
-| GET | `/recruiter/job/<id>/applicants` | Ranked applicants |
-| POST | `/recruiter/application/<id>/status` | Status update |
-| GET | `/recruiter/analytics` | Charts dashboard |
-| GET | `/api/jobs` | JSON — all jobs |
-| GET | `/api/candidate/<id>/score` | JSON — candidate scores |
+### Prerequisites
+- Python 3.11+
+- MySQL 8.0
 
----
-
-## 🖥️ Screenshots
-
-> Register karo → Resume upload karo → Apply karo → Recruiter ranked list dekhe → Analytics charts
-
-```
-Homepage       →  /
-Login          →  /login
-Register       →  /register  (Candidate ya Recruiter)
-PDF Upload     →  /candidate/upload_resume
-Apply Job      →  /candidate/dashboard
-Ranked List    →  /recruiter/job/<id>/applicants
-Analytics      →  /recruiter/analytics
-```
-
----
-
-## ❌ Common Errors & Solutions
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `ModuleNotFoundError` | Library nahi hai | `pip install -r requirements.txt` |
-| `Access denied for user 'root'` | Wrong MySQL password | `app.py` mein password check karo |
-| `No module named 'MySQLdb'` | mysqlclient issue | `pip install PyMySQL` try karo |
-| `PDF read error` | Scanned/image PDF | Text-based PDF use karo |
-| Port 5000 in use | Port busy | `app.run(port=5001)` karo |
-
----
-
-## 🚀 Deployment (Render — Free)
+### Steps
 
 ```bash
-# 1. Gunicorn install karo
-pip install gunicorn
+# 1. Clone the repository
+git clone https://github.com/govindturkar69-crypto/TalentAI-Recruitment-Platform.git
+cd TalentAI-Recruitment-Platform
 
-# 2. requirements.txt update karo
-echo "gunicorn" >> requirements.txt
+# 2. Create & activate a virtual environment
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate      # Mac/Linux
 
-# 3. GitHub par push karo
-git add . && git commit -m "deploy" && git push
+# 3. Install dependencies
+pip install -r requirements.txt
 
-# 4. render.com → New Web Service → Connect GitHub repo
-#    Build: pip install -r requirements.txt
-#    Start: gunicorn app:app
-#
-# 5. MySQL ke liye PlanetScale (free) use karo
+# 4. Set up environment variables
+cp .env.example .env
+# Edit .env with your MySQL credentials
+
+# 5. Create the database
+mysql -u root -p < database/schema.sql
+
+# 6. Run the app
+python app.py
+```
+
+Open **http://localhost:5000** in your browser.
+
+### Environment Variables (`.env`)
+```env
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your_password
+MYSQL_DB=recruitment_db
+FLASK_SECRET_KEY=your_random_secret_key
 ```
 
 ---
 
-## 🗺️ Development Roadmap
+## 🗃️ Database Schema
 
-- [x] Flask setup + MySQL connection
-- [x] Login / Register (Candidate + Recruiter)
-- [x] PDF resume upload
-- [x] Skill extraction (50+ skills)
-- [x] AI scoring (Skill Match + TF-IDF)
-- [x] Candidate ranking
-- [x] Job posting module
-- [x] Application tracking
-- [x] Analytics dashboard (5 charts)
-- [ ] Email notifications
-- [ ] Resume similarity recommendation
-- [ ] Admin panel
-- [ ] REST API (mobile app ke liye)
+| Table | Purpose |
+|-------|---------|
+| `users` | Candidates + Recruiters (role-based) |
+| `jobs` | Job listings (with active/closed flag) |
+| `resumes` | Uploaded PDFs + extracted skills |
+| `applications` | Candidate ↔ Job links (score, status) |
+| `candidate_profiles` | Bio, contact, social links |
+| `notifications` | Real-time alerts |
+| `saved_jobs` | Bookmarked jobs |
+| `password_resets` | Secure reset tokens |
 
 ---
 
-## 👨‍💻 Author
+## 🗺️ Roadmap
 
-**Tumhara Naam**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [linkedin.com/in/yourprofile](https://linkedin.com/in/yourprofile)
+- [x] AI resume parsing & skill extraction
+- [x] Smart scoring (Skill Match + TF-IDF)
+- [x] Automatic candidate ranking
+- [x] Job posting & management (edit / close / delete)
+- [x] Application tracking & withdrawal
+- [x] Real-time notifications
+- [x] Analytics dashboard (5 charts)
+- [x] Candidate profile page
+- [x] AI job recommendations
+- [x] Saved / bookmarked jobs
+- [x] Bulk status actions
+- [x] Export applicants to Excel
+- [x] Forgot password (token-based)
+- [x] Dark mode
+- [x] Search & filter jobs
+- [x] Admin-only recruiter access
+- [x] Deployed live on Railway
+- [ ] Email notifications (SMTP)
+- [ ] Admin panel for user management
+- [ ] Resume improvement AI suggestions
+- [ ] Mobile app
+
+---
+
+## 📬 Contact
+
+<div align="center">
+
+**Govind Turkar**
+
+[![GitHub](https://img.shields.io/badge/GitHub-govindturkar69--crypto-181717?style=for-the-badge&logo=github)](https://github.com/govindturkar69-crypto)
+[![Email](https://img.shields.io/badge/Email-govindturkar45@gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:govindturkar45@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/yourprofile)
+
+</div>
 
 ---
 
 ## 📄 License
 
-This project is open source — MIT License.
+This project is licensed under the **MIT License** — free to use, modify, and distribute.
 
 ---
 
 <div align="center">
-  <strong>⭐ Agar project helpful laga toh GitHub par Star dena mat bhoolo!</strong>
+
+### ⭐ If you found this project helpful, please give it a star!
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=6366f1&height=120&section=footer&text=Thanks%20for%20visiting!&fontSize=24&fontColor=ffffff" width="100%" />
+
 </div>

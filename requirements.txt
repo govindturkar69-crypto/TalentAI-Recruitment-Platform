@@ -1,5 +1,6 @@
 Flask==2.3.3
 PyMySQL==1.1.0
+DBUtils==3.1.0
 cryptography==41.0.7
 Werkzeug==2.3.7
 PyPDF2==3.0.1

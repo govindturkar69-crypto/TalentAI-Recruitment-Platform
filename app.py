@@ -4,9 +4,10 @@ from datetime import datetime, timedelta
 from io import BytesIO
 
 from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, jsonify, send_file)
+                   url_for, session, flash, jsonify, send_file, g)
 import pymysql
 import pymysql.cursors
+from dbutils.pooled_db import PooledDB
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -37,15 +38,32 @@ app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+# ── Connection Pool (Performance Fix) ────────────────────────────
+# Pehle: har request har baar naya DB connection kholta tha (slow).
+# Ab: ek pool banta hai jo connections reuse karta hai (fast).
+# Aiven jaise cloud DBs ko SSL chahiye. MYSQL_SSL=True hone par SSL on.
+_ssl_config = {"ssl": {"ssl": True}} if os.environ.get("MYSQL_SSL") == "True" else {}
+
+DB_POOL = PooledDB(
+    creator=pymysql,
+    maxconnections=10,      # max total connections
+    mincached=2,            # ready-to-use connections at startup
+    maxcached=5,            # max idle connections kept alive
+    blocking=True,          # wait if pool is full instead of erroring
+    ping=1,                 # check connection is alive before using
+    host=os.environ.get("MYSQL_HOST", "localhost"),
+    port=int(os.environ.get("MYSQL_PORT", 3306)),
+    user=os.environ.get("MYSQL_USER", "root"),
+    password=os.environ.get("MYSQL_PASSWORD", ""),
+    database=os.environ.get("MYSQL_DB", "recruitment_db"),
+    cursorclass=pymysql.cursors.DictCursor,
+    **_ssl_config,
+)
+
+
 def get_db_connection():
-    return pymysql.connect(
-        host=os.environ.get("MYSQL_HOST", "localhost"),
-        port=int(os.environ.get("MYSQL_PORT", 3306)),
-        user=os.environ.get("MYSQL_USER", "root"),
-        password=os.environ.get("MYSQL_PASSWORD", ""),
-        database=os.environ.get("MYSQL_DB", "recruitment_db"),
-        cursorclass=pymysql.cursors.DictCursor
-    )
+    # Pool se ek connection uthao (reuse hota hai, naya nahi banta)
+    return DB_POOL.connection()
 
 
 def allowed_file(filename):
@@ -85,8 +103,12 @@ def login_required(role=None):
 
 @app.context_processor
 def inject_unread_count():
+    # Logged-out users ke liye query hi mat chalao
     if "user_id" not in session:
         return {"unread_count": 0}
+    # Ek request mein result cache karo (agar template kai baar use kare)
+    if "unread_count" in g:
+        return {"unread_count": g.unread_count}
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -97,6 +119,7 @@ def inject_unread_count():
         count = cur.fetchone()["cnt"]
         cur.close()
         conn.close()
+        g.unread_count = count
         return {"unread_count": count}
     except Exception:
         return {"unread_count": 0}
@@ -105,6 +128,21 @@ def inject_unread_count():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/healthz")
+def healthz():
+    # Health-check endpoint (Render/monitoring ke liye)
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "ok", "database": "connected"}), 200
+    except Exception:
+        return jsonify({"status": "error", "database": "unreachable"}), 503
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -118,7 +156,6 @@ def register():
             flash("All fields are required.", "danger")
             return render_template("register.html")
 
-        # Sirf admin email recruiter banega, baaki sab candidate
         role = "recruiter" if email == ADMIN_EMAIL else "candidate"
 
         hashed = generate_password_hash(password)

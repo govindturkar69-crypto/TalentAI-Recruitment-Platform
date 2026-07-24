@@ -867,6 +867,107 @@ a:hover { color: var(--brand-hover); }
   @view-transition { navigation: none; }
 }
 
+/* ============================================================
+   base.html COMPONENTS
+   ------------------------------------------------------------
+   Classes used by the shared layout: navbar shell, notification
+   bell, theme toggle, footer.
+   ============================================================ */
+
+/* Navbar shell */
+.bg-primary-custom {
+  background: var(--ink) !important;
+}
+
+/* Notification bell */
+.notif-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: rgba(255,255,255,.78);
+  background: rgba(255,255,255,.07);
+  font-size: 0.95rem;
+  transition: background var(--d-hover) var(--ease),
+              color var(--d-hover) var(--ease),
+              transform var(--d-press) var(--ease);
+}
+.notif-bell:hover {
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.notif-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--signal-low);
+  color: #fff;
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 17px;
+  text-align: center;
+  border: 2px solid var(--ink);
+}
+
+/* Theme toggle */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  color: rgba(255,255,255,.78);
+  background: rgba(255,255,255,.07);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background var(--d-hover) var(--ease),
+              color var(--d-hover) var(--ease),
+              transform var(--d-press) var(--ease);
+}
+.theme-toggle-btn:hover {
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.theme-toggle-btn:active { transform: translateY(0); }
+
+/* Footer */
+.footer-custom {
+  border-top: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink-3);
+}
+.footer-custom small { color: var(--ink-3); }
+
+/* Navbar name chip */
+.navbar .badge.bg-light {
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border-color: transparent;
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+
+/* Dark mode */
+[data-theme="dark"] .bg-primary-custom { background: #090C11 !important; }
+[data-theme="dark"] .notif-badge       { border-color: #090C11; }
+[data-theme="dark"] .footer-custom {
+  background: var(--surface);
+  border-top-color: var(--rule);
+}
+
 /* ── Small screens: shorter travel ────────────────────────── */
 @media (max-width: 768px) {
   :root { --rise: 12px; --lift: -4px; --scale-up: 1; }

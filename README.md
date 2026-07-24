@@ -10,13 +10,13 @@
 
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-2.3-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
+[![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
-[![Railway](https://img.shields.io/badge/Deployed_on-Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app)
+[![Render](https://img.shields.io/badge/Deployed_on-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com)
 
 <br/>
 
-[![Live Demo](https://img.shields.io/badge/🚀_LIVE_DEMO-Click_Here-22c55e?style=for-the-badge)](https://talentai-recruitment-platform-production.up.railway.app)
+[![Live Demo](https://img.shields.io/badge/🚀_LIVE_DEMO-Click_Here-22c55e?style=for-the-badge)](https://talentai-recruitment-platform.onrender.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 <br/>
@@ -29,9 +29,11 @@
 
 ## 🌐 Live Demo
 
-> ### 🔗 **[https://talentai-recruitment-platform-production.up.railway.app](https://talentai-recruitment-platform-production.up.railway.app)**
+> ### 🔗 **[https://talentai-recruitment-platform.onrender.com](https://talentai-recruitment-platform.onrender.com)**
 
 Register with any email to explore as a **Candidate**. The **Recruiter** dashboard is restricted to the admin account only, keeping the platform secure and realistic.
+
+> ⏳ **Note:** The app is hosted on a free tier, so the first load after a period of inactivity may take 30–50 seconds while the server wakes up. Subsequent loads are instant.
 
 ---
 
@@ -104,11 +106,14 @@ The platform has two sides:
 - 🔍 **TF-IDF Similarity** — resume vs job cosine similarity (30% weight)
 - 🏅 **Final Score** — `(Skill × 0.7) + (TF-IDF × 0.3)`
 
-### 🎨 Platform
+### 🎨 Platform & Engineering
 - 🌙 **Dark Mode** — full dark theme with smooth transitions
 - 🔐 **Admin-Only Recruiter** — only the admin email can be a recruiter
 - 🔑 **Forgot Password** — secure token-based password reset
 - 🛡️ **Secure Config** — all secrets stored in environment variables
+- ⚡ **Connection Pooling** — reused DB connections instead of opening a new one per request
+- 🗂️ **Database Indexes** — indexed columns on all frequently queried fields
+- ❤️ **Health Check** — `/healthz` endpoint for uptime monitoring
 
 ---
 
@@ -148,14 +153,15 @@ Final Score  = (60×0.7)+(45×0.3)   = 55.5%   →  ⚠️ Review
 | Layer | Technology |
 |-------|------------|
 | **Backend** | Python 3.13, Flask, PyMySQL |
-| **Database** | MySQL 8.0 |
+| **Database** | MySQL 8.4 (hosted on Aiven) |
+| **Connection Pool** | DBUtils `PooledDB` |
 | **AI / ML** | scikit-learn (TF-IDF + Cosine Similarity), PyPDF2 |
 | **Analytics** | Plotly, Pandas |
 | **Frontend** | Bootstrap 5.3, Vanilla JavaScript |
 | **Auth** | Werkzeug (password hashing), Flask sessions |
 | **Export** | openpyxl (Excel) |
-| **Deployment** | Railway (app + database), Gunicorn |
-| **Security** | python-dotenv (.env for secrets) |
+| **Deployment** | Render (web service) + Aiven (MySQL), Gunicorn |
+| **Security** | python-dotenv (.env for secrets), SSL DB connection |
 
 ---
 
@@ -163,7 +169,7 @@ Final Score  = (60×0.7)+(45×0.3)   = 55.5%   →  ⚠️ Review
 
 ```
 TalentAI/
-├── app.py                     # Main Flask app (29 routes)
+├── app.py                     # Main Flask app (30 routes)
 ├── requirements.txt           # Python dependencies
 ├── Procfile                   # Deployment start command
 ├── runtime.txt                # Python version
@@ -196,6 +202,7 @@ TalentAI/
 ├── static/
 │   ├── css/style.css          # Dark mode + animations
 │   └── js/main.js             # Theme toggle + filters
+├── screenshots/               # README screenshots
 └── uploads/                   # Uploaded resumes
 ```
 
@@ -205,7 +212,7 @@ TalentAI/
 
 ### Prerequisites
 - Python 3.11+
-- MySQL 8.0
+- MySQL 8.0+
 
 ### Steps
 
@@ -242,7 +249,9 @@ MYSQL_PORT=3306
 MYSQL_USER=root
 MYSQL_PASSWORD=your_password
 MYSQL_DB=recruitment_db
+MYSQL_SSL=False
 FLASK_SECRET_KEY=your_random_secret_key
+FLASK_DEBUG=True
 ```
 
 ---
@@ -259,6 +268,39 @@ FLASK_SECRET_KEY=your_random_secret_key
 | `notifications` | Real-time alerts |
 | `saved_jobs` | Bookmarked jobs |
 | `password_resets` | Secure reset tokens |
+
+Indexed columns: `users.email`, `applications.candidate_id`, `applications.job_id`, `applications.status`, `jobs.recruiter_id`, `jobs.is_active`, `resumes.user_id`, `saved_jobs.candidate_id`, `notifications(user_id, is_read)`, `password_resets.token`.
+
+---
+
+## 🚀 Deployment
+
+The app runs on a **fully free stack** — Render for the web service, Aiven for managed MySQL.
+
+### 1. Database — Aiven
+- Create a free MySQL service at [aiven.io](https://aiven.io)
+- Run `database/schema.sql` to create the 8 tables
+- Note the host, port, user, password, and database name
+
+### 2. Web Service — Render
+- Create a new **Web Service** at [render.com](https://render.com) and connect the GitHub repo
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `gunicorn app:app`
+- **Instance Type:** Free
+
+### 3. Environment Variables on Render
+```
+MYSQL_HOST       = <your-aiven-host>.aivencloud.com
+MYSQL_PORT       = <your-aiven-port>
+MYSQL_USER       = avnadmin
+MYSQL_PASSWORD   = <your-aiven-password>
+MYSQL_DB         = <your-database-name>
+MYSQL_SSL        = True
+FLASK_SECRET_KEY = <random-secret-string>
+FLASK_DEBUG      = False
+```
+
+> Aiven requires an SSL connection, which is why `MYSQL_SSL=True` is needed in production.
 
 ---
 
@@ -280,11 +322,13 @@ FLASK_SECRET_KEY=your_random_secret_key
 - [x] Dark mode
 - [x] Search & filter jobs
 - [x] Admin-only recruiter access
-- [x] Deployed live on Railway
+- [x] Database connection pooling & indexes
+- [x] Health-check endpoint
+- [x] Deployed live on Render + Aiven
 - [ ] Email notifications (SMTP)
+- [ ] Full UI redesign with a unified design system
 - [ ] Admin panel for user management
 - [ ] Resume improvement AI suggestions
-- [ ] Mobile app
 
 ---
 

@@ -679,34 +679,38 @@ a:hover { color: var(--brand-hover); }
 
 
 /* ============================================================
-   3D LAYER
+   MOTION SYSTEM
    ------------------------------------------------------------
-   Rich depth on entry pages (auth + homepage) where first
-   impression matters. Subtle depth on working pages, where
-   people are scanning data and motion would get in the way.
-
-   Only `transform` and `opacity` are animated — both run on
-   the GPU, so this costs nothing at load time.
+   One timing scale, one easing curve, used on every page.
+   Motion only marks a change of state — nothing loops, nothing
+   drifts, nothing rotates. Movement is translateY and scale
+   only, so text stays crisp and layout never shifts.
    ============================================================ */
 
-/* ── Motion tokens ────────────────────────────────────────── */
 :root {
-  --ease-out-3d: cubic-bezier(.16, .84, .32, 1);
-  --ease-soft:   cubic-bezier(.2, .7, .3, 1);
-  --depth-near:  18px;
-  --depth-far:  -60px;
+  /* Duration scale */
+  --d-press:   120ms;   /* buttons, toggles, checkboxes        */
+  --d-hover:   180ms;   /* hover lift, shadow                  */
+  --d-enter:   240ms;   /* card + panel entrance, focus ring   */
+  --d-panel:   320ms;   /* dropdowns, reveals, larger surfaces */
+  --d-data:    600ms;   /* count-ups, chart draw-in            */
+
+  /* One curve, everywhere */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Distance */
+  --lift:      -8px;    /* hover                               */
+  --rise:      20px;    /* entrance travel                     */
+  --scale-up:  1.02;    /* hover                               */
+
+  /* Stagger */
+  --stagger: 40ms;
 }
 
-/* ── Entrance: everything rises out of depth on page load ─── */
-@keyframes riseIn {
-  from {
-    opacity: 0;
-    transform: perspective(1000px) translate3d(0, 18px, var(--depth-far)) rotateX(7deg);
-  }
-  to {
-    opacity: 1;
-    transform: perspective(1000px) translate3d(0, 0, 0) rotateX(0deg);
-  }
+/* ── Entrance ─────────────────────────────────────────────── */
+@keyframes enter {
+  from { opacity: 0; transform: translateY(var(--rise)); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .card,
@@ -714,260 +718,156 @@ a:hover { color: var(--brand-hover); }
 .table-responsive,
 .hero-section,
 .notif-item,
-.alert,
-.empty-state {
-  animation: riseIn .55s var(--ease-out-3d) both;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
+.empty-state,
+.profile-header {
+  animation: enter var(--d-enter) var(--ease) both;
 }
 
-/* Stagger by column position so grids cascade left→right */
-.row > [class*="col"]:nth-child(1) .card { animation-delay: .04s; }
-.row > [class*="col"]:nth-child(2) .card { animation-delay: .10s; }
-.row > [class*="col"]:nth-child(3) .card { animation-delay: .16s; }
-.row > [class*="col"]:nth-child(4) .card { animation-delay: .22s; }
-.row > [class*="col"]:nth-child(5) .card { animation-delay: .28s; }
-.row > [class*="col"]:nth-child(6) .card { animation-delay: .34s; }
+/* Stagger — grid columns, cascading left to right */
+.row > [class*="col"]:nth-child(1)  .card { animation-delay: calc(var(--stagger) * 0); }
+.row > [class*="col"]:nth-child(2)  .card { animation-delay: calc(var(--stagger) * 1); }
+.row > [class*="col"]:nth-child(3)  .card { animation-delay: calc(var(--stagger) * 2); }
+.row > [class*="col"]:nth-child(4)  .card { animation-delay: calc(var(--stagger) * 3); }
+.row > [class*="col"]:nth-child(5)  .card { animation-delay: calc(var(--stagger) * 4); }
+.row > [class*="col"]:nth-child(6)  .card { animation-delay: calc(var(--stagger) * 5); }
+.row > [class*="col"]:nth-child(7)  .card { animation-delay: calc(var(--stagger) * 6); }
+.row > [class*="col"]:nth-child(8)  .card { animation-delay: calc(var(--stagger) * 7); }
+.row > [class*="col"]:nth-child(n+9) .card { animation-delay: calc(var(--stagger) * 8); }
 
-.notif-item:nth-child(1) { animation-delay: .04s; }
-.notif-item:nth-child(2) { animation-delay: .10s; }
-.notif-item:nth-child(3) { animation-delay: .16s; }
-.notif-item:nth-child(4) { animation-delay: .22s; }
-.notif-item:nth-child(5) { animation-delay: .28s; }
+/* Stagger — stacked lists */
+.notif-item:nth-child(1) { animation-delay: calc(var(--stagger) * 0); }
+.notif-item:nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
+.notif-item:nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
+.notif-item:nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
+.notif-item:nth-child(5) { animation-delay: calc(var(--stagger) * 4); }
+.notif-item:nth-child(6) { animation-delay: calc(var(--stagger) * 5); }
+.notif-item:nth-child(7) { animation-delay: calc(var(--stagger) * 6); }
+.notif-item:nth-child(n+8) { animation-delay: calc(var(--stagger) * 7); }
 
-/* ── SUBTLE: working pages ────────────────────────────────── */
-/* Cards lift toward the reader on hover — enough to feel
-   physical, not enough to distract while scanning.           */
+/* Table rows fade in place — no travel, so scanning isn't disturbed */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.table tbody tr {
+  animation: fadeIn var(--d-enter) var(--ease) both;
+}
+.table tbody tr:nth-child(1) { animation-delay: calc(var(--stagger) * 0); }
+.table tbody tr:nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
+.table tbody tr:nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
+.table tbody tr:nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
+.table tbody tr:nth-child(5) { animation-delay: calc(var(--stagger) * 4); }
+.table tbody tr:nth-child(6) { animation-delay: calc(var(--stagger) * 5); }
+.table tbody tr:nth-child(7) { animation-delay: calc(var(--stagger) * 6); }
+.table tbody tr:nth-child(n+8) { animation-delay: calc(var(--stagger) * 7); }
+
+/* Alerts fade only — they mount and unmount, travel would shift layout */
+.alert { animation: fadeIn var(--d-enter) var(--ease) both; }
+
+/* ── Hover ────────────────────────────────────────────────── */
 .card {
   transition:
-    transform .32s var(--ease-soft),
-    box-shadow .32s var(--ease-soft),
-    border-color .18s ease;
-  will-change: transform;
+    transform   var(--d-hover) var(--ease),
+    box-shadow  var(--d-hover) var(--ease),
+    border-color var(--d-hover) var(--ease);
 }
 
-.job-card:hover {
-  transform: perspective(1000px) translate3d(0, -4px, var(--depth-near)) rotateX(1.5deg);
-  box-shadow: var(--shadow-lg);
-}
-
-/* Stat cards: straight lift, no rotation — numbers stay square
-   to the reader so they remain easy to read.                  */
+.job-card:hover,
 .card:has(.stat-number):hover,
 .card:has(.stat-number-sm):hover,
 .card:has(.display-6):hover {
-  transform: perspective(1000px) translate3d(0, -3px, 12px);
+  transform: translateY(var(--lift)) scale(var(--scale-up));
   box-shadow: var(--shadow-lg);
+  border-color: var(--rule-strong);
 }
 
-/* Buttons press into the page */
-.btn {
-  transform-style: preserve-3d;
-  transition:
-    transform .12s var(--ease-soft),
-    background .15s ease,
-    border-color .15s ease;
-}
-.btn:hover  { transform: perspective(600px) translateZ(6px); }
-.btn:active { transform: perspective(600px) translateZ(-3px) translateY(1px); }
-
-/* Table rows come forward slightly */
+/* Table rows: background only. Nothing moves under a scanning eye. */
 .table-hover > tbody > tr {
-  transition: transform .2s var(--ease-soft), background .2s ease;
-}
-.table-hover > tbody > tr:hover {
-  transform: perspective(1200px) translateZ(8px);
+  transition: background var(--d-hover) var(--ease);
 }
 
-/* Skill chips pop on hover */
-.badge { transition: transform .18s var(--ease-soft); }
-.bg-success-light:hover,
-.bg-danger-light:hover,
-.bg-primary-light:hover {
-  transform: perspective(500px) translateZ(8px);
+/* ── Press ────────────────────────────────────────────────── */
+.btn {
+  transition:
+    transform   var(--d-press) var(--ease),
+    background  var(--d-press) var(--ease),
+    border-color var(--d-press) var(--ease),
+    box-shadow  var(--d-press) var(--ease);
+}
+.btn:hover  { transform: translateY(-2px); box-shadow: var(--shadow); }
+.btn:active { transform: translateY(0); box-shadow: none; }
+
+/* ── Focus ────────────────────────────────────────────────── */
+.form-control,
+.form-select {
+  transition:
+    border-color var(--d-enter) var(--ease),
+    box-shadow   var(--d-enter) var(--ease);
 }
 
-/* Avatars sit slightly above the row */
-.avatar-circle {
-  transform: perspective(500px) translateZ(6px);
-  box-shadow: 0 2px 6px rgba(18,22,28,.18);
+/* ── Skeleton screens ─────────────────────────────────────── */
+/* Used where content genuinely arrives late — charts, uploads.
+   A moving sheen reads as "loading" without a spinner.        */
+@keyframes sheen {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
 }
 
-/* ── RICH: auth pages (login, register, forgot, reset) ────── */
-/* The card floats in a lit space with two depth planes behind
-   it. Slow, continuous — it reads as calm, not busy.          */
-
-@keyframes authFloat {
-  0%, 100% { transform: perspective(1400px) rotateX(0.9deg) rotateY(-0.9deg) translate3d(0, 0, 0); }
-  50%      { transform: perspective(1400px) rotateX(-0.9deg) rotateY(0.9deg) translate3d(0, -8px, 20px); }
-}
-
-@keyframes authEnter {
-  from { opacity: 0; transform: perspective(1400px) rotateX(14deg) translate3d(0, 40px, -140px); }
-  to   { opacity: 1; transform: perspective(1400px) rotateX(0deg) translate3d(0, 0, 0); }
-}
-
-@keyframes planeDrift {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  50%      { transform: translate3d(14px, -18px, 0) rotate(3deg); }
-}
-
-.auth-card {
-  position: relative;
-  transform-style: preserve-3d;
-  animation:
-    authEnter .8s var(--ease-out-3d) both,
-    authFloat 9s ease-in-out 0.8s infinite;
-  box-shadow:
-    0 2px 4px rgba(18,22,28,.04),
-    0 12px 28px rgba(18,22,28,.09),
-    0 40px 80px rgba(18,22,28,.07);
-}
-
-/* Two planes drifting behind the card at different depths */
-.auth-card::before,
-.auth-card::after {
-  content: "";
-  position: absolute;
-  border-radius: var(--radius-lg);
-  z-index: -1;
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-alt) 25%,
+    var(--rule) 37%,
+    var(--surface-alt) 63%
+  );
+  background-size: 200% 100%;
+  animation: sheen 1.4s linear infinite;
+  border-radius: var(--radius-sm);
+  color: transparent !important;
+  user-select: none;
   pointer-events: none;
 }
 
-.auth-card::before {
-  inset: -18px -14px 30px -14px;
-  background: linear-gradient(140deg, var(--brand-tint), transparent 70%);
-  transform: translateZ(-60px);
-  animation: planeDrift 11s ease-in-out infinite;
+.skeleton-chart { height: 320px; width: 100%; }
+.skeleton-text  { height: 0.9em; margin: 0.35em 0; }
+.skeleton-text.w-60 { width: 60%; }
+.skeleton-text.w-40 { width: 40%; }
+
+/* ── Count-up numerals hold their width while animating ───── */
+.stat-number,
+.stat-number-sm,
+.display-6 { font-variant-numeric: tabular-nums; }
+
+/* ── Charts: revealed by GSAP on scroll ───────────────────── */
+.js-plotly-plot {
+  transition: opacity var(--d-data) var(--ease),
+              transform var(--d-data) var(--ease);
 }
 
-.auth-card::after {
-  inset: -34px -28px 60px -28px;
-  background: linear-gradient(200deg, var(--signal-mid-tint), transparent 65%);
-  transform: translateZ(-110px);
-  animation: planeDrift 14s ease-in-out reverse infinite;
-  opacity: .7;
-}
+/* ── Page transitions (native, no library) ────────────────── */
+@view-transition { navigation: auto; }
 
-/* Auth form fields step forward as you reach them */
-.auth-card .form-control,
-.auth-card .input-group {
-  transition: transform .22s var(--ease-soft), border-color .15s ease, box-shadow .15s ease;
+::view-transition-old(root) {
+  animation: fadeOutVT 120ms var(--ease) both;
 }
-.auth-card .form-control:focus {
-  transform: perspective(700px) translateZ(10px);
+::view-transition-new(root) {
+  animation: fadeInVT 180ms var(--ease) both;
 }
+@keyframes fadeOutVT { to   { opacity: 0; } }
+@keyframes fadeInVT  { from { opacity: 0; } }
 
-/* ── RICH: homepage hero ──────────────────────────────────── */
-@keyframes heroEnter {
-  from { opacity: 0; transform: perspective(1500px) rotateX(10deg) translate3d(0, 34px, -120px); }
-  to   { opacity: 1; transform: perspective(1500px) rotateX(0deg) translate3d(0, 0, 0); }
-}
-
-@keyframes heroBreathe {
-  0%, 100% { transform: perspective(1500px) translate3d(0, 0, 0); }
-  50%      { transform: perspective(1500px) translate3d(0, -6px, 14px); }
-}
-
-.hero-section {
-  position: relative;
-  overflow: visible;
-  transform-style: preserve-3d;
-  animation:
-    heroEnter .9s var(--ease-out-3d) both,
-    heroBreathe 12s ease-in-out .9s infinite;
-}
-
-.hero-section::before,
-.hero-section::after {
-  content: "";
-  position: absolute;
-  border-radius: var(--radius-lg);
-  z-index: -1;
-  pointer-events: none;
-}
-
-.hero-section::before {
-  inset: -26px -20px 40px -20px;
-  background: linear-gradient(135deg, var(--brand-tint), transparent 68%);
-  transform: translateZ(-80px);
-  animation: planeDrift 13s ease-in-out infinite;
-}
-
-.hero-section::after {
-  inset: -48px -38px 70px -38px;
-  background: linear-gradient(215deg, var(--signal-high-tint), transparent 62%);
-  transform: translateZ(-140px);
-  opacity: .65;
-  animation: planeDrift 17s ease-in-out reverse infinite;
-}
-
-/* Hero headline lifts above the panel */
-.hero-section h1 { transform: translateZ(40px); }
-.hero-section p  { transform: translateZ(24px); }
-.hero-section .btn { transform: translateZ(32px); }
-.hero-section .btn:hover { transform: translateZ(46px); }
-
-/* Homepage feature cards tilt as a set */
-.hero-section ~ .row .card:hover,
-.hero-section + * .card:hover {
-  transform: perspective(1000px) translate3d(0, -6px, 22px) rotateX(2deg);
-  box-shadow: var(--shadow-lg);
-}
-
-/* ── Profile header depth ─────────────────────────────────── */
-.profile-header {
-  transform-style: preserve-3d;
-  animation: riseIn .6s var(--ease-out-3d) both;
-  box-shadow: 0 12px 36px rgba(18,22,28,.16);
-}
-.profile-header .avatar-circle { transform: perspective(600px) translateZ(20px); }
-
-/* ── Score readout: lifts with its row, stays legible ─────── */
-.score-pill {
-  transition: transform .22s var(--ease-soft);
-  transform-style: preserve-3d;
-}
-tr:hover .score-pill { transform: perspective(700px) translateZ(14px); }
-
-/* ── Dark mode: depth planes need more presence ───────────── */
-[data-theme="dark"] .auth-card {
-  box-shadow:
-    0 2px 4px rgba(0,0,0,.5),
-    0 14px 32px rgba(0,0,0,.45),
-    0 44px 88px rgba(0,0,0,.4);
-}
-[data-theme="dark"] .auth-card::before,
-[data-theme="dark"] .hero-section::before { opacity: .5; }
-[data-theme="dark"] .auth-card::after,
-[data-theme="dark"] .hero-section::after  { opacity: .35; }
-[data-theme="dark"] .avatar-circle { box-shadow: 0 2px 8px rgba(0,0,0,.5); }
-
-/* ── Reduced motion: strip every 3D effect ────────────────── */
+/* ── Reduced motion: strip everything ─────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .card, .filter-bar, .table-responsive, .hero-section,
-  .notif-item, .alert, .empty-state, .auth-card, .profile-header {
-    animation: none !important;
-    transform: none !important;
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  .auth-card::before, .auth-card::after,
-  .hero-section::before, .hero-section::after {
-    animation: none !important;
-    display: none;
-  }
-  .btn:hover, .btn:active,
-  .job-card:hover, .table-hover > tbody > tr:hover,
-  .badge:hover, tr:hover .score-pill,
-  .hero-section h1, .hero-section p, .hero-section .btn {
-    transform: none !important;
-  }
+  .card:hover, .btn:hover, .btn:active,
+  .job-card:hover { transform: none !important; }
+  .skeleton { animation: none; }
+  @view-transition { navigation: none; }
 }
 
-/* ── Small screens: reduce depth so nothing overflows ─────── */
+/* ── Small screens: shorter travel ────────────────────────── */
 @media (max-width: 768px) {
-  :root { --depth-near: 10px; --depth-far: -30px; }
-  .auth-card::after, .hero-section::after { display: none; }
-  .auth-card::before, .hero-section::before { inset: -10px -8px 20px -8px; }
-  .hero-section h1 { transform: translateZ(20px); }
-  .table-hover > tbody > tr:hover { transform: none; }
+  :root { --rise: 12px; --lift: -4px; --scale-up: 1; }
 }

@@ -1,8 +1,15 @@
 // ============================================
-// static/js/main.js  —  Frontend JavaScript v3
+// static/js/main.js  —  Frontend JavaScript v4
+// ============================================
+// Motion split:
+//   CSS      → entrance, hover, press, focus, skeletons, page transitions
+//   GSAP     → number count-ups, chart draw-in on scroll
+//   Three.js → homepage hero gradient mesh (lazy, homepage only)
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function () {
+
+  const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ── Dark Mode Toggle ────────────────────────────────────────────
   const themeToggleBtn = document.getElementById('themeToggleBtn');
@@ -52,14 +59,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // ── Score bar animation on page load ──────────────────────────────
+  // ── Score bars fill on load ───────────────────────────────────────
   document.querySelectorAll('.progress-bar').forEach(function (bar) {
     const target = bar.style.width;
+    if (REDUCED) return;
     bar.style.width = '0%';
     setTimeout(function () {
-      bar.style.transition = 'width 0.8s ease-in-out';
+      bar.style.transition = 'width 600ms cubic-bezier(0.2, 0, 0, 1)';
       bar.style.width = target;
-    }, 300);
+    }, 120);
   });
 
   // ── Confirm before status change ──────────────────────────────────
@@ -136,43 +144,115 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // ── 3D cursor tilt — auth card + hero ──────────────────────────────
-  // Skipped on touch devices and when reduced motion is requested.
-  (function initTilt() {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const touch   = window.matchMedia('(hover: none)').matches;
-    if (reduced || touch) return;
+  // ══════════════════════════════════════════════════════════════════
+  // MOTION
+  // ══════════════════════════════════════════════════════════════════
 
-    const targets = document.querySelectorAll('.auth-card, .hero-section');
-    if (!targets.length) return;
+  const CDN = {
+    gsap:          'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js',
+    scrollTrigger: 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js',
+    three:         'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
+    hero3d:        '/static/js/hero-3d.js'
+  };
 
-    const MAX_TILT = 6;   // degrees
-    const LIFT     = 24;  // px toward the viewer
-
-    targets.forEach(function (el) {
-      let raf = null;
-
-      el.addEventListener('mousemove', function (e) {
-        if (raf) return;
-        raf = requestAnimationFrame(function () {
-          const r = el.getBoundingClientRect();
-          const x = (e.clientX - r.left) / r.width  - 0.5;   // -0.5 … 0.5
-          const y = (e.clientY - r.top)  / r.height - 0.5;
-
-          el.style.animationPlayState = 'paused';
-          el.style.transform =
-            'perspective(1400px) rotateY(' + ( x * MAX_TILT).toFixed(2) + 'deg)' +
-            ' rotateX('              + (-y * MAX_TILT).toFixed(2) + 'deg)' +
-            ' translateZ(' + LIFT + 'px)';
-          raf = null;
-        });
-      });
-
-      el.addEventListener('mouseleave', function () {
-        el.style.transform = '';
-        el.style.animationPlayState = '';
-      });
+  const loaded = {};
+  function loadScript(src) {
+    if (loaded[src]) return loaded[src];
+    loaded[src] = new Promise(function (resolve, reject) {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
     });
-  })();
+    return loaded[src];
+  }
+
+  // ── Chart skeletons ────────────────────────────────────────────────
+  // Plotly renders after its own script runs. Until then the container
+  // is empty, so show a skeleton rather than blank space.
+  document.querySelectorAll('[id^="chart"]').forEach(function (host) {
+    if (host.querySelector('.js-plotly-plot')) return;
+    const sk = document.createElement('div');
+    sk.className = 'skeleton skeleton-chart';
+    sk.dataset.chartSkeleton = '1';
+    host.appendChild(sk);
+  });
+
+  function clearSkeletons() {
+    document.querySelectorAll('[data-chart-skeleton]').forEach(function (sk) {
+      sk.remove();
+    });
+  }
+
+  // ── Number count-ups + chart draw-in (GSAP) ────────────────────────
+  const numberEls = Array.prototype.filter.call(
+    document.querySelectorAll('.stat-number, .stat-number-sm, .display-6'),
+    function (el) { return /^[\d.,]+%?$/.test(el.textContent.trim()); }
+  );
+
+  const hasPlots  = document.querySelectorAll('.js-plotly-plot').length > 0;
+  const needsGSAP = numberEls.length > 0 || hasPlots;
+
+  if (REDUCED || !needsGSAP) {
+    clearSkeletons();
+  } else {
+    loadScript(CDN.gsap)
+      .then(function () { return loadScript(CDN.scrollTrigger); })
+      .then(function () {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Count-ups — numbers roll to their real value
+        numberEls.forEach(function (el) {
+          const raw      = el.textContent.trim();
+          const suffix   = raw.endsWith('%') ? '%' : '';
+          const decimals = (raw.split('.')[1] || '').replace('%', '').length;
+          const target   = parseFloat(raw.replace(/[^\d.]/g, ''));
+          if (isNaN(target)) return;
+
+          const counter = { v: 0 };
+          gsap.to(counter, {
+            v: target,
+            duration: 0.6,
+            ease: 'power2.out',
+            scrollTrigger: { trigger: el, start: 'top 92%', once: true },
+            onUpdate: function () {
+              el.textContent = counter.v.toFixed(decimals) + suffix;
+            },
+            onComplete: function () {
+              el.textContent = raw;   // restore the exact original string
+            }
+          });
+        });
+
+        // Charts draw in when they reach the viewport
+        document.querySelectorAll('.js-plotly-plot').forEach(function (plot) {
+          gsap.fromTo(plot,
+            { opacity: 0, y: 20 },
+            {
+              opacity: 1, y: 0,
+              duration: 0.6,
+              ease: 'power2.out',
+              scrollTrigger: { trigger: plot, start: 'top 88%', once: true }
+            }
+          );
+        });
+
+        clearSkeletons();
+      })
+      .catch(clearSkeletons);   // GSAP blocked or offline — show content anyway
+  }
+
+  // ── Homepage hero gradient mesh (lazy, homepage only) ──────────────
+  const hero = document.querySelector('.hero-section');
+  if (hero && !REDUCED && window.innerWidth > 768) {
+    const idle = window.requestIdleCallback || function (fn) { setTimeout(fn, 400); };
+    idle(function () {
+      loadScript(CDN.three)
+        .then(function () { return loadScript(CDN.hero3d); })
+        .catch(function () { /* hero stays flat — nothing breaks */ });
+    });
+  }
 
 });

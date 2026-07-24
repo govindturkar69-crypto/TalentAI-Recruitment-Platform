@@ -1,5 +1,5 @@
 // ============================================
-// static/js/main.js  —  Frontend JavaScript v2
+// static/js/main.js  —  Frontend JavaScript v3
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -135,5 +135,44 @@ document.addEventListener('DOMContentLoaded', function () {
       filterJobs();
     });
   }
+
+  // ── 3D cursor tilt — auth card + hero ──────────────────────────────
+  // Skipped on touch devices and when reduced motion is requested.
+  (function initTilt() {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const touch   = window.matchMedia('(hover: none)').matches;
+    if (reduced || touch) return;
+
+    const targets = document.querySelectorAll('.auth-card, .hero-section');
+    if (!targets.length) return;
+
+    const MAX_TILT = 6;   // degrees
+    const LIFT     = 24;  // px toward the viewer
+
+    targets.forEach(function (el) {
+      let raf = null;
+
+      el.addEventListener('mousemove', function (e) {
+        if (raf) return;
+        raf = requestAnimationFrame(function () {
+          const r = el.getBoundingClientRect();
+          const x = (e.clientX - r.left) / r.width  - 0.5;   // -0.5 … 0.5
+          const y = (e.clientY - r.top)  / r.height - 0.5;
+
+          el.style.animationPlayState = 'paused';
+          el.style.transform =
+            'perspective(1400px) rotateY(' + ( x * MAX_TILT).toFixed(2) + 'deg)' +
+            ' rotateX('              + (-y * MAX_TILT).toFixed(2) + 'deg)' +
+            ' translateZ(' + LIFT + 'px)';
+          raf = null;
+        });
+      });
+
+      el.addEventListener('mouseleave', function () {
+        el.style.transform = '';
+        el.style.animationPlayState = '';
+      });
+    });
+  })();
 
 });

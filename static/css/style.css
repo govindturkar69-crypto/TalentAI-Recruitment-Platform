@@ -707,60 +707,52 @@ a:hover { color: var(--brand-hover); }
   --stagger: 40ms;
 }
 
-/* ── Entrance ─────────────────────────────────────────────── */
-@keyframes enter {
-  from { opacity: 0; transform: translateY(var(--rise)); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Scroll reveal ────────────────────────────────────────── */
+/* Content blocks start hidden and reveal as they enter the
+   viewport. JS tags blocks with .reveal and flips .is-visible
+   via IntersectionObserver — no library, and pages without JS
+   show everything immediately (no .js-ready class on <html>).
+   Stagger index is set per item as --ri by JS.                */
+
+html.js-ready .reveal {
+  opacity: 0;
+  transform: translateY(var(--rise));
+  transition:
+    opacity   var(--d-panel) var(--ease),
+    transform var(--d-panel) var(--ease);
+  transition-delay: calc(var(--ri, 0) * var(--stagger));
+}
+html.js-ready .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.card,
-.filter-bar,
-.table-responsive,
-.hero-section,
-.notif-item,
-.empty-state,
-.profile-header {
-  animation: enter var(--d-enter) var(--ease) both;
+/* Rows and alerts fade only — no travel, so scanning and
+   layout stay steady. */
+html.js-ready .reveal-fade {
+  opacity: 0;
+  transition: opacity var(--d-enter) var(--ease);
+  transition-delay: calc(var(--ri, 0) * var(--stagger));
 }
+html.js-ready .reveal-fade.is-visible { opacity: 1; }
 
-/* Stagger — grid columns, cascading left to right */
-.row > [class*="col"]:nth-child(1)  .card { animation-delay: calc(var(--stagger) * 0); }
-.row > [class*="col"]:nth-child(2)  .card { animation-delay: calc(var(--stagger) * 1); }
-.row > [class*="col"]:nth-child(3)  .card { animation-delay: calc(var(--stagger) * 2); }
-.row > [class*="col"]:nth-child(4)  .card { animation-delay: calc(var(--stagger) * 3); }
-.row > [class*="col"]:nth-child(5)  .card { animation-delay: calc(var(--stagger) * 4); }
-.row > [class*="col"]:nth-child(6)  .card { animation-delay: calc(var(--stagger) * 5); }
-.row > [class*="col"]:nth-child(7)  .card { animation-delay: calc(var(--stagger) * 6); }
-.row > [class*="col"]:nth-child(8)  .card { animation-delay: calc(var(--stagger) * 7); }
-.row > [class*="col"]:nth-child(n+9) .card { animation-delay: calc(var(--stagger) * 8); }
-
-/* Stagger — stacked lists */
-.notif-item:nth-child(1) { animation-delay: calc(var(--stagger) * 0); }
-.notif-item:nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
-.notif-item:nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
-.notif-item:nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
-.notif-item:nth-child(5) { animation-delay: calc(var(--stagger) * 4); }
-.notif-item:nth-child(6) { animation-delay: calc(var(--stagger) * 5); }
-.notif-item:nth-child(7) { animation-delay: calc(var(--stagger) * 6); }
-.notif-item:nth-child(n+8) { animation-delay: calc(var(--stagger) * 7); }
-
-/* Table rows fade in place — no travel, so scanning isn't disturbed */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.table tbody tr {
-  animation: fadeIn var(--d-enter) var(--ease) both;
+/* ── Heading word reveal ──────────────────────────────────── */
+/* JS splits a page title into word spans; they rise into place
+   once, when the heading first enters view. Plain-text headings
+   only — anything with markup is left untouched.              */
+html.js-ready .word-reveal .word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.4em);
+  transition:
+    opacity   var(--d-panel) var(--ease),
+    transform var(--d-panel) var(--ease);
+  transition-delay: calc(var(--wi, 0) * 45ms);
 }
-.table tbody tr:nth-child(1) { animation-delay: calc(var(--stagger) * 0); }
-.table tbody tr:nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
-.table tbody tr:nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
-.table tbody tr:nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
-.table tbody tr:nth-child(5) { animation-delay: calc(var(--stagger) * 4); }
-.table tbody tr:nth-child(6) { animation-delay: calc(var(--stagger) * 5); }
-.table tbody tr:nth-child(7) { animation-delay: calc(var(--stagger) * 6); }
-.table tbody tr:nth-child(n+8) { animation-delay: calc(var(--stagger) * 7); }
-
-/* Alerts fade only — they mount and unmount, travel would shift layout */
-.alert { animation: fadeIn var(--d-enter) var(--ease) both; }
+html.js-ready .word-reveal.is-visible .word {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 /* ── Hover ────────────────────────────────────────────────── */
 .card {

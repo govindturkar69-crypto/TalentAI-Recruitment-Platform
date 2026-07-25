@@ -10,6 +10,12 @@
 document.addEventListener('DOMContentLoaded', function () {
 
   const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TOUCH   = window.matchMedia('(hover: none)').matches;
+
+  // Mark the page JS-ready so the CSS reveal system engages.
+  // Without this class every .reveal element stays fully visible,
+  // so no-JS visitors and reduced-motion users see content at once.
+  if (!REDUCED) document.documentElement.classList.add('js-ready');
 
   // ── Dark Mode Toggle ────────────────────────────────────────────
   const themeToggleBtn = document.getElementById('themeToggleBtn');
@@ -182,8 +188,95 @@ document.addEventListener('DOMContentLoaded', function () {
     gsap:          'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js',
     scrollTrigger: 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js',
     three:         'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
-    hero3d:        '/static/js/hero-3d.js'
+    hero3d:        '/static/js/hero-3d.js',
+    lenis:         'https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js'
   };
+
+  // ── Scroll reveal (native IntersectionObserver, 0 KB) ──────────────
+  // Tag content blocks, then reveal each as it enters the viewport.
+  // Items in the same container stagger via a --ri index.
+  if (!REDUCED && 'IntersectionObserver' in window) {
+    const blocks = document.querySelectorAll(
+      '.card, .filter-bar, .hero-section, .empty-state, .profile-header'
+    );
+
+    // Assign a stagger index within each parent (capped at 8)
+    const seen = new Map();
+    blocks.forEach(function (el) {
+      el.classList.add('reveal');
+      const parent = el.closest('.row') || el.parentElement;
+      const n = seen.get(parent) || 0;
+      el.style.setProperty('--ri', Math.min(n, 8));
+      seen.set(parent, n + 1);
+    });
+
+    // Table rows + alerts fade only (no travel while scanning)
+    document.querySelectorAll('.table tbody tr').forEach(function (row, i) {
+      row.classList.add('reveal-fade');
+      row.style.setProperty('--ri', Math.min(i, 8));
+    });
+
+    const io = new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+
+    document.querySelectorAll('.reveal, .reveal-fade').forEach(function (el) {
+      io.observe(el);
+    });
+  }
+
+  // ── Heading word reveal — page title only, once ────────────────────
+  if (!REDUCED && 'IntersectionObserver' in window) {
+    const heading = document.querySelector('main h1, main h2, .hero-section h1');
+    // Only split plain-text headings (no nested markup, not too long)
+    if (heading && heading.children.length === 0 && heading.textContent.trim().split(/\s+/).length <= 10) {
+      const words = heading.textContent.trim().split(/\s+/);
+      heading.textContent = '';
+      heading.classList.add('word-reveal');
+      words.forEach(function (w, i) {
+        const span = document.createElement('span');
+        span.className = 'word';
+        span.textContent = w;
+        span.style.setProperty('--wi', i);
+        heading.appendChild(span);
+        if (i < words.length - 1) heading.appendChild(document.createTextNode(' '));
+      });
+      const ho = new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.disconnect(); }
+        });
+      }, { threshold: 0.5 });
+      ho.observe(heading);
+    }
+  }
+
+  // ── Smooth scroll (Lenis, ~4 KB, lazy after idle) ──────────────────
+  // Desktop only. Touch devices keep native momentum scrolling.
+  if (!REDUCED && !TOUCH) {
+    const idle = window.requestIdleCallback || function (fn) { setTimeout(fn, 300); };
+    idle(function () {
+      loadScript(CDN.lenis).then(function () {
+        if (typeof Lenis === 'undefined') return;
+        const lenis = new Lenis({
+          duration: 1.05,
+          easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
+          smoothWheel: true
+        });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        // Keep GSAP ScrollTrigger in sync if it loads later
+        if (window.ScrollTrigger) {
+          lenis.on('scroll', ScrollTrigger.update);
+        }
+      }).catch(function () { /* native scroll stays — nothing breaks */ });
+    });
+  }
 
   const loaded = {};
   function loadScript(src) {

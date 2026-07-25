@@ -972,3 +972,60 @@ a:hover { color: var(--brand-hover); }
 @media (max-width: 768px) {
   :root { --rise: 12px; --lift: -4px; --scale-up: 1; }
 }
+
+
+/* ============================================================
+   PAGE-SPECIFIC MOTION
+   ------------------------------------------------------------
+   Three pages need a touch the shared classes can't give:
+   upload dropzone feedback, recommendation match-bars, and the
+   homepage feature row. Everything else is already covered by
+   the class-level entrance / hover / stagger rules above.
+   ============================================================ */
+
+/* ── upload_resume: dropzone reacts to drag ───────────────── */
+.upload-dropzone {
+  transition:
+    border-color var(--d-enter) var(--ease),
+    background   var(--d-enter) var(--ease),
+    transform    var(--d-hover) var(--ease);
+}
+.upload-dropzone.dragover {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+  transform: scale(1.01);
+}
+.upload-dropzone .bi {
+  transition: transform var(--d-panel) var(--ease);
+}
+.upload-dropzone.dragover .bi {
+  transform: translateY(-4px);
+}
+
+/* ── job_recommendations: match bar draws in ──────────────── */
+.match-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.match-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  width: 0;
+  transition: width var(--d-data) var(--ease);
+}
+
+/* ── index: feature cards lift as a calm set ──────────────── */
+.hero-section ~ .row .card {
+  transition:
+    transform  var(--d-hover) var(--ease),
+    box-shadow var(--d-hover) var(--ease),
+    border-color var(--d-hover) var(--ease);
+}
+.hero-section ~ .row .card:hover {
+  transform: translateY(var(--lift));
+  box-shadow: var(--shadow-lg);
+  border-color: var(--rule-strong);
+}

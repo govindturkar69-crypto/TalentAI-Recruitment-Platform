@@ -144,6 +144,36 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // ── Resume upload: drag-and-drop dropzone ─────────────────────────
+  const dropzone  = document.querySelector('.upload-dropzone');
+  const fileInput = document.querySelector('.upload-dropzone input[type="file"]');
+  if (dropzone && fileInput) {
+    ['dragenter', 'dragover'].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+      });
+    });
+    dropzone.addEventListener('drop', function (e) {
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        // show the chosen file name if a label element exists
+        const label = document.getElementById('fileName');
+        if (label) label.textContent = e.dataTransfer.files[0].name;
+      }
+    });
+    fileInput.addEventListener('change', function () {
+      const label = document.getElementById('fileName');
+      if (label && this.files.length) label.textContent = this.files[0].name;
+    });
+  }
+
   // ══════════════════════════════════════════════════════════════════
   // MOTION
   // ══════════════════════════════════════════════════════════════════

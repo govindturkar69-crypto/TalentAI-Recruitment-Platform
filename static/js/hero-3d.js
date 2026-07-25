@@ -1,16 +1,20 @@
 /* ============================================================
-   static/js/hero-3d.js
+   static/js/hero-3d.js  —  v2
    ------------------------------------------------------------
-   Gradient-mesh background for the homepage hero.
+   A quiet gradient field for the homepage hero.
 
-   Loaded ONLY on pages that contain .hero-section, and only
-   after the page is interactive — so the other 15 pages never
-   download Three.js.
+   Design reference: Linear / Vercel homepage backgrounds — a
+   near-still surface with one soft light that drifts slowly.
+   Low contrast, muted, never asking to be looked at.
 
-   A shader-driven soft colour field, drifting very slowly.
-   No geometry, no lights, no models: one fullscreen plane and
-   a fragment shader, which is why it holds 60fps on a laptop
-   GPU and costs almost nothing per frame.
+   Technique (kept deliberately simple, per Three.js's own
+   gradient examples): one fullscreen plane, one fragment
+   shader, a single smooth light blob moving on a slow path
+   plus faint film grain so the gradient never visibly bands.
+   No geometry, no lights, no models — 60fps on a laptop GPU.
+
+   Loaded only on pages that contain .hero-section, only after
+   the page is idle, never on mobile, never under reduced motion.
    ============================================================ */
 
 (function () {
@@ -21,7 +25,7 @@
   const host = document.querySelector('.hero-section');
   if (!host) return;
 
-  /* ── Canvas, positioned behind hero content ─────────────── */
+  /* ── Canvas behind hero content ─────────────────────────── */
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   Object.assign(canvas.style, {
@@ -33,20 +37,20 @@
     zIndex: '0',
     pointerEvents: 'none',
     opacity: '0',
-    transition: 'opacity 600ms cubic-bezier(0.2, 0, 0, 1)'
+    transition: 'opacity 800ms cubic-bezier(0.2, 0, 0, 1)'
   });
 
   if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+  host.style.overflow = 'hidden';
   host.insertBefore(canvas, host.firstChild);
 
-  /* Lift hero content above the canvas */
   Array.prototype.forEach.call(host.children, function (child) {
     if (child === canvas) return;
     if (getComputedStyle(child).position === 'static') child.style.position = 'relative';
     child.style.zIndex = '1';
   });
 
-  /* ── Palette pulled from the design tokens ──────────────── */
+  /* ── Palette from design tokens ─────────────────────────── */
   const css  = getComputedStyle(document.documentElement);
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
 
@@ -59,11 +63,11 @@
     ];
   }
 
-  const cBase = hexToVec(css.getPropertyValue('--surface'),     dark ? '151A21' : 'FFFFFF');
-  const cWarm = hexToVec(css.getPropertyValue('--brand-tint'),  dark ? '1A2433' : 'E8EDF5');
-  const cCool = hexToVec(css.getPropertyValue('--signal-high-tint'), dark ? '12271F' : 'E4F2EC');
+  /* Two closely-related tones. Low contrast is the whole point. */
+  const cField = hexToVec(css.getPropertyValue('--surface'),    dark ? '151A21' : 'FFFFFF');
+  const cGlow  = hexToVec(css.getPropertyValue('--brand-tint'), dark ? '1E2A3D' : 'E8EDF5');
 
-  /* ── Scene ──────────────────────────────────────────────── */
+  /* ── Renderer ───────────────────────────────────────────── */
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({
@@ -76,7 +80,6 @@
     canvas.remove();
     return;
   }
-
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
   const scene  = new THREE.Scene();
@@ -85,9 +88,9 @@
   const uniforms = {
     uTime:  { value: 0 },
     uRes:   { value: new THREE.Vector2(1, 1) },
-    uBase:  { value: new THREE.Vector3().fromArray(cBase) },
-    uWarm:  { value: new THREE.Vector3().fromArray(cWarm) },
-    uCool:  { value: new THREE.Vector3().fromArray(cCool) }
+    uField: { value: new THREE.Vector3().fromArray(cField) },
+    uGlow:  { value: new THREE.Vector3().fromArray(cGlow) },
+    uDark:  { value: dark ? 1.0 : 0.0 }
   };
 
   const vertexShader = [
@@ -98,43 +101,55 @@
     '}'
   ].join('\n');
 
+  /* One soft radial light on a slow Lissajous path, a faint
+     second light for asymmetry, and dither to kill banding.  */
   const fragmentShader = [
     'precision mediump float;',
     'varying vec2 vUv;',
     'uniform float uTime;',
     'uniform vec2  uRes;',
-    'uniform vec3  uBase;',
-    'uniform vec3  uWarm;',
-    'uniform vec3  uCool;',
+    'uniform vec3  uField;',
+    'uniform vec3  uGlow;',
+    'uniform float uDark;',
 
-    /* value noise + 3 octaves of fbm — enough for soft blobs */
-    'float hash(vec2 p) {',
-    '  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);',
-    '}',
-    'float noise(vec2 p) {',
-    '  vec2 i = floor(p), f = fract(p);',
-    '  vec2 u = f * f * (3.0 - 2.0 * f);',
-    '  return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),',
-    '             mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);',
-    '}',
-    'float fbm(vec2 p) {',
-    '  float v = 0.0, a = 0.5;',
-    '  for (int i = 0; i < 3; i++) { v += a * noise(p); p *= 2.0; a *= 0.5; }',
-    '  return v;',
+    'float dither(vec2 p) {',
+    '  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;',
     '}',
 
     'void main() {',
     '  vec2 uv = vUv;',
-    '  uv.x *= uRes.x / uRes.y;',
-    '  float t = uTime * 0.035;',            /* very slow drift */
-    '  float n1 = fbm(uv * 1.6 + vec2(t, t * 0.6));',
-    '  float n2 = fbm(uv * 2.1 - vec2(t * 0.8, t * 0.4) + 4.0);',
-    '  vec3 col = uBase;',
-    '  col = mix(col, uWarm, smoothstep(0.35, 0.85, n1));',
-    '  col = mix(col, uCool, smoothstep(0.45, 0.95, n2) * 0.7);',
-    /* fade toward the edges so it never fights the card border */
-    '  float edge = smoothstep(0.0, 0.35, vUv.y) * smoothstep(1.0, 0.65, vUv.y);',
-    '  gl_FragColor = vec4(col, edge * 0.9);',
+    '  float agu = uRes.x / uRes.y;',
+    '  vec2 p = vec2((uv.x - 0.5) * agu, uv.y - 0.5);',
+
+    '  float t = uTime * 0.06;',                 /* very slow */
+
+    /* primary light — wide, soft, drifting */
+    '  vec2 c1 = vec2(sin(t) * 0.28 * agu, cos(t * 0.8) * 0.18);',
+    '  float d1 = length(p - c1);',
+    '  float g1 = smoothstep(0.9, 0.0, d1);',
+
+    /* secondary light — smaller, opposite drift, faint */
+    '  vec2 c2 = vec2(sin(t * 0.7 + 2.0) * 0.34 * agu, cos(t + 1.0) * 0.22);',
+    '  float d2 = length(p - c2);',
+    '  float g2 = smoothstep(0.7, 0.0, d2) * 0.5;',
+
+    '  float glow = clamp(g1 + g2, 0.0, 1.0);',
+
+    /* mix tones — gentle in light mode, a touch stronger in dark */
+    '  float strength = mix(0.6, 0.85, uDark);',
+    '  vec3 col = mix(uField, uGlow, glow * strength);',
+
+    /* vertical settle so the top is calmer than the middle */
+    '  col = mix(col, uField, smoothstep(0.5, 1.0, uv.y) * 0.25);',
+
+    /* dither ±1/255 to prevent visible gradient banding */
+    '  col += dither(gl_FragCoord.xy) * (1.0 / 255.0);',
+
+    /* fade at edges so it never fights the panel border */
+    '  float edge = smoothstep(0.0, 0.12, uv.x) * smoothstep(1.0, 0.88, uv.x)',
+    '             * smoothstep(0.0, 0.10, uv.y) * smoothstep(1.0, 0.90, uv.y);',
+
+    '  gl_FragColor = vec4(col, edge);',
     '}'
   ].join('\n');
 
@@ -164,7 +179,7 @@
     resizeTimer = setTimeout(resize, 150);
   });
 
-  /* ── Loop — paused when off-screen or tab is hidden ─────── */
+  /* ── Loop — paused off-screen and when tab hidden ───────── */
   let running = true;
   let frame   = null;
   const clock = new THREE.Clock();
@@ -175,8 +190,7 @@
     renderer.render(scene, camera);
     frame = requestAnimationFrame(render);
   }
-
-  function start() { if (!frame) { running = true; clock.start(); render(); } }
+  function start() { if (!frame) { running = true; render(); } }
   function stop()  { running = false; }
 
   if ('IntersectionObserver' in window) {
@@ -191,8 +205,8 @@
     document.hidden ? stop() : start();
   });
 
-  /* Fade in once the first frame is on screen */
+  /* Fade in after the first painted frame */
   requestAnimationFrame(function () {
-    requestAnimationFrame(function () { canvas.style.opacity = '1'; });
+    requestAnimationFrame(function () { canvas.style.opacity = dark ? '1' : '0.85'; });
   });
 })();

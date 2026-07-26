@@ -1,7 +1,4 @@
-/* ============================================
-   TalentAI - Advanced Custom Styles v2
-   Dark mode + animations + modern design
-   ============================================ */
+/* TalentAI — application styles (light + dark theme) */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
@@ -39,7 +36,7 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* ── Smooth Fade-In Animation for Page Content ──────────────────── */
+/* Smooth Fade-In Animation for Page Content */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -51,7 +48,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   to   { opacity: 1; }
 }
 
-/* ── Navbar ──────────────────────────────────────── */
+/* Navbar */
 .bg-primary-custom {
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
 }
@@ -60,7 +57,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 }
 .navbar-brand { font-size: 1.3rem; letter-spacing: -0.5px; }
 
-/* ── Theme Toggle Button ─────────────────────────── */
+/* Theme Toggle Button */
 .theme-toggle-btn {
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.2);
@@ -80,7 +77,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   transform: rotate(20deg) scale(1.08);
 }
 
-/* ── Notification Bell ───────────────────────────── */
+/* Notification Bell */
 .notif-bell {
   position: relative;
   background: rgba(255,255,255,0.12);
@@ -119,7 +116,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   50% { box-shadow: 0 0 0 4px rgba(239,68,68,0); }
 }
 
-/* ── Hero ────────────────────────────────────────── */
+/* Hero */
 .hero-section {
   background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%);
   border-radius: 20px;
@@ -139,7 +136,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   50% { transform: translateY(-10px); }
 }
 
-/* ── Feature Cards ───────────────────────────────── */
+/* Feature Cards */
 .feature-card {
   background: var(--bg-card);
   border-radius: 16px !important;
@@ -152,7 +149,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 }
 .feature-icon { font-size: 2.5rem; }
 
-/* ── Stat Boxes ──────────────────────────────────── */
+/* Stat Boxes */
 .stat-box {
   background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-primary) 100%);
   border: 1px solid var(--border-color);
@@ -163,17 +160,17 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 .stat-number-sm { font-size: 2rem; font-weight: 800; color: var(--accent-1); }
 .stat-mini-card { background: var(--bg-card); border-color: var(--border-color); }
 
-/* ── Cards (general dark mode support) ──────────────── */
+/* Cards */
 .card {
   background: var(--bg-card);
   color: var(--text-primary);
   border-color: var(--border-color);
 }
 
-/* ── Auth Cards ──────────────────────────────────── */
+/* Auth Cards */
 .auth-card { border-radius: 20px !important; }
 
-/* ── Role Selector ───────────────────────────────── */
+/* Role Selector */
 .role-card {
   cursor: pointer;
   transition: all 0.2s ease;
@@ -187,7 +184,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* ── Job Cards ───────────────────────────────────── */
+/* Job Cards */
 .job-card {
   border-radius: 14px !important;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
@@ -198,7 +195,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   box-shadow: 0 10px 24px var(--shadow-color) !important;
 }
 
-/* ── Score Pills ─────────────────────────────────── */
+/* Score Pills */
 .score-pill {
   display: inline-block;
   padding: 4px 12px;
@@ -213,7 +210,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 [data-theme="dark"] .score-medium { background: rgba(245,158,11,0.18); color: #fbbf24; }
 [data-theme="dark"] .score-low    { background: rgba(239,68,68,0.18); color: #f87171; }
 
-/* ── Avatar Circle ───────────────────────────────── */
+/* Avatar Circle */
 .avatar-circle {
   width: 36px; height: 36px;
   border-radius: 50%;
@@ -236,14 +233,14 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   box-shadow: 0 8px 20px var(--accent-glow);
 }
 
-/* ── Badges ──────────────────────────────────────── */
+/* Badges */
 .bg-primary-light  { background: var(--accent-glow) !important; color: var(--accent-1) !important; }
 .bg-success-light  { background: #dcfce7 !important; }
 .bg-danger-light   { background: #fee2e2 !important; }
 [data-theme="dark"] .bg-success-light  { background: rgba(34,197,94,0.18) !important; color: #4ade80 !important; }
 [data-theme="dark"] .bg-danger-light   { background: rgba(239,68,68,0.18) !important; color: #f87171 !important; }
 
-/* ── Upload Zone ─────────────────────────────────── */
+/* Upload Zone */
 .upload-zone {
   border: 2.5px dashed #c4b5fd;
   background: #faf5ff;
@@ -260,13 +257,13 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   transform: scale(1.01);
 }
 
-/* ── Footer ──────────────────────────────────────── */
+/* Footer */
 .footer-custom {
   border-top: 1px solid var(--border-color);
   margin-top: auto;
 }
 
-/* ── Table ───────────────────────────────────────── */
+/* Table */
 .table { color: var(--text-primary); }
 .table thead th { font-weight: 600; font-size: 0.85rem; letter-spacing: 0.3px; }
 .table tbody td { vertical-align: middle; }
@@ -274,7 +271,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 [data-theme="dark"] .table-light { --bs-table-bg: #232838; color: var(--text-primary); }
 [data-theme="dark"] .table-hover tbody tr:hover { --bs-table-hover-bg: rgba(255,255,255,0.04); }
 
-/* ── Forms ───────────────────────────────────────── */
+/* Forms */
 [data-theme="dark"] .form-control,
 [data-theme="dark"] .form-select {
   background-color: #232838;
@@ -292,7 +289,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   color: var(--text-muted);
 }
 
-/* ── Search & Filter Bar (NEW) ────────────────────── */
+/* Search & Filter Bar */
 .filter-bar {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -316,7 +313,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 .filter-chip:hover { background: var(--accent-1); color: #fff; }
 .filter-chip .remove-x { font-weight: 800; opacity: 0.7; }
 
-/* ── Match Score Badge (job recommendations) ──────── */
+/* Match Score Badge */
 .match-badge {
   display: inline-flex;
   align-items: center;
@@ -329,7 +326,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   font-weight: 700;
 }
 
-/* ── Notification List Item (NEW) ─────────────────── */
+/* Notification List Item */
 .notif-item {
   display: flex;
   gap: 12px;
@@ -353,7 +350,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   flex-shrink: 0;
 }
 
-/* ── Profile Page (NEW) ───────────────────────────── */
+/* Profile Page */
 .profile-header {
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
   border-radius: 20px;
@@ -383,7 +380,7 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   transform: translateY(-2px);
 }
 
-/* ── Responsive ──────────────────────────────────── */
+/* Responsive */
 @media (max-width: 768px) {
   .hero-section { padding: 40px 15px; }
   .stat-number  { font-size: 2rem; }
@@ -391,13 +388,13 @@ main.container { animation: fadeInUp 0.45s ease-out; }
   .profile-header { padding: 28px 18px; }
 }
 
-/* ── Scrollbar (dark mode polish) ─────────────────── */
+/* Scrollbar */
 [data-theme="dark"] ::-webkit-scrollbar { width: 10px; }
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #0f1117; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2d3142; border-radius: 10px; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3d4356; }
 
-/* ── Dark Mode Text Visibility Fix ─────────────────────────── */
+/* Dark Mode Text Visibility Fix */
 /* Bootstrap ke text classes dark background pe faint/black reh
    jaate the. Ye unhe readable banata hai — design same rehta hai. */
 [data-theme="dark"] {

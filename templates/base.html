@@ -18,7 +18,7 @@
 </head>
 <body>
 
-<!-- ── Navbar ─────────────────────────────────────────────────── -->
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom">
   <div class="container">
     <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
@@ -78,7 +78,7 @@
   </div>
 </nav>
 
-<!-- ── Flash Messages ─────────────────────────────────────────── -->
+<!-- Flash Messages -->
 <div class="container mt-3">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
@@ -90,12 +90,12 @@
   {% endwith %}
 </div>
 
-<!-- ── Page Content ───────────────────────────────────────────── -->
+<!-- Page Content -->
 <main class="container my-4">
   {% block content %}{% endblock %}
 </main>
 
-<!-- ── Footer ────────────────────────────────────────────────── -->
+<!-- Footer -->
 <footer class="footer-custom text-center py-3 mt-5">
   <small class="text-muted">TalentAI &copy; 2024 &nbsp;|&nbsp; AI-Powered Recruitment Platform</small>
 </footer>

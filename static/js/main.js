@@ -1,10 +1,8 @@
-// ============================================
-// static/js/main.js  —  Frontend JavaScript v2
-// ============================================
+// Frontend behaviour: theme toggle, alerts, skill preview, job filters.
 
 document.addEventListener('DOMContentLoaded', function () {
 
-  // ── Dark Mode Toggle ────────────────────────────────────────────
+  // Dark Mode Toggle
   const themeToggleBtn = document.getElementById('themeToggleBtn');
   const themeIcon = document.getElementById('themeIcon');
   const root = document.documentElement;
@@ -27,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // ── Auto-dismiss flash alerts after 4 seconds ──────────────────────
+  // Auto-dismiss flash alerts after 4 seconds
   setTimeout(function () {
     document.querySelectorAll('.alert').forEach(function (alert) {
       var bsAlert = new bootstrap.Alert(alert);
@@ -35,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }, 4000);
 
-  // ── Skills input: auto lowercase + preview tags ────────────────────
+  // Skills input: auto lowercase + preview tags
   const skillsInput = document.querySelector('input[name="required_skills"]');
   if (skillsInput) {
     skillsInput.addEventListener('blur', function () {
@@ -52,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // ── Score bar animation on page load ──────────────────────────────
+  // Score bar animation on page load
   document.querySelectorAll('.progress-bar').forEach(function (bar) {
     const target = bar.style.width;
     bar.style.width = '0%';
@@ -62,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 300);
   });
 
-  // ── Confirm before status change ──────────────────────────────────
+  // Confirm before status change
   document.querySelectorAll('select[name="status"]').forEach(function (sel) {
     sel.addEventListener('change', function () {
       const val = this.value;
@@ -77,13 +75,13 @@ document.addEventListener('DOMContentLoaded', function () {
     sel.dataset.prev = sel.value;
   });
 
-  // ── Tooltip init ──────────────────────────────────────────────────
+  // Tooltip init
   var tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   tooltipEls.forEach(function (el) {
     new bootstrap.Tooltip(el);
   });
 
-  // ── Job Search & Filter (Candidate Dashboard) ──────────────────────
+  // Job Search & Filter (Candidate Dashboard)
   const jobSearchInput   = document.getElementById('jobSearchInput');
   const jobLocationFilter = document.getElementById('jobLocationFilter');
   const jobSkillFilter   = document.getElementById('jobSkillFilter');
@@ -125,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (jobLocationFilter) jobLocationFilter.addEventListener('change', filterJobs);
   if (jobSkillFilter)    jobSkillFilter.addEventListener('change', filterJobs);
 
-  // ── Clear Filters Button ───────────────────────────────────────────
+  // Clear Filters Button
   const clearFiltersBtn = document.getElementById('clearFiltersBtn');
   if (clearFiltersBtn) {
     clearFiltersBtn.addEventListener('click', function () {

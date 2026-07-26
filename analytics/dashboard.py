@@ -1,7 +1,4 @@
-# ============================================
-# analytics/dashboard.py
-# Analytics Charts using Plotly
-# ============================================
+"""Plotly chart builders for the recruiter analytics dashboard."""
 
 import json
 import plotly
@@ -11,10 +8,7 @@ import pandas as pd
 
 
 def get_skill_distribution_chart(applications):
-    """
-    Sabse zyada demand mein kaunsi skills hain — bar chart.
-    applications: list of dicts with 'matched_skills' key
-    """
+    """Horizontal bar chart of the most in-demand matched skills."""
     skill_count = {}
     for app in applications:
         skills = app.get("matched_skills", "")
@@ -49,9 +43,7 @@ def get_skill_distribution_chart(applications):
 
 
 def get_score_distribution_chart(applications):
-    """
-    Candidate scores ka distribution — histogram.
-    """
+    """Histogram of candidate match scores."""
     scores = [app.get("score", 0) for app in applications]
     if not scores:
         return None
@@ -74,9 +66,7 @@ def get_score_distribution_chart(applications):
 
 
 def get_job_applicants_chart(applications):
-    """
-    Har job mein kitne applicants hain — pie chart.
-    """
+    """Donut chart of applicant counts per job role."""
     job_count = {}
     for app in applications:
         job = app.get("job_title", "Unknown")
@@ -102,9 +92,7 @@ def get_job_applicants_chart(applications):
 
 
 def get_top_candidates_chart(applications, top_n=10):
-    """
-    Top N candidates ka score bar chart.
-    """
+    """Bar chart of the top N candidates by score."""
     if not applications:
         return None
 
@@ -143,9 +131,7 @@ def get_top_candidates_chart(applications, top_n=10):
 
 
 def get_status_chart(applications):
-    """
-    Application status breakdown — shortlisted / rejected / applied / hired.
-    """
+    """Bar chart of applications grouped by status."""
     status_count = {}
     for app in applications:
         status = app.get("status", "applied")

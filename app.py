@@ -38,10 +38,8 @@ app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
-# ── Connection Pool (Performance Fix) ────────────────────────────
-# Pehle: har request har baar naya DB connection kholta tha (slow).
-# Ab: ek pool banta hai jo connections reuse karta hai (fast).
-# Aiven jaise cloud DBs ko SSL chahiye. MYSQL_SSL=True hone par SSL on.
+# Connection pool: reuse DB connections instead of opening one per request.
+# Cloud databases such as Aiven require SSL, enabled via MYSQL_SSL=True.
 _ssl_config = {"ssl": {"ssl": True}} if os.environ.get("MYSQL_SSL") == "True" else {}
 
 DB_POOL = PooledDB(
@@ -62,7 +60,6 @@ DB_POOL = PooledDB(
 
 
 def get_db_connection():
-    # Pool se ek connection uthao (reuse hota hai, naya nahi banta)
     return DB_POOL.connection()
 
 
@@ -103,10 +100,9 @@ def login_required(role=None):
 
 @app.context_processor
 def inject_unread_count():
-    # Logged-out users ke liye query hi mat chalao
     if "user_id" not in session:
         return {"unread_count": 0}
-    # Ek request mein result cache karo (agar template kai baar use kare)
+    # Cache the count on g so a template can read it multiple times per request.
     if "unread_count" in g:
         return {"unread_count": g.unread_count}
     try:
@@ -132,7 +128,6 @@ def index():
 
 @app.route("/healthz")
 def healthz():
-    # Health-check endpoint (Render/monitoring ke liye)
     try:
         conn = get_db_connection()
         cur = conn.cursor()

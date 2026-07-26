@@ -396,3 +396,80 @@ main.container { animation: fadeInUp 0.45s ease-out; }
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #0f1117; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2d3142; border-radius: 10px; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3d4356; }
+
+/* ── Dark Mode Text Visibility Fix ─────────────────────────── */
+/* Bootstrap ke text classes dark background pe faint/black reh
+   jaate the. Ye unhe readable banata hai — design same rehta hai. */
+[data-theme="dark"] {
+  color: var(--text-primary);
+}
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] li,
+[data-theme="dark"] td,
+[data-theme="dark"] th,
+[data-theme="dark"] label,
+[data-theme="dark"] .card,
+[data-theme="dark"] .card-body,
+[data-theme="dark"] .fw-bold,
+[data-theme="dark"] .fw-semibold {
+  color: var(--text-primary);
+}
+
+/* Muted / secondary text */
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .text-secondary,
+[data-theme="dark"] small {
+  color: var(--text-muted) !important;
+}
+
+/* Bootstrap's .text-dark forces black — flip it in dark mode */
+[data-theme="dark"] .text-dark {
+  color: var(--text-primary) !important;
+}
+
+/* Badges with light bg keep readable dark text; but bg-light chips
+   on dark surface need lightening */
+[data-theme="dark"] .badge.bg-light,
+[data-theme="dark"] .bg-light {
+  background: #232838 !important;
+  color: var(--text-primary) !important;
+}
+
+/* List group / dropdown items */
+[data-theme="dark"] .list-group-item {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+[data-theme="dark"] .dropdown-menu {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+[data-theme="dark"] .dropdown-item {
+  color: var(--text-primary);
+}
+[data-theme="dark"] .dropdown-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+}
+
+/* Muted links & headings that use Bootstrap greys */
+[data-theme="dark"] .text-body,
+[data-theme="dark"] .text-body-secondary {
+  color: var(--text-primary) !important;
+}
+
+/* Card headers/footers */
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .card-footer {
+  background: #202535;
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}

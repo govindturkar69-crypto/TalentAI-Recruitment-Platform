@@ -62,7 +62,7 @@
             <span class="badge bg-light text-dark me-2"><i class="bi bi-person-circle"></i> {{ session.get('name') }}</span>
           </li>
           <li class="nav-item">
-            <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a>
           </li>
         {% else %}
           <li class="nav-item">
@@ -70,8 +70,8 @@
               <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
             </button>
           </li>
-          <li class="nav-item"><a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('login') }}">Login</a></li>
-          <li class="nav-item"><a class="btn btn-light btn-sm" href="{{ url_for('register') }}">Register</a></li>
+          <li class="nav-item"><a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('auth.login') }}">Login</a></li>
+          <li class="nav-item"><a class="btn btn-light btn-sm" href="{{ url_for('auth.register') }}">Register</a></li>
         {% endif %}
       </ul>
     </div>

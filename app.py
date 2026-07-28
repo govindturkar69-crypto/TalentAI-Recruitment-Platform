@@ -1,22 +1,20 @@
 import os
-import secrets
-from datetime import datetime, timedelta
 from io import BytesIO
 
 from flask import (Flask, render_template, request, redirect,
                    url_for, session, flash, jsonify, send_file, g)
-import pymysql
-import pymysql.cursors
-from dbutils.pooled_db import PooledDB
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
-from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_wtf import CSRFProtect
 from dotenv import load_dotenv
 
 load_dotenv()
 
+from core import (
+    get_db_connection, create_notification, login_required, ADMIN_EMAIL
+)
+from routes.auth import auth as auth_blueprint
 from models.resume_parser import (
     extract_text_from_pdf, extract_skills,
     get_final_score, score_candidate
@@ -43,7 +41,7 @@ app.config.update(
 # CSRF protection for all POST forms
 csrf = CSRFProtect(app)
 
-ADMIN_EMAIL = "govindturkar45@gmail.com"
+app.register_blueprint(auth_blueprint)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 ALLOWED_EXTENSIONS = {"pdf"}
@@ -53,64 +51,8 @@ app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
-# Connection pool: reuse DB connections instead of opening one per request.
-# Cloud databases such as Aiven require SSL, enabled via MYSQL_SSL=True.
-_ssl_config = {"ssl": {"ssl": True}} if os.environ.get("MYSQL_SSL") == "True" else {}
-
-DB_POOL = PooledDB(
-    creator=pymysql,
-    maxconnections=10,      # max total connections
-    mincached=2,            # ready-to-use connections at startup
-    maxcached=5,            # max idle connections kept alive
-    blocking=True,          # wait if pool is full instead of erroring
-    ping=1,                 # check connection is alive before using
-    host=os.environ.get("MYSQL_HOST", "localhost"),
-    port=int(os.environ.get("MYSQL_PORT", 3306)),
-    user=os.environ.get("MYSQL_USER", "root"),
-    password=os.environ.get("MYSQL_PASSWORD", ""),
-    database=os.environ.get("MYSQL_DB", "recruitment_db"),
-    cursorclass=pymysql.cursors.DictCursor,
-    **_ssl_config,
-)
-
-
-def get_db_connection():
-    return DB_POOL.connection()
-
-
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def create_notification(user_id, title, message, notif_type="system"):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO notifications (user_id, title, message, type) VALUES (%s,%s,%s,%s)",
-            (user_id, title, message, notif_type)
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print("Notification error:", e)
-
-
-def login_required(role=None):
-    from functools import wraps
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            if "user_id" not in session:
-                flash("Please log in first.", "warning")
-                return redirect(url_for("login"))
-            if role and session.get("role") != role:
-                flash("Access denied.", "danger")
-                return redirect(url_for("index"))
-            return f(*args, **kwargs)
-        return wrapper
-    return decorator
 
 
 @app.context_processor
@@ -153,153 +95,6 @@ def healthz():
         return jsonify({"status": "ok", "database": "connected"}), 200
     except Exception:
         return jsonify({"status": "error", "database": "unreachable"}), 503
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        name     = request.form["name"].strip()
-        email    = request.form["email"].strip().lower()
-        password = request.form["password"]
-
-        if not all([name, email, password]):
-            flash("All fields are required.", "danger")
-            return render_template("register.html")
-
-        if len(password) < 8:
-            flash("Password must be at least 8 characters long.", "danger")
-            return render_template("register.html")
-
-        role = "recruiter" if email == ADMIN_EMAIL else "candidate"
-
-        hashed = generate_password_hash(password)
-        conn = get_db_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute(
-                "INSERT INTO users (name, email, password, role) VALUES (%s,%s,%s,%s)",
-                (name, email, hashed, role)
-            )
-            conn.commit()
-            flash("Registration successful! Please log in.", "success")
-            return redirect(url_for("login"))
-        except Exception:
-            flash("This email is already registered.", "danger")
-        finally:
-            cur.close()
-            conn.close()
-
-    return render_template("register.html")
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email    = request.form["email"].strip().lower()
-        password = request.form["password"]
-
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if user and check_password_hash(user["password"], password):
-            session["user_id"] = user["id"]
-            session["name"]    = user["name"]
-            session["role"]    = user["role"]
-            flash(f"Welcome back, {user['name']}!", "success")
-
-            if user["role"] == "recruiter":
-                return redirect(url_for("recruiter_dashboard"))
-            return redirect(url_for("candidate_dashboard"))
-
-        flash("Incorrect email or password.", "danger")
-
-    return render_template("login.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("You have been logged out.", "info")
-    return redirect(url_for("login"))
-
-
-@app.route("/forgot_password", methods=["GET", "POST"])
-def forgot_password():
-    if request.method == "POST":
-        email = request.form["email"].strip().lower()
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cur.fetchone()
-
-        if user:
-            token = secrets.token_urlsafe(32)
-            expires_at = datetime.now() + timedelta(hours=1)
-            cur.execute(
-                "INSERT INTO password_resets (user_id, token, expires_at) VALUES (%s,%s,%s)",
-                (user["id"], token, expires_at)
-            )
-            conn.commit()
-            reset_link = url_for("reset_password", token=token, _external=True)
-            flash(f"Password reset link generated. Since email sending isn't configured, "
-                  f"use this link now: {reset_link}", "info")
-        else:
-            flash("If that email is registered, a reset link has been generated.", "info")
-
-        cur.close()
-        conn.close()
-        return redirect(url_for("forgot_password"))
-
-    return render_template("forgot_password.html")
-
-
-@app.route("/reset_password/<token>", methods=["GET", "POST"])
-def reset_password(token):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT * FROM password_resets WHERE token = %s AND used = FALSE", (token,)
-    )
-    reset_entry = cur.fetchone()
-
-    if not reset_entry or reset_entry["expires_at"] < datetime.now():
-        cur.close()
-        conn.close()
-        flash("This reset link is invalid or has expired.", "danger")
-        return redirect(url_for("forgot_password"))
-
-    if request.method == "POST":
-        new_password     = request.form["password"]
-        confirm_password = request.form["confirm_password"]
-
-        if new_password != confirm_password:
-            flash("Passwords do not match.", "danger")
-            cur.close()
-            conn.close()
-            return render_template("reset_password.html", token=token)
-
-        if len(new_password) < 8:
-            flash("Password must be at least 8 characters long.", "danger")
-            cur.close()
-            conn.close()
-            return render_template("reset_password.html", token=token)
-
-        hashed = generate_password_hash(new_password)
-        cur.execute("UPDATE users SET password=%s WHERE id=%s", (hashed, reset_entry["user_id"]))
-        cur.execute("UPDATE password_resets SET used=TRUE WHERE id=%s", (reset_entry["id"],))
-        conn.commit()
-        cur.close()
-        conn.close()
-        flash("Password reset successful! Please log in.", "success")
-        return redirect(url_for("login"))
-
-    cur.close()
-    conn.close()
-    return render_template("reset_password.html", token=token)
 
 
 @app.route("/candidate/dashboard")

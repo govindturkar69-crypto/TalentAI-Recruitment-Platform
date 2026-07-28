@@ -30,6 +30,7 @@
 <!-- Applicants Table -->
 {% if applicants %}
 <form method="POST" action="{{ url_for('bulk_update_status') }}" id="bulkForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="job_id" value="{{ job.id }}">
 
   <!-- Bulk Action Bar -->
@@ -145,6 +146,7 @@
 
 <!-- Hidden single-status form (reused by the dropdown above) -->
 <form method="POST" id="singleStatusForm" action="" class="d-none">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="status" id="singleStatusValue">
 </form>
 

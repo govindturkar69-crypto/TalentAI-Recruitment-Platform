@@ -10,3 +10,4 @@ plotly==5.17.0
 python-dotenv==1.0.0
 openpyxl==3.1.2
 gunicorn==21.2.0
+Flask-WTF==1.2.1

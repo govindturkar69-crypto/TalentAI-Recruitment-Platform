@@ -85,6 +85,7 @@
             <i class="bi bi-pencil"></i> Edit
           </a>
           <form method="POST" action="{{ url_for('toggle_job_active', job_id=job.id) }}" class="flex-fill">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-{{ 'success' if not job.is_active else 'warning' }} btn-sm w-100">
               <i class="bi bi-{{ 'arrow-counterclockwise' if not job.is_active else 'pause-circle' }}"></i>
               {{ 'Reopen' if not job.is_active else 'Close' }}
@@ -92,6 +93,7 @@
           </form>
           <form method="POST" action="{{ url_for('delete_job', job_id=job.id) }}"
                 onsubmit="return confirm('Delete this job and all its applications permanently?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete permanently">
               <i class="bi bi-trash"></i>
             </button>

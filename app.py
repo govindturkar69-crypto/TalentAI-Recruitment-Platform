@@ -12,6 +12,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from flask_wtf import CSRFProtect
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,7 +27,21 @@ from analytics.dashboard import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback_dev_key_change_me")
+
+secret_key = os.environ.get("FLASK_SECRET_KEY")
+if not secret_key:
+    raise RuntimeError("FLASK_SECRET_KEY is not set. Refusing to start with an insecure key.")
+app.secret_key = secret_key
+
+# Harden session cookies
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("FLASK_DEBUG", "False") != "True",
+)
+
+# CSRF protection for all POST forms
+csrf = CSRFProtect(app)
 
 ADMIN_EMAIL = "govindturkar45@gmail.com"
 
@@ -151,6 +166,10 @@ def register():
             flash("All fields are required.", "danger")
             return render_template("register.html")
 
+        if len(password) < 8:
+            flash("Password must be at least 8 characters long.", "danger")
+            return render_template("register.html")
+
         role = "recruiter" if email == ADMIN_EMAIL else "candidate"
 
         hashed = generate_password_hash(password)
@@ -259,6 +278,12 @@ def reset_password(token):
 
         if new_password != confirm_password:
             flash("Passwords do not match.", "danger")
+            cur.close()
+            conn.close()
+            return render_template("reset_password.html", token=token)
+
+        if len(new_password) < 8:
+            flash("Password must be at least 8 characters long.", "danger")
             cur.close()
             conn.close()
             return render_template("reset_password.html", token=token)
@@ -900,5 +925,5 @@ def api_candidate_score(user_id):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("FLASK_DEBUG", "True") == "True"
+    debug_mode = os.environ.get("FLASK_DEBUG", "False") == "True"
     app.run(debug=debug_mode, host="0.0.0.0", port=port)

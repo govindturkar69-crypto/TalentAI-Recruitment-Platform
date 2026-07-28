@@ -13,6 +13,7 @@
         </div>
 
         <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_resume') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <!-- Drag & Drop Zone -->
           <div class="upload-zone p-5 text-center rounded-3 mb-4" id="dropZone">
             <input type="file" name="resume" id="resumeFile" accept=".pdf" class="d-none" required>

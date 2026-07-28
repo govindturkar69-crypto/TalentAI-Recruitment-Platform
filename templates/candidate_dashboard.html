@@ -130,6 +130,7 @@
             </button>
           {% elif resume %}
             <form method="POST" action="{{ url_for('apply_job', job_id=job.id) }}" class="flex-fill">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-primary btn-sm w-100">
                 <i class="bi bi-send"></i> Apply Now
               </button>
@@ -142,12 +143,14 @@
 
           {% if job.id in saved_job_ids %}
             <form method="POST" action="{{ url_for('unsave_job', job_id=job.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-outline-warning btn-sm" title="Remove from saved">
                 <i class="bi bi-bookmark-fill"></i>
               </button>
             </form>
           {% else %}
             <form method="POST" action="{{ url_for('save_job', job_id=job.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-outline-secondary btn-sm" title="Save for later">
                 <i class="bi bi-bookmark"></i>
               </button>
@@ -218,6 +221,7 @@
           {% if app.status not in ['withdrawn', 'hired'] %}
             <form method="POST" action="{{ url_for('withdraw_application', app_id=app.id) }}"
                   onsubmit="return confirm('Withdraw this application?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-outline-danger btn-sm">
                 <i class="bi bi-x-circle"></i> Withdraw
               </button>

@@ -32,6 +32,7 @@
     <div class="card border-0 shadow-sm p-4">
       <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square"></i> Edit Profile</h5>
       <form method="POST" action="{{ url_for('candidate_profile') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="mb-3">
           <label class="form-label fw-semibold">Bio</label>
           <textarea name="bio" class="form-control" rows="3" placeholder="Tell recruiters about yourself...">{{ profile.bio if profile else '' }}</textarea>

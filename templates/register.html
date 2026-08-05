@@ -1,52 +1,118 @@
-{% extends "base.html" %}
-{% block title %}Register{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create account · Talent AI</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
 
-{% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-5">
-    <div class="card auth-card shadow-sm border-0">
-      <div class="card-body p-4">
-        <div class="text-center mb-4">
-          <div style="font-size:2.5rem">✍️</div>
-          <h3 class="fw-bold mt-2">Create New Account</h3>
-          <p class="text-muted small">Register to join the platform</p>
-        </div>
-
-        <form method="POST" action="{{ url_for('auth.register') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Full Name</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-person"></i></span>
-              <input type="text" name="name" class="form-control" placeholder="Your full name" required>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Email Address</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-              <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label class="form-label fw-semibold">Password</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input type="password" name="password" class="form-control" placeholder="Min. 6 characters" minlength="6" required>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
-            <i class="bi bi-person-check"></i> Register
-          </button>
-        </form>
-
-        <hr class="my-3">
-        <p class="text-center text-muted small mb-0">
-          Already have an account?
-          <a href="{{ url_for('auth.login') }}" class="text-decoration-none fw-bold">Login here</a>
-        </p>
+  <!-- LEFT: onboarding-themed branding -->
+  <aside class="brand-panel">
+    <div class="brand-head">
+      <a href="{{ url_for('auth.login') }}" class="logo">
+        <div class="logo-mark"><i class="bi bi-hexagon-fill"></i></div>
+        <div class="logo-text">Talent<span>AI</span></div>
+      </a>
+      <div class="brand-copy">
+        <h1>Join teams<br><span class="grad">hiring smarter</span><br>every day.</h1>
+        <p>Create your account and turn stacks of resumes into a ranked shortlist in minutes.</p>
       </div>
     </div>
-  </div>
-</div>
-{% endblock %}
+
+    <!-- onboarding checklist visual (different from login + reset) -->
+    <div class="join-visual">
+      <div class="join-card">
+        <h4>What you get</h4>
+        <div class="join-item">
+          <div class="ji-check"><i class="bi bi-check-lg"></i></div>
+          <div class="ji-text">AI resume parsing &amp; skill extraction</div>
+        </div>
+        <div class="join-item">
+          <div class="ji-check"><i class="bi bi-check-lg"></i></div>
+          <div class="ji-text">Automatic candidate scoring</div>
+        </div>
+        <div class="join-item">
+          <div class="ji-check"><i class="bi bi-check-lg"></i></div>
+          <div class="ji-text">Ranked shortlists &amp; analytics</div>
+        </div>
+        <div class="join-badge"><i class="bi bi-lightning-charge"></i> Set up in under a minute</div>
+      </div>
+    </div>
+
+    <div class="brand-foot">
+      <span><i class="bi bi-shield-check"></i>Secure by design</span>
+      <span><i class="bi bi-people"></i>Built for hiring teams</span>
+    </div>
+  </aside>
+
+  <!-- RIGHT: register form -->
+  <main class="auth-panel">
+    <div class="auth-card">
+      <div class="page-tag join"><i class="bi bi-person-plus"></i> Create account</div>
+      <h2>Create your account</h2>
+      <p class="sub">Start scoring candidates in minutes — no credit card required.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert {{ 'ok' if category in ['success', 'info'] else 'err' }} show">
+            <i class="bi {{ 'bi-check-circle-fill' if category in ['success','info'] else 'bi-exclamation-circle-fill' }}"></i>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.register') }}" id="registerForm" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field" id="nameField">
+          <label for="name">Full name</label>
+          <div class="input-wrap">
+            <i class="bi bi-person lead"></i>
+            <input type="text" id="name" name="name" placeholder="Your full name"
+                   autocomplete="name" autofocus required>
+          </div>
+          <div class="field-err">Please enter your name.</div>
+        </div>
+
+        <div class="field" id="emailField">
+          <label for="email">Email</label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope lead"></i>
+            <input type="email" id="email" name="email" placeholder="you@company.com"
+                   autocomplete="email" required>
+          </div>
+          <div class="field-err">Enter a valid email address.</div>
+        </div>
+
+        <div class="field" id="pwField">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock lead"></i>
+            <input type="password" id="password" name="password" placeholder="At least 8 characters"
+                   autocomplete="new-password" minlength="8" required>
+            <button type="button" class="toggle-pw" id="togglePw" aria-label="Show password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          <div class="pw-meter" id="pwMeter"><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+          <div class="pw-hint" id="pwHint">Use 8+ characters with a mix of letters, numbers &amp; symbols.</div>
+          <div class="field-err">Password must be at least 8 characters.</div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submitBtn" style="margin-top:6px">
+          <span class="btn-label">Create account</span>
+          <span class="spinner"></span>
+        </button>
+      </form>
+
+      <p class="divider">Already have an account?
+        <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+    </div>
+  </main>
+
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

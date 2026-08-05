@@ -238,3 +238,64 @@ body {
   .brand-panel { display: none; }
   .auth-panel { padding: 24px; }
 }
+
+/* ── Page-specific brand visuals ── */
+/* Each auth page shows a different left-panel visual so you always
+   know which page you're on, while the theme stays identical. */
+
+/* Reset page: a secure link-delivery visual */
+.reset-visual { position: relative; z-index: 1; margin: 40px 0; max-width: 460px; }
+.reset-step {
+  display: flex; align-items: center; gap: 14px; padding: 16px 18px; margin-bottom: 12px;
+  background: rgba(17,24,39,0.7); border: 1px solid var(--line-2); border-radius: 14px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.reset-step:last-child { margin-bottom: 0; }
+.reset-step .rs-ico {
+  width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+  display: grid; place-items: center; font-size: 18px; color: #fff;
+  background: linear-gradient(135deg, var(--accent), #0891B2);
+}
+.reset-step.dim .rs-ico { background: rgba(148,163,184,0.15); color: var(--text-3); }
+.reset-step .rs-body { flex: 1; }
+.reset-step .rs-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.reset-step .rs-sub { font-size: 12px; color: var(--text-3); }
+.reset-step .rs-check { color: var(--success); font-size: 18px; }
+.reset-connector { width: 2px; height: 14px; margin-left: 37px; background: var(--line-2); }
+
+/* Register page: an onboarding checklist visual */
+.join-visual { position: relative; z-index: 1; margin: 40px 0; max-width: 460px; }
+.join-card {
+  background: rgba(17,24,39,0.7); border: 1px solid var(--line-2); border-radius: 16px;
+  padding: 22px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.join-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-2); }
+.join-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+.join-item:first-of-type { border-top: 0; }
+.join-item .ji-check {
+  width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0; display: grid; place-items: center;
+  font-size: 12px; color: #fff; background: linear-gradient(135deg, var(--primary), var(--primary-2));
+}
+.join-item .ji-text { font-size: 13.5px; }
+.join-badge {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 18px; padding: 9px 14px;
+  border-radius: 10px; font-size: 12.5px; color: #93C5FD;
+  background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.25);
+}
+
+/* Password strength meter (register) */
+.pw-meter { display: flex; gap: 5px; margin-top: 9px; }
+.pw-meter .seg { flex: 1; height: 4px; border-radius: 3px; background: var(--line-2); transition: background 200ms var(--ease); }
+.pw-meter.s1 .seg:nth-child(1) { background: var(--error); }
+.pw-meter.s2 .seg:nth-child(-n+2) { background: #F59E0B; }
+.pw-meter.s3 .seg:nth-child(-n+3) { background: var(--accent); }
+.pw-meter.s4 .seg { background: var(--success); }
+.pw-hint { font-size: 12px; color: var(--text-3); margin-top: 7px; }
+
+/* Small page tag above the heading, so the page announces itself */
+.page-tag {
+  display: inline-flex; align-items: center; gap: 7px; margin-bottom: 16px;
+  padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500;
+}
+.page-tag.reset { background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.3); color: #67E8F9; }
+.page-tag.join  { background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.3); color: #93C5FD; }

@@ -6,6 +6,7 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
+
 def send_password_reset_email(recipient_email, reset_url):
     """
     Send a password reset email using Resend.
@@ -36,13 +37,15 @@ def send_password_reset_email(recipient_email, reset_url):
     )
 
     try:
-        resend.Emails.send({
-            "from": Config.MAIL_FROM,
-            "to": recipient_email,
-            "subject": subject,
-            "html": html_content,
-            "text": text_content,
-        })
+        resend.Emails.send(
+            {
+                "from": Config.MAIL_FROM,
+                "to": recipient_email,
+                "subject": subject,
+                "html": html_content,
+                "text": text_content,
+            }
+        )
         return True
     except Exception as e:
         # Log the exception safely without exposing tokens or the full URL

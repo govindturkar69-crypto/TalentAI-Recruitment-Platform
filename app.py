@@ -192,8 +192,7 @@ def api_jobs():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
-                "SELECT id, job_title, required_skills, location, experience "
-                "FROM jobs WHERE is_active = TRUE"
+                "SELECT id, job_title, required_skills, location, experience " "FROM jobs WHERE is_active = TRUE"
             )
             jobs = cur.fetchall()
     return jsonify(jobs)

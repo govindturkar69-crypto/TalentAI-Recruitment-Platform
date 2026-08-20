@@ -1,8 +1,8 @@
 from models.resume_parser import (
     extract_skills,
+    get_final_score,
     score_candidate,
     tfidf_similarity,
-    get_final_score,
 )
 
 

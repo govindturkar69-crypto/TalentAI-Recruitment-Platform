@@ -7,7 +7,7 @@
     <h2 class="fw-bold mb-1">👋 Welcome, {{ session.name }}!</h2>
     <p class="text-muted mb-0">Track your applications and apply for new jobs</p>
   </div>
-  <a href="{{ url_for('upload_resume') }}" class="btn btn-primary">
+  <a href="{{ url_for('candidate.upload_resume') }}" class="btn btn-primary">
     <i class="bi bi-cloud-upload"></i> Upload Resume
   </a>
 </div>
@@ -42,7 +42,7 @@
             <small class="text-muted">Upload a resume before applying</small>
           </div>
         </div>
-        <a href="{{ url_for('upload_resume') }}" class="btn btn-sm btn-outline-primary mt-2">Upload Now</a>
+        <a href="{{ url_for('candidate.upload_resume') }}" class="btn btn-sm btn-outline-primary mt-2">Upload Now</a>
       {% endif %}
     </div>
   </div>
@@ -129,7 +129,7 @@
               <i class="bi bi-check-circle"></i> Already Applied
             </button>
           {% elif resume %}
-            <form method="POST" action="{{ url_for('apply_job', job_id=job.id) }}" class="flex-fill">
+            <form method="POST" action="{{ url_for('candidate.apply_job', job_id=job.id) }}" class="flex-fill">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-primary btn-sm w-100">
                 <i class="bi bi-send"></i> Apply Now
@@ -142,14 +142,14 @@
           {% endif %}
 
           {% if job.id in saved_job_ids %}
-            <form method="POST" action="{{ url_for('unsave_job', job_id=job.id) }}">
+            <form method="POST" action="{{ url_for('candidate.unsave_job', job_id=job.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-outline-warning btn-sm" title="Remove from saved">
                 <i class="bi bi-bookmark-fill"></i>
               </button>
             </form>
           {% else %}
-            <form method="POST" action="{{ url_for('save_job', job_id=job.id) }}">
+            <form method="POST" action="{{ url_for('candidate.save_job', job_id=job.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-outline-secondary btn-sm" title="Save for later">
                 <i class="bi bi-bookmark"></i>
@@ -219,7 +219,7 @@
         <td><small class="text-muted">{{ app.applied_at.strftime('%d %b %Y') if app.applied_at else '—' }}</small></td>
         <td>
           {% if app.status not in ['withdrawn', 'hired'] %}
-            <form method="POST" action="{{ url_for('withdraw_application', app_id=app.id) }}"
+            <form method="POST" action="{{ url_for('candidate.withdraw_application', app_id=app.id) }}"
                   onsubmit="return confirm('Withdraw this application?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-outline-danger btn-sm">

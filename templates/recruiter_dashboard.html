@@ -8,10 +8,10 @@
     <p class="text-muted mb-0">Manage candidates and post new jobs</p>
   </div>
   <div class="d-flex gap-2">
-    <a href="{{ url_for('analytics') }}" class="btn btn-outline-primary">
+    <a href="{{ url_for('analytics.analytics') }}" class="btn btn-outline-primary">
       <i class="bi bi-bar-chart-line"></i> Analytics
     </a>
-    <a href="{{ url_for('post_job') }}" class="btn btn-primary">
+    <a href="{{ url_for('recruiter.post_job') }}" class="btn btn-primary">
       <i class="bi bi-plus-circle"></i> Post Job
     </a>
   </div>
@@ -75,23 +75,23 @@
           {% endfor %}
         </div>
 
-        <a href="{{ url_for('view_applicants', job_id=job.id) }}"
+        <a href="{{ url_for('recruiter.view_applicants', job_id=job.id) }}"
            class="btn btn-outline-primary btn-sm w-100 mb-2">
           <i class="bi bi-people"></i> View Applicants
         </a>
 
         <div class="d-flex gap-2">
-          <a href="{{ url_for('edit_job', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm flex-fill">
+          <a href="{{ url_for('recruiter.edit_job', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm flex-fill">
             <i class="bi bi-pencil"></i> Edit
           </a>
-          <form method="POST" action="{{ url_for('toggle_job_active', job_id=job.id) }}" class="flex-fill">
+          <form method="POST" action="{{ url_for('recruiter.toggle_job_active', job_id=job.id) }}" class="flex-fill">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-{{ 'success' if not job.is_active else 'warning' }} btn-sm w-100">
               <i class="bi bi-{{ 'arrow-counterclockwise' if not job.is_active else 'pause-circle' }}"></i>
               {{ 'Reopen' if not job.is_active else 'Close' }}
             </button>
           </form>
-          <form method="POST" action="{{ url_for('delete_job', job_id=job.id) }}"
+          <form method="POST" action="{{ url_for('recruiter.delete_job', job_id=job.id) }}"
                 onsubmit="return confirm('Delete this job and all its applications permanently?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete permanently">
@@ -108,7 +108,7 @@
 <div class="text-center text-muted py-5 border rounded-3">
   <i class="bi bi-briefcase" style="font-size:3rem"></i>
   <p class="mt-3">You haven't posted any jobs yet.</p>
-  <a href="{{ url_for('post_job') }}" class="btn btn-primary">Post Your First Job</a>
+  <a href="{{ url_for('recruiter.post_job') }}" class="btn btn-primary">Post Your First Job</a>
 </div>
 {% endif %}
 {% endblock %}

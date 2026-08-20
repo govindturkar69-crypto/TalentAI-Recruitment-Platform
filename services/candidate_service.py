@@ -1,0 +1,132 @@
+from contextlib import closing
+
+from core import get_db_connection
+from models.resume_parser import extract_skills, extract_text_from_pdf, get_final_score, score_candidate
+from services.notification_service import create_notification
+
+
+def process_resume_upload(user_id, save_path, filename):
+    raw_text = extract_text_from_pdf(save_path)
+    skills = extract_skills(raw_text)
+    skills_str = ",".join(skills)
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "INSERT INTO resumes (user_id, resume_path, skills, raw_text) VALUES (%s,%s,%s,%s)",
+                (user_id, filename, skills_str, raw_text),
+            )
+            conn.commit()
+
+    return skills, skills_str
+
+
+def apply_for_job_service(user_id, user_name, job_id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT * FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (user_id,))
+            resume = cur.fetchone()
+            if not resume:
+                return {"success": False, "message": "Please upload your resume first.", "type": "warning"}
+
+            cur.execute("SELECT id FROM applications WHERE candidate_id=%s AND job_id=%s", (user_id, job_id))
+            if cur.fetchone():
+                return {"success": False, "message": "You have already applied for this job.", "type": "warning"}
+
+            cur.execute("SELECT * FROM jobs WHERE id = %s", (job_id,))
+            job = cur.fetchone()
+            if not job:
+                return {"success": False, "message": "Job not found.", "type": "danger"}
+
+            candidate_skills = resume["skills"].split(",") if resume["skills"] else []
+            result = get_final_score(
+                resume["raw_text"], candidate_skills, job["required_skills"], job["description"] or ""
+            )
+
+            cur.execute(
+                """
+                INSERT INTO applications
+                    (candidate_id, job_id, resume_id, score, matched_skills, missing_skills)
+                VALUES (%s,%s,%s,%s,%s,%s)
+            """,
+                (
+                    user_id,
+                    job_id,
+                    resume["id"],
+                    result["final_score"],
+                    ",".join(result["matched"]),
+                    ",".join(result["missing"]),
+                ),
+            )
+            conn.commit()
+
+    create_notification(
+        user_id,
+        "Application Submitted",
+        f"You applied for {job['job_title']} with a score of {result['final_score']:.1f}%.",
+        "applied",
+    )
+    create_notification(
+        job["recruiter_id"],
+        "New Application Received",
+        f"{user_name} applied for {job['job_title']} with a score of {result['final_score']:.1f}%.",
+        "applied",
+    )
+
+    return {
+        "success": True,
+        "message": f"Application submitted! Your score: {result['final_score']:.1f}%",
+        "type": "success",
+    }
+
+
+def withdraw_application_service(app_id, user_id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT a.*, j.job_title FROM applications a JOIN jobs j ON a.job_id = j.id "
+                "WHERE a.id = %s AND a.candidate_id = %s",
+                (app_id, user_id),
+            )
+            app_row = cur.fetchone()
+
+            if not app_row:
+                return {"success": False, "message": "Application not found.", "type": "danger"}
+
+            if app_row["status"] == "hired":
+                return {"success": False, "message": "You can't withdraw a hired application.", "type": "warning"}
+
+            cur.execute("UPDATE applications SET status='withdrawn' WHERE id=%s", (app_id,))
+            conn.commit()
+
+    return {"success": True, "message": f"Application for {app_row['job_title']} has been withdrawn.", "type": "info"}
+
+
+def get_job_recommendations_service(user_id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT * FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (user_id,))
+            resume = cur.fetchone()
+            if not resume:
+                return None, []
+
+            cur.execute("SELECT * FROM jobs WHERE is_active = TRUE ORDER BY created_at DESC")
+            jobs = cur.fetchall()
+            cur.execute("SELECT job_id FROM applications WHERE candidate_id = %s", (user_id,))
+            applied_job_ids = {row["job_id"] for row in cur.fetchall()}
+
+    candidate_skills = resume["skills"].split(",") if resume["skills"] else []
+    recommendations = []
+    for job in jobs:
+        result = score_candidate(candidate_skills, job["required_skills"])
+        if result["score"] > 0:
+            recommendations.append(
+                {
+                    "job": job,
+                    "match_score": round(result["score"], 1),
+                    "matched": result["matched"],
+                    "already_applied": job["id"] in applied_job_ids,
+                }
+            )
+    recommendations.sort(key=lambda r: r["match_score"], reverse=True)
+    return resume, recommendations

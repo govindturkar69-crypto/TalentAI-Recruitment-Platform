@@ -1,22 +1,27 @@
 """Authentication routes: register, login, logout, password reset."""
 
+import logging
 import secrets
+from contextlib import closing
 from datetime import datetime, timedelta
 
-from flask import (Blueprint, render_template, request, redirect,
-                   url_for, session, flash)
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from core import get_db_connection, ADMIN_EMAIL
+from config import Config
+from services.email_service import send_password_reset_email
+
+logger = logging.getLogger(__name__)
 
 auth = Blueprint("auth", __name__)
 
 
 @auth.route("/register", methods=["GET", "POST"])
 def register():
+    # Rate limiting is applied via the limiter in app.py
     if request.method == "POST":
-        name     = request.form["name"].strip()
-        email    = request.form["email"].strip().lower()
+        name = request.form["name"].strip()
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
 
         if not all([name, email, password]):
@@ -27,24 +32,25 @@ def register():
             flash("Password must be at least 8 characters long.", "danger")
             return render_template("register.html")
 
-        role = "recruiter" if email == ADMIN_EMAIL else "candidate"
+        role = "recruiter" if email == Config.ADMIN_EMAIL else "candidate"
 
         hashed = generate_password_hash(password)
-        conn = get_db_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute(
-                "INSERT INTO users (name, email, password, role) VALUES (%s,%s,%s,%s)",
-                (name, email, hashed, role)
-            )
-            conn.commit()
-            flash("Registration successful! Please log in.", "success")
-            return redirect(url_for("auth.login"))
-        except Exception:
-            flash("This email is already registered.", "danger")
-        finally:
-            cur.close()
-            conn.close()
+        with closing(get_db_connection()) as conn:
+            with closing(conn.cursor()) as cur:
+                try:
+                    cur.execute(
+                        "INSERT INTO users (name, email, password, role) VALUES (%s,%s,%s,%s)",
+                        (name, email, hashed, role),
+                    )
+                    conn.commit()
+                    flash("Registration successful! Please log in.", "success")
+                    return redirect(url_for("auth.login"))
+                except Exception:
+                    # L1: Generic message to prevent account enumeration
+                    flash(
+                        "Registration could not be completed. The email may already be in use.",
+                        "danger",
+                    )
 
     return render_template("register.html")
 
@@ -52,32 +58,32 @@ def register():
 @auth.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email    = request.form["email"].strip().lower()
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
 
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
+        with closing(get_db_connection()) as conn:
+            with closing(conn.cursor()) as cur:
+                cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+                user = cur.fetchone()
 
         if user and check_password_hash(user["password"], password):
+            session.clear()  # Prevent session fixation
             session["user_id"] = user["id"]
-            session["name"]    = user["name"]
-            session["role"]    = user["role"]
+            session["name"] = user["name"]
+            session["role"] = user["role"]
+            session.permanent = True  # M4: Use PERMANENT_SESSION_LIFETIME
             flash(f"Welcome back, {user['name']}!", "success")
 
             if user["role"] == "recruiter":
-                return redirect(url_for("recruiter_dashboard"))
-            return redirect(url_for("candidate_dashboard"))
+                return redirect(url_for("recruiter.recruiter_dashboard"))
+            return redirect(url_for("candidate.candidate_dashboard"))
 
         flash("Incorrect email or password.", "danger")
 
     return render_template("login.html")
 
 
-@auth.route("/logout")
+@auth.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     flash("You have been logged out.", "info")
@@ -88,27 +94,45 @@ def logout():
 def forgot_password():
     if request.method == "POST":
         email = request.form["email"].strip().lower()
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cur.fetchone()
+        with closing(get_db_connection()) as conn:
+            with closing(conn.cursor()) as cur:
+                cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+                user = cur.fetchone()
 
-        if user:
-            token = secrets.token_urlsafe(32)
-            expires_at = datetime.now() + timedelta(hours=1)
-            cur.execute(
-                "INSERT INTO password_resets (user_id, token, expires_at) VALUES (%s,%s,%s)",
-                (user["id"], token, expires_at)
-            )
-            conn.commit()
-            reset_link = url_for("auth.reset_password", token=token, _external=True)
-            flash(f"Password reset link generated. Since email sending isn't configured, "
-                  f"use this link now: {reset_link}", "info")
-        else:
-            flash("If that email is registered, a reset link has been generated.", "info")
+                if user:
+                    # L2: Invalidate any previous unused tokens for this user
+                    cur.execute(
+                        "UPDATE password_resets SET used = TRUE WHERE user_id = %s AND used = FALSE",
+                        (user["id"],),
+                    )
+                    token = secrets.token_urlsafe(32)
+                    expires_at = datetime.now() + timedelta(hours=1)
+                    cur.execute(
+                        "INSERT INTO password_resets (user_id, token, expires_at) VALUES (%s,%s,%s)",
+                        (user["id"], token, expires_at),
+                    )
+                    conn.commit()
+                    # Generate reset URL and send email
+                    app_base_url = Config.APP_BASE_URL
+                    if Config.APP_ENV == "production" and not app_base_url:
+                        logger.error(
+                            "Configuration error: APP_BASE_URL is missing in production. "
+                            "Cannot send password reset email."
+                        )
+                    else:
+                        if not app_base_url:
+                            app_base_url = request.host_url.rstrip("/")
+                        else:
+                            app_base_url = app_base_url.rstrip("/")
 
-        cur.close()
-        conn.close()
+                        reset_url = f"{app_base_url}{url_for('auth.reset_password', token=token)}"
+                        send_password_reset_email(user["email"], reset_url)
+
+        # Always show the same message regardless of whether the email exists
+        flash(
+            "If that email is registered, a password reset link has been sent.",
+            "info",
+        )
         return redirect(url_for("auth.forgot_password"))
 
     return render_template("forgot_password.html")
@@ -116,44 +140,42 @@ def forgot_password():
 
 @auth.route("/reset_password/<token>", methods=["GET", "POST"])
 def reset_password(token):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT * FROM password_resets WHERE token = %s AND used = FALSE", (token,)
-    )
-    reset_entry = cur.fetchone()
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT * FROM password_resets WHERE token = %s AND used = FALSE", (token,))
+            reset_entry = cur.fetchone()
 
-    if not reset_entry or reset_entry["expires_at"] < datetime.now():
-        cur.close()
-        conn.close()
-        flash("This reset link is invalid or has expired.", "danger")
-        return redirect(url_for("auth.forgot_password"))
+            if not reset_entry or reset_entry["expires_at"] < datetime.now():
+                flash("This reset link is invalid or has expired.", "danger")
+                return redirect(url_for("auth.forgot_password"))
 
-    if request.method == "POST":
-        new_password     = request.form["password"]
-        confirm_password = request.form["confirm_password"]
+            if request.method == "POST":
+                new_password = request.form["password"]
+                confirm_password = request.form["confirm_password"]
 
-        if new_password != confirm_password:
-            flash("Passwords do not match.", "danger")
-            cur.close()
-            conn.close()
-            return render_template("reset_password.html", token=token)
+                if new_password != confirm_password:
+                    flash("Passwords do not match.", "danger")
+                    return render_template("reset_password.html", token=token)
 
-        if len(new_password) < 8:
-            flash("Password must be at least 8 characters long.", "danger")
-            cur.close()
-            conn.close()
-            return render_template("reset_password.html", token=token)
+                if len(new_password) < 8:
+                    flash("Password must be at least 8 characters long.", "danger")
+                    return render_template("reset_password.html", token=token)
 
-        hashed = generate_password_hash(new_password)
-        cur.execute("UPDATE users SET password=%s WHERE id=%s", (hashed, reset_entry["user_id"]))
-        cur.execute("UPDATE password_resets SET used=TRUE WHERE id=%s", (reset_entry["id"],))
-        conn.commit()
-        cur.close()
-        conn.close()
-        flash("Password reset successful! Please log in.", "success")
-        return redirect(url_for("auth.login"))
+                hashed = generate_password_hash(new_password)
+                cur.execute("UPDATE users SET password=%s WHERE id=%s", (hashed, reset_entry["user_id"]))
+                cur.execute("UPDATE password_resets SET used=TRUE WHERE id=%s", (reset_entry["id"],))
+                conn.commit()
 
-    cur.close()
-    conn.close()
+                # M3: Clear the current session so any stolen session is invalidated
+                # for this browser. Note: Flask signed-cookie sessions on other
+                # browsers cannot be server-side invalidated without schema changes.
+                session.clear()
+
+                flash("Password reset successful! Please log in.", "success")
+                return redirect(url_for("auth.login"))
+
     return render_template("reset_password.html", token=token)
+
+
+# Deferred import to avoid circular dependency
+from core import get_db_connection  # noqa: E402

@@ -1,60 +1,107 @@
+import logging
 import os
-from io import BytesIO
+from contextlib import closing
+from urllib.parse import urlparse
 
-from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, jsonify, send_file, g)
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
-from werkzeug.utils import secure_filename
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_wtf import CSRFProtect
-from dotenv import load_dotenv
 
-load_dotenv()
+from logging_config import setup_logging
 
-from core import (
-    get_db_connection, create_notification, login_required, ADMIN_EMAIL
-)
+setup_logging()
+logger = logging.getLogger(__name__)
+
+from config import Config
+from core import get_db_connection, login_required
+from routes.analytics import analytics_bp
+
+# Blueprints
 from routes.auth import auth as auth_blueprint
-from models.resume_parser import (
-    extract_text_from_pdf, extract_skills,
-    get_final_score, score_candidate
-)
-from analytics.dashboard import (
-    get_skill_distribution_chart, get_score_distribution_chart,
-    get_job_applicants_chart, get_top_candidates_chart, get_status_chart
-)
+from routes.candidate import candidate_bp
+from routes.recruiter import recruiter_bp
 
 app = Flask(__name__)
+app.config.from_object(Config)
 
-secret_key = os.environ.get("FLASK_SECRET_KEY")
-if not secret_key:
-    raise RuntimeError("FLASK_SECRET_KEY is not set. Refusing to start with an insecure key.")
-app.secret_key = secret_key
+if Config.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
 
-# Harden session cookies
-app.config.update(
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=os.environ.get("FLASK_DEBUG", "False") != "True",
-)
+    sentry_sdk.init(
+        dsn=Config.SENTRY_DSN,
+        integrations=[FlaskIntegration()],
+        environment=Config.APP_ENV,
+        send_default_pii=False,
+        traces_sample_rate=0.0,
+    )
+
+# Ensure UPLOAD_FOLDER exists
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 # CSRF protection for all POST forms
 csrf = CSRFProtect(app)
 
+# Rate limiter — in-memory storage suitable for single-instance deployment.
+# For distributed deployments, configure a shared backend (e.g. Redis).
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://",
+)
+
 app.register_blueprint(auth_blueprint)
+app.register_blueprint(candidate_bp)
+app.register_blueprint(recruiter_bp)
+app.register_blueprint(analytics_bp)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
-ALLOWED_EXTENSIONS = {"pdf"}
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+# H6: Apply rate limits to auth endpoints
+limiter.limit("5/minute")(app.view_functions["auth.login"])
+limiter.limit("5/hour")(app.view_functions["auth.register"])
+limiter.limit("3/hour")(app.view_functions["auth.forgot_password"])
 
 
+# ---------------------------------------------------------------------------
+# Security helper
+# ---------------------------------------------------------------------------
+def is_safe_redirect_url(target):
+    """Return True only if *target* is a relative URL on the same host."""
+    if not target:
+        return False
+    parsed = urlparse(target)
+    # Relative URL (no scheme/host) is always safe
+    if not parsed.scheme and not parsed.netloc:
+        return True
+    # Absolute URL must match our host
+    host = urlparse(request.host_url)
+    return parsed.scheme in ("http", "https") and parsed.netloc == host.netloc
+
+
+def safe_redirect(fallback):
+    """Redirect to request.referrer only if it is same-origin, else *fallback*."""
+    ref = request.referrer
+    if is_safe_redirect_url(ref):
+        return redirect(ref)
+    return redirect(fallback)
+
+
+# ---------------------------------------------------------------------------
+# Security headers
+# ---------------------------------------------------------------------------
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Context processor — unread notification count
+# ---------------------------------------------------------------------------
 @app.context_processor
 def inject_unread_count():
     if "user_id" not in session:
@@ -63,21 +110,35 @@ def inject_unread_count():
     if "unread_count" in g:
         return {"unread_count": g.unread_count}
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT COUNT(*) AS cnt FROM notifications WHERE user_id = %s AND is_read = FALSE",
-            (session["user_id"],)
-        )
-        count = cur.fetchone()["cnt"]
-        cur.close()
-        conn.close()
+        with closing(get_db_connection()) as conn:
+            with closing(conn.cursor()) as cur:
+                cur.execute(
+                    "SELECT COUNT(*) AS cnt FROM notifications WHERE user_id = %s AND is_read = FALSE",
+                    (session["user_id"],),
+                )
+                count = int(cur.fetchone()["cnt"])
         g.unread_count = count
         return {"unread_count": count}
     except Exception:
         return {"unread_count": 0}
 
 
+# ---------------------------------------------------------------------------
+# Error handlers
+# ---------------------------------------------------------------------------
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template("errors/404.html"), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template("errors/500.html"), 500
+
+
+# ---------------------------------------------------------------------------
+# Public routes
+# ---------------------------------------------------------------------------
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -86,639 +147,81 @@ def index():
 @app.route("/healthz")
 def healthz():
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT 1")
-        cur.fetchone()
-        cur.close()
-        conn.close()
+        with closing(get_db_connection()) as conn:
+            with closing(conn.cursor()) as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
         return jsonify({"status": "ok", "database": "connected"}), 200
     except Exception:
         return jsonify({"status": "error", "database": "unreachable"}), 503
 
 
-@app.route("/candidate/dashboard")
-@login_required(role="candidate")
-def candidate_dashboard():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT a.*, j.job_title, j.location, j.experience
-        FROM applications a
-        JOIN jobs j ON a.job_id = j.id
-        WHERE a.candidate_id = %s
-        ORDER BY a.applied_at DESC
-    """, (session["user_id"],))
-    applications = cur.fetchall()
-
-    cur.execute("SELECT * FROM jobs WHERE is_active = TRUE ORDER BY created_at DESC")
-    jobs = cur.fetchall()
-
-    cur.execute(
-        "SELECT * FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
-        (session["user_id"],)
-    )
-    resume = cur.fetchone()
-
-    cur.execute("SELECT job_id FROM saved_jobs WHERE candidate_id = %s", (session["user_id"],))
-    saved_job_ids = {row["job_id"] for row in cur.fetchall()}
-
-    cur.close()
-    conn.close()
-
-    return render_template("candidate_dashboard.html",
-                           applications=applications, jobs=jobs,
-                           resume=resume, saved_job_ids=saved_job_ids)
-
-
-@app.route("/candidate/upload_resume", methods=["GET", "POST"])
-@login_required(role="candidate")
-def upload_resume():
-    if request.method == "POST":
-        if "resume" not in request.files:
-            flash("Please select a file.", "danger")
-            return redirect(request.url)
-
-        file = request.files["resume"]
-        if file.filename == "" or not allowed_file(file.filename):
-            flash("Only PDF files are allowed.", "danger")
-            return redirect(request.url)
-
-        filename  = secure_filename(f"user_{session['user_id']}_{file.filename}")
-        save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(save_path)
-
-        raw_text   = extract_text_from_pdf(save_path)
-        skills     = extract_skills(raw_text)
-        skills_str = ",".join(skills)
-
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO resumes (user_id, resume_path, skills, raw_text) VALUES (%s,%s,%s,%s)",
-            (session["user_id"], filename, skills_str, raw_text)
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        flash(f"Resume uploaded! {len(skills)} skills found: {skills_str}", "success")
-        return redirect(url_for("candidate_dashboard"))
-
-    return render_template("upload_resume.html")
-
-
-@app.route("/candidate/apply/<int:job_id>", methods=["POST"])
-@login_required(role="candidate")
-def apply_job(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "SELECT * FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
-        (session["user_id"],)
-    )
-    resume = cur.fetchone()
-    if not resume:
-        flash("Please upload your resume first.", "warning")
-        cur.close()
-        conn.close()
-        return redirect(url_for("candidate_dashboard"))
-
-    cur.execute(
-        "SELECT id FROM applications WHERE candidate_id=%s AND job_id=%s",
-        (session["user_id"], job_id)
-    )
-    if cur.fetchone():
-        flash("You have already applied for this job.", "warning")
-        cur.close()
-        conn.close()
-        return redirect(url_for("candidate_dashboard"))
-
-    cur.execute("SELECT * FROM jobs WHERE id = %s", (job_id,))
-    job = cur.fetchone()
-
-    candidate_skills = resume["skills"].split(",") if resume["skills"] else []
-    result = get_final_score(
-        resume["raw_text"], candidate_skills,
-        job["required_skills"], job["description"] or ""
-    )
-
-    cur.execute("""
-        INSERT INTO applications
-            (candidate_id, job_id, resume_id, score, matched_skills, missing_skills)
-        VALUES (%s,%s,%s,%s,%s,%s)
-    """, (session["user_id"], job_id, resume["id"], result["final_score"],
-          ",".join(result["matched"]), ",".join(result["missing"])))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    create_notification(session["user_id"], "Application Submitted",
-        f"You applied for {job['job_title']} with a score of {result['final_score']:.1f}%.", "applied")
-    create_notification(job["recruiter_id"], "New Application Received",
-        f"{session['name']} applied for {job['job_title']} with a score of {result['final_score']:.1f}%.", "applied")
-
-    flash(f"Application submitted! Your score: {result['final_score']:.1f}%", "success")
-    return redirect(url_for("candidate_dashboard"))
-
-
-@app.route("/candidate/withdraw/<int:app_id>", methods=["POST"])
-@login_required(role="candidate")
-def withdraw_application(app_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT a.*, j.job_title FROM applications a JOIN jobs j ON a.job_id = j.id "
-        "WHERE a.id = %s AND a.candidate_id = %s", (app_id, session["user_id"])
-    )
-    app_row = cur.fetchone()
-
-    if not app_row:
-        flash("Application not found.", "danger")
-        cur.close(); conn.close()
-        return redirect(url_for("candidate_dashboard"))
-
-    if app_row["status"] == "hired":
-        flash("You can't withdraw a hired application.", "warning")
-        cur.close(); conn.close()
-        return redirect(url_for("candidate_dashboard"))
-
-    cur.execute("UPDATE applications SET status='withdrawn' WHERE id=%s", (app_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    flash(f"Application for {app_row['job_title']} has been withdrawn.", "info")
-    return redirect(url_for("candidate_dashboard"))
-
-
-@app.route("/candidate/save_job/<int:job_id>", methods=["POST"])
-@login_required(role="candidate")
-def save_job(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        cur.execute("INSERT INTO saved_jobs (candidate_id, job_id) VALUES (%s,%s)",
-                    (session["user_id"], job_id))
-        conn.commit()
-        flash("Job saved for later.", "success")
-    except Exception:
-        flash("This job is already in your saved list.", "info")
-    finally:
-        cur.close(); conn.close()
-    return redirect(request.referrer or url_for("candidate_dashboard"))
-
-
-@app.route("/candidate/unsave_job/<int:job_id>", methods=["POST"])
-@login_required(role="candidate")
-def unsave_job(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM saved_jobs WHERE candidate_id=%s AND job_id=%s",
-                (session["user_id"], job_id))
-    conn.commit()
-    cur.close(); conn.close()
-    flash("Job removed from saved list.", "info")
-    return redirect(request.referrer or url_for("saved_jobs_page"))
-
-
-@app.route("/candidate/saved_jobs")
-@login_required(role="candidate")
-def saved_jobs_page():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT j.*, s.saved_at FROM saved_jobs s
-        JOIN jobs j ON s.job_id = j.id
-        WHERE s.candidate_id = %s ORDER BY s.saved_at DESC
-    """, (session["user_id"],))
-    saved = cur.fetchall()
-    cur.close(); conn.close()
-    return render_template("saved_jobs.html", saved_jobs=saved)
-
-
-@app.route("/recruiter/dashboard")
-@login_required(role="recruiter")
-def recruiter_dashboard():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM jobs WHERE recruiter_id = %s ORDER BY is_active DESC, created_at DESC",
-                (session["user_id"],))
-    jobs = cur.fetchall()
-    cur.execute("SELECT COUNT(*) AS cnt FROM users WHERE role='candidate'")
-    total_candidates = cur.fetchone()["cnt"]
-    cur.execute("SELECT COUNT(*) AS cnt FROM applications")
-    total_applications = cur.fetchone()["cnt"]
-    cur.execute("SELECT COUNT(*) AS cnt FROM applications WHERE status='shortlisted'")
-    shortlisted = cur.fetchone()["cnt"]
-    cur.close(); conn.close()
-    return render_template("recruiter_dashboard.html", jobs=jobs,
-                           total_candidates=total_candidates,
-                           total_applications=total_applications,
-                           shortlisted=shortlisted)
-
-
-@app.route("/recruiter/post_job", methods=["GET", "POST"])
-@login_required(role="recruiter")
-def post_job():
-    if request.method == "POST":
-        title       = request.form["job_title"].strip()
-        skills      = request.form["required_skills"].strip().lower()
-        description = request.form["description"].strip()
-        location    = request.form["location"].strip()
-        experience  = request.form["experience"].strip()
-
-        if not all([title, skills]):
-            flash("Title and required skills are mandatory.", "danger")
-            return render_template("post_job.html")
-
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO jobs (recruiter_id, job_title, required_skills, description, location, experience)
-            VALUES (%s,%s,%s,%s,%s,%s)
-        """, (session["user_id"], title, skills, description, location, experience))
-        conn.commit()
-        cur.close(); conn.close()
-        flash(f"Job '{title}' posted successfully!", "success")
-        return redirect(url_for("recruiter_dashboard"))
-
-    return render_template("post_job.html")
-
-
-@app.route("/recruiter/job/<int:job_id>/edit", methods=["GET", "POST"])
-@login_required(role="recruiter")
-def edit_job(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM jobs WHERE id = %s AND recruiter_id = %s", (job_id, session["user_id"]))
-    job = cur.fetchone()
-
-    if not job:
-        flash("Job not found.", "danger")
-        cur.close(); conn.close()
-        return redirect(url_for("recruiter_dashboard"))
-
-    if request.method == "POST":
-        title       = request.form["job_title"].strip()
-        skills      = request.form["required_skills"].strip().lower()
-        description = request.form["description"].strip()
-        location    = request.form["location"].strip()
-        experience  = request.form["experience"].strip()
-
-        if not all([title, skills]):
-            flash("Title and required skills are mandatory.", "danger")
-            cur.close(); conn.close()
-            return render_template("edit_job.html", job=job)
-
-        cur.execute("""
-            UPDATE jobs SET job_title=%s, required_skills=%s, description=%s,
-            location=%s, experience=%s WHERE id=%s AND recruiter_id=%s
-        """, (title, skills, description, location, experience, job_id, session["user_id"]))
-        conn.commit()
-        cur.close(); conn.close()
-        flash(f"Job '{title}' updated successfully!", "success")
-        return redirect(url_for("recruiter_dashboard"))
-
-    cur.close(); conn.close()
-    return render_template("edit_job.html", job=job)
-
-
-@app.route("/recruiter/job/<int:job_id>/toggle_active", methods=["POST"])
-@login_required(role="recruiter")
-def toggle_job_active(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT is_active, job_title FROM jobs WHERE id = %s AND recruiter_id = %s",
-                (job_id, session["user_id"]))
-    job = cur.fetchone()
-    if not job:
-        flash("Job not found.", "danger")
-        cur.close(); conn.close()
-        return redirect(url_for("recruiter_dashboard"))
-
-    new_state = not job["is_active"]
-    cur.execute("UPDATE jobs SET is_active = %s WHERE id = %s", (new_state, job_id))
-    conn.commit()
-    cur.close(); conn.close()
-    flash(f"Job '{job['job_title']}' has been {'reopened' if new_state else 'closed'}.", "success")
-    return redirect(url_for("recruiter_dashboard"))
-
-
-@app.route("/recruiter/job/<int:job_id>/delete", methods=["POST"])
-@login_required(role="recruiter")
-def delete_job(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT job_title FROM jobs WHERE id = %s AND recruiter_id = %s",
-                (job_id, session["user_id"]))
-    job = cur.fetchone()
-    if not job:
-        flash("Job not found.", "danger")
-        cur.close(); conn.close()
-        return redirect(url_for("recruiter_dashboard"))
-
-    cur.execute("DELETE FROM jobs WHERE id = %s AND recruiter_id = %s", (job_id, session["user_id"]))
-    conn.commit()
-    cur.close(); conn.close()
-    flash(f"Job '{job['job_title']}' deleted.", "info")
-    return redirect(url_for("recruiter_dashboard"))
-
-
-@app.route("/recruiter/job/<int:job_id>/applicants")
-@login_required(role="recruiter")
-def view_applicants(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM jobs WHERE id = %s", (job_id,))
-    job = cur.fetchone()
-    cur.execute("""
-        SELECT a.*, u.name AS candidate_name, u.email,
-               a.score, a.matched_skills, a.missing_skills, a.status
-        FROM applications a JOIN users u ON a.candidate_id = u.id
-        WHERE a.job_id = %s ORDER BY a.score DESC
-    """, (job_id,))
-    applicants = cur.fetchall()
-    cur.close(); conn.close()
-    for i, ap in enumerate(applicants):
-        ap["rank"] = i + 1
-    return render_template("view_applicants.html", job=job, applicants=applicants)
-
-
-@app.route("/recruiter/applications/bulk_update", methods=["POST"])
-@login_required(role="recruiter")
-def bulk_update_status():
-    app_ids    = request.form.getlist("selected_apps")
-    new_status = request.form.get("bulk_status")
-    job_id     = request.form.get("job_id")
-
-    if not app_ids or not new_status:
-        flash("Please select at least one candidate and a status.", "warning")
-        return redirect(url_for("view_applicants", job_id=job_id))
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    for app_id in app_ids:
-        cur.execute("UPDATE applications SET status=%s WHERE id=%s", (new_status, app_id))
-        cur.execute("""
-            SELECT a.candidate_id, j.job_title FROM applications a
-            JOIN jobs j ON a.job_id = j.id WHERE a.id = %s
-        """, (app_id,))
-        info = cur.fetchone()
-        if info and new_status in ("shortlisted", "rejected", "hired"):
-            msgs = {
-                "shortlisted": f"Good news! You've been shortlisted for {info['job_title']}.",
-                "rejected":    f"Your application for {info['job_title']} was not selected.",
-                "hired":       f"Congratulations! You've been hired for {info['job_title']}!",
-            }
-            create_notification(info["candidate_id"],
-                f"Application {new_status.title()}", msgs[new_status], new_status)
-    conn.commit()
-    cur.close(); conn.close()
-    flash(f"Updated {len(app_ids)} application(s) to '{new_status}'.", "success")
-    return redirect(url_for("view_applicants", job_id=job_id))
-
-
-@app.route("/recruiter/job/<int:job_id>/export")
-@login_required(role="recruiter")
-def export_applicants(job_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM jobs WHERE id = %s AND recruiter_id = %s", (job_id, session["user_id"]))
-    job = cur.fetchone()
-    if not job:
-        flash("Job not found.", "danger")
-        cur.close(); conn.close()
-        return redirect(url_for("recruiter_dashboard"))
-
-    cur.execute("""
-        SELECT u.name, u.email, a.score, a.matched_skills, a.missing_skills, a.status, a.applied_at
-        FROM applications a JOIN users u ON a.candidate_id = u.id
-        WHERE a.job_id = %s ORDER BY a.score DESC
-    """, (job_id,))
-    applicants = cur.fetchall()
-    cur.close(); conn.close()
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Applicants"
-    headers = ["Rank", "Name", "Email", "Score (%)", "Matched Skills", "Missing Skills", "Status", "Applied On"]
-    ws.append(headers)
-    hfill = PatternFill(start_color="6366F1", end_color="6366F1", fill_type="solid")
-    hfont = Font(color="FFFFFF", bold=True)
-    for col_num, _ in enumerate(headers, 1):
-        c = ws.cell(row=1, column=col_num)
-        c.fill = hfill; c.font = hfont
-        c.alignment = Alignment(horizontal="center")
-    for i, ap in enumerate(applicants, 1):
-        ws.append([i, ap["name"], ap["email"], round(ap["score"], 1),
-                   ap["matched_skills"] or "", ap["missing_skills"] or "",
-                   ap["status"].title(),
-                   ap["applied_at"].strftime("%d %b %Y") if ap["applied_at"] else ""])
-    for col_cells in ws.columns:
-        ws.column_dimensions[col_cells[0].column_letter].width = min(
-            max((len(str(c.value)) if c.value else 0) for c in col_cells) + 4, 50)
-
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-    safe = "".join(c if c.isalnum() else "_" for c in job["job_title"])
-    return send_file(output,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        as_attachment=True, download_name=f"applicants_{safe}.xlsx")
-
-
-@app.route("/recruiter/application/<int:app_id>/status", methods=["POST"])
-@login_required(role="recruiter")
-def update_status(app_id):
-    new_status = request.form["status"]
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("UPDATE applications SET status=%s WHERE id=%s", (new_status, app_id))
-    conn.commit()
-    cur.execute("""
-        SELECT a.candidate_id, j.job_title FROM applications a
-        JOIN jobs j ON a.job_id = j.id WHERE a.id = %s
-    """, (app_id,))
-    info = cur.fetchone()
-    cur.close(); conn.close()
-    if info and new_status in ("shortlisted", "rejected", "hired"):
-        msgs = {
-            "shortlisted": f"Good news! You've been shortlisted for {info['job_title']}.",
-            "rejected":    f"Your application for {info['job_title']} was not selected.",
-            "hired":       f"Congratulations! You've been hired for {info['job_title']}!",
-        }
-        create_notification(info["candidate_id"],
-            f"Application {new_status.title()}", msgs[new_status], new_status)
-    flash(f"Status updated to: {new_status}", "success")
-    return redirect(request.referrer or url_for("recruiter_dashboard"))
-
-
-@app.route("/recruiter/analytics")
-@login_required(role="recruiter")
-def analytics():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT a.*, u.name AS candidate_name, j.job_title
-        FROM applications a
-        JOIN users u ON a.candidate_id = u.id
-        JOIN jobs  j ON a.job_id = j.id
-    """)
-    applications = cur.fetchall()
-    cur.close(); conn.close()
-    apps_data = [dict(a) for a in applications]
-    stats = {
-        "total":       len(apps_data),
-        "avg_score":   round(sum(a.get("score", 0) for a in apps_data) / max(len(apps_data), 1), 1),
-        "shortlisted": sum(1 for a in apps_data if a.get("status") == "shortlisted"),
-        "hired":       sum(1 for a in apps_data if a.get("status") == "hired"),
-    }
-    return render_template("analytics.html",
-        chart1=get_skill_distribution_chart(apps_data),
-        chart2=get_score_distribution_chart(apps_data),
-        chart3=get_job_applicants_chart(apps_data),
-        chart4=get_top_candidates_chart(apps_data),
-        chart5=get_status_chart(apps_data),
-        stats=stats)
-
-
+# ---------------------------------------------------------------------------
+# Authenticated routes
+# ---------------------------------------------------------------------------
 @app.route("/notifications")
 @login_required()
 def notifications():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM notifications WHERE user_id = %s ORDER BY created_at DESC LIMIT 50",
-                (session["user_id"],))
-    notifs = cur.fetchall()
-    cur.close(); conn.close()
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT * FROM notifications WHERE user_id = %s ORDER BY created_at DESC LIMIT 50",
+                (session["user_id"],),
+            )
+            notifs = cur.fetchall()
     return render_template("notifications.html", notifications=notifs)
 
 
 @app.route("/notifications/mark_all_read", methods=["POST"])
 @login_required()
 def mark_all_read():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("UPDATE notifications SET is_read = TRUE WHERE user_id = %s", (session["user_id"],))
-    conn.commit()
-    cur.close(); conn.close()
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("UPDATE notifications SET is_read = TRUE WHERE user_id = %s", (session["user_id"],))
+            conn.commit()
     flash("All notifications marked as read.", "success")
     return redirect(url_for("notifications"))
 
 
-@app.route("/candidate/profile", methods=["GET", "POST"])
-@login_required(role="candidate")
-def candidate_profile():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    if request.method == "POST":
-        bio              = request.form.get("bio", "").strip()
-        phone            = request.form.get("phone", "").strip()
-        location         = request.form.get("location", "").strip()
-        experience_years = request.form.get("experience_years", "").strip()
-        linkedin_url     = request.form.get("linkedin_url", "").strip()
-        github_url       = request.form.get("github_url", "").strip()
-        portfolio_url    = request.form.get("portfolio_url", "").strip()
-
-        cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (session["user_id"],))
-        existing = cur.fetchone()
-        if existing:
-            cur.execute("""
-                UPDATE candidate_profiles SET bio=%s, phone=%s, location=%s,
-                experience_years=%s, linkedin_url=%s, github_url=%s, portfolio_url=%s
-                WHERE user_id=%s
-            """, (bio, phone, location, experience_years, linkedin_url, github_url,
-                  portfolio_url, session["user_id"]))
-        else:
-            cur.execute("""
-                INSERT INTO candidate_profiles
-                (user_id, bio, phone, location, experience_years, linkedin_url, github_url, portfolio_url)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-            """, (session["user_id"], bio, phone, location, experience_years,
-                  linkedin_url, github_url, portfolio_url))
-        conn.commit()
-        flash("Profile updated successfully!", "success")
-        cur.close(); conn.close()
-        return redirect(url_for("candidate_profile"))
-
-    cur.execute("SELECT * FROM candidate_profiles WHERE user_id = %s", (session["user_id"],))
-    profile = cur.fetchone()
-    cur.execute("SELECT * FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
-                (session["user_id"],))
-    resume = cur.fetchone()
-    cur.execute("SELECT COUNT(*) AS cnt FROM applications WHERE candidate_id = %s", (session["user_id"],))
-    application_count = cur.fetchone()["cnt"]
-    cur.close(); conn.close()
-
-    fields = ["bio", "phone", "location", "experience_years", "linkedin_url"]
-    filled = sum(1 for f in fields if profile and profile.get(f)) if profile else 0
-    profile_completion = int(((filled + (1 if resume else 0)) / (len(fields) + 1)) * 100)
-
-    return render_template("candidate_profile.html", profile=profile, resume=resume,
-                           application_count=application_count,
-                           profile_completion=profile_completion)
-
-
-@app.route("/candidate/recommendations")
-@login_required(role="candidate")
-def job_recommendations():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
-                (session["user_id"],))
-    resume = cur.fetchone()
-    if not resume:
-        cur.close(); conn.close()
-        return render_template("job_recommendations.html", resume=None, recommendations=[])
-
-    cur.execute("SELECT * FROM jobs WHERE is_active = TRUE ORDER BY created_at DESC")
-    jobs = cur.fetchall()
-    cur.execute("SELECT job_id FROM applications WHERE candidate_id = %s", (session["user_id"],))
-    applied_job_ids = {row["job_id"] for row in cur.fetchall()}
-    cur.close(); conn.close()
-
-    candidate_skills = resume["skills"].split(",") if resume["skills"] else []
-    recommendations = []
-    for job in jobs:
-        result = score_candidate(candidate_skills, job["required_skills"])
-        if result["score"] > 0:
-            recommendations.append({
-                "job": job,
-                "match_score": round(result["score"], 1),
-                "matched": result["matched"],
-                "already_applied": job["id"] in applied_job_ids,
-            })
-    recommendations.sort(key=lambda r: r["match_score"], reverse=True)
-    return render_template("job_recommendations.html", resume=resume, recommendations=recommendations)
-
-
+# ---------------------------------------------------------------------------
+# API endpoints — H2: require auth, filter active only
+# ---------------------------------------------------------------------------
 @app.route("/api/jobs")
+@login_required()
 def api_jobs():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT id, job_title, required_skills, location, experience FROM jobs")
-    jobs = cur.fetchall()
-    cur.close(); conn.close()
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT id, job_title, required_skills, location, experience "
+                "FROM jobs WHERE is_active = TRUE"
+            )
+            jobs = cur.fetchall()
     return jsonify(jobs)
 
 
+# ---------------------------------------------------------------------------
+# H1: require auth + ownership check for candidate score API
+# ---------------------------------------------------------------------------
 @app.route("/api/candidate/<int:user_id>/score")
+@login_required()
 def api_candidate_score(user_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT a.score, j.job_title FROM applications a
-        JOIN jobs j ON a.job_id = j.id WHERE a.candidate_id = %s
-    """, (user_id,))
-    data = cur.fetchall()
-    cur.close(); conn.close()
+    # Candidates may only view their own scores
+    if session.get("role") == "candidate" and session["user_id"] != user_id:
+        return jsonify({"error": "Not found"}), 404
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                SELECT a.score, j.job_title FROM applications a
+                JOIN jobs j ON a.job_id = j.id WHERE a.candidate_id = %s
+            """,
+                (user_id,),
+            )
+            data = cur.fetchall()
     return jsonify(data)
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("FLASK_DEBUG", "False") == "True"
+    debug_mode = app.config.get("FLASK_DEBUG", False)
     app.run(debug=debug_mode, host="0.0.0.0", port=port)

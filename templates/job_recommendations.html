@@ -11,7 +11,7 @@
 <div class="text-center text-muted py-5 border rounded-3">
   <i class="bi bi-file-earmark-x" style="font-size:3rem"></i>
   <p class="mt-3">Upload a resume first to get personalized recommendations.</p>
-  <a href="{{ url_for('upload_resume') }}" class="btn btn-primary">Upload Resume</a>
+  <a href="{{ url_for('candidate.upload_resume') }}" class="btn btn-primary">Upload Resume</a>
 </div>
 {% elif recommendations %}
 <div class="row g-3">
@@ -41,7 +41,7 @@
             <i class="bi bi-check-circle"></i> Already Applied
           </button>
         {% else %}
-          <form method="POST" action="{{ url_for('apply_job', job_id=rec.job.id) }}">
+          <form method="POST" action="{{ url_for('candidate.apply_job', job_id=rec.job.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary btn-sm w-100">
               <i class="bi bi-send"></i> Apply Now

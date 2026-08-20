@@ -21,7 +21,7 @@
 
 <br/>
 
-**[🌐 Live Demo](#-live-demo) · [✨ Features](#-features) · [📸 Screenshots](#-screenshots) · [⚙️ Setup](#%EF%B8%8F-installation) · [📬 Contact](#-contact)**
+**[🌐 Live Demo](#-live-demo) · [✨ Features](#-features) · [⚙️ Setup](#%EF%B8%8F-installation) · [📬 Contact](#-contact)**
 
 </div>
 
@@ -45,39 +45,7 @@ The platform has two sides:
 - **Candidates** upload their resume, get AI-matched to jobs, and track applications in real time.
 - **Recruiters** post jobs and receive an automatically ranked list of applicants, complete with match scores, analytics, and Excel export.
 
----
 
-## 📸 Screenshots
-
-<div align="center">
-
-### 🏠 Homepage
-<img src="screenshots/homepage.png" width="800" alt="Homepage" />
-
-### 👤 Candidate Dashboard
-<img src="screenshots/candidate-dashboard.png" width="800" alt="Candidate Dashboard" />
-
-### 📄 Resume Upload
-<img src="screenshots/upload-resume.png" width="800" alt="Resume Upload" />
-
-### ⭐ AI Job Recommendations
-<img src="screenshots/recommendations.png" width="800" alt="Job Recommendations" />
-
-### 🏢 Recruiter Dashboard
-<img src="screenshots/recruiter-dashboard.png" width="800" alt="Recruiter Dashboard" />
-
-### 🏆 Ranked Applicants
-<img src="screenshots/applicants.png" width="800" alt="Ranked Applicants" />
-
-### 📊 Analytics Dashboard
-<img src="screenshots/analytics.png" width="800" alt="Analytics" />
-
-### 🌙 Dark Mode
-<img src="screenshots/dark-mode.png" width="800" alt="Dark Mode" />
-
-</div>
-
----
 
 ## ✨ Features
 
@@ -202,7 +170,6 @@ TalentAI/
 ├── static/
 │   ├── css/style.css          # Dark mode + animations
 │   └── js/main.js             # Theme toggle + filters
-├── screenshots/               # README screenshots
 └── uploads/                   # Uploaded resumes
 ```
 
@@ -298,7 +265,18 @@ MYSQL_DB         = <your-database-name>
 MYSQL_SSL        = True
 FLASK_SECRET_KEY = <random-secret-string>
 FLASK_DEBUG      = False
+
+### 4. Password Reset Email Configuration (Resend)
+To enable production password-reset email delivery:
+1. Verify your sender domain in [Resend](https://resend.com).
+2. Generate an API Key in the Resend dashboard.
+3. Configure the following environment variables in Render:
+```env
+RESEND_API_KEY   = <your-real-resend-api-key>
+MAIL_FROM        = <verified-sender-email-address>
+APP_BASE_URL     = https://talentai-recruitment-platform.onrender.com
 ```
+*Note: The real `RESEND_API_KEY` must never be committed to GitHub or added to `.env.example`. Ensure `APP_BASE_URL` exactly matches your production URL.*
 
 > Aiven requires an SSL connection, which is why `MYSQL_SSL=True` is needed in production.
 
@@ -359,3 +337,107 @@ This project is licensed under the **MIT License** — free to use, modify, and 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=6366f1&height=120&section=footer&text=Thanks%20for%20visiting!&fontSize=24&fontColor=ffffff" width="100%" />
 
 </div>
+
+## 🛠️ Continuous Integration (CI)
+
+This project uses **GitHub Actions** for Continuous Integration (CI). 
+
+Whenever you push to the repository or open a Pull Request, the CI pipeline automatically runs:
+1. **Syntax Validation**: Uses `compileall` to check all Python source files.
+2. **Automated Tests**: Runs the `pytest` suite to verify business logic and workflows without connecting to a real database.
+3. **Docker Build**: Builds the production `Dockerfile` to ensure there are no syntax errors or missing requirements.
+
+*(Note: The CI pipeline does not deploy the application or push images to Docker Hub; it is strictly for validation).*
+
+### Running CI Checks Locally
+
+Before pushing your code, you can run the same validation steps locally:
+
+**1. Install Development Dependencies**
+```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+
+**2. Run Ruff (Linter)**
+```bash
+ruff check .
+# To automatically fix safe violations: ruff check --fix .
+```
+
+**3. Run Black (Formatter)**
+```bash
+black --check .
+# To automatically format: black .
+```
+
+**4. Run Syntax Validation**
+```bash
+python -m compileall -q app.py core.py config.py routes/ services/ models/
+```
+
+**5. Run Pytest**
+```bash
+pytest -v tests/
+```
+
+**6. Test Docker Build**
+```bash
+docker build -t recruitment-analytics-ci .
+```
+
+## 5. Production Monitoring
+
+This application supports optional error tracking via **Sentry**.
+
+### Health Check
+A lightweight health endpoint is available at `/healthz`. It performs a fast `SELECT 1` query to verify database connectivity.
+- **Healthy:** HTTP `200 OK`
+- **Unhealthy:** HTTP `503 Service Unavailable`
+
+### Error Tracking
+To enable Sentry error tracking in your deployed environment, configure the following environment variable:
+```bash
+# Provide your actual Sentry DSN from your Sentry project settings
+SENTRY_DSN=https://your-dsn@sentry.io/project
+```
+- If `SENTRY_DSN` is empty or missing, error tracking remains completely disabled.
+- Tracebacks and sensitive PII (like cookies/headers) are scrubbed automatically.
+
+### Logs
+Structured console logging includes request paths, methods, and user IDs (when available).
+
+## 6. Production Database Backup & Recovery
+
+The production database is hosted on **Aiven Cloud**. 
+
+### Managed Automated Backups
+Aiven provides native, fully automated daily backups and continuous Point-in-Time Recovery (PITR). 
+> **Action Required**: The project maintainer must verify within the Aiven Console that automated backups and PITR are actively enabled and configured for the correct retention period.
+
+### Recovery Strategy
+To ensure production safety during a disaster recovery scenario:
+1. **Never restore directly over the live production database.**
+2. Use the Aiven Console to restore the backup to a **new, forked staging database**.
+3. Verify data integrity and application compatibility against the staging database.
+4. Only after successful verification, update the `MYSQL_HOST` environment variable in the production deployment (Render) to point to the newly restored database.
+
+*Note: No manual backup scripts or backup endpoints are included in the application code to prevent unauthorized access and data exposure.*
+
+## 7. Production Deployment Checklist
+
+Before taking the application live, verify the following:
+
+- [ ] **Environment Variables**: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DB`, `FLASK_SECRET_KEY` are all set.
+- [ ] **Debug Mode Disabled**: `FLASK_DEBUG=False` is set.
+- [ ] **Aiven Database Configuration**: Ensure the database is accessible and `MYSQL_SSL=True` is enabled.
+- [ ] **Render Deployment**: Confirm `gunicorn app:app` is configured as the start command.
+- [ ] **Health Check**: Verify `/healthz` returns HTTP 200 OK.
+- [ ] **Sentry Configuration**: Ensure `SENTRY_DSN` is correctly configured in production for error tracking.
+- [ ] **Admin Email**: `ADMIN_EMAIL` is configured to the correct recruiter email.
+- [ ] **CI Status**: Verify all GitHub Actions (Ruff, Black, Pytest) are passing.
+- [ ] **Backups**: Confirm in the Aiven Console that automated backups and PITR are actively running.
+- [ ] **Security Smoke Test**: Manually verify that `/api/jobs` rejects anonymous users and candidate features function properly.
+
+---
+```

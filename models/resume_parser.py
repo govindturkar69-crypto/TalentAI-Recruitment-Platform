@@ -1,40 +1,101 @@
 """Resume parsing, skill extraction, and candidate scoring."""
 
+import logging
 import re
 
-import PyPDF2
+logger = logging.getLogger(__name__)
+
+import pypdf
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 SKILLS_DB = [
     # Programming languages
-    "python", "java", "javascript", "typescript", "c++", "c#", "php", "ruby",
-    "swift", "kotlin", "go", "rust", "scala", "r",
-
+    "python",
+    "java",
+    "javascript",
+    "typescript",
+    "c++",
+    "c#",
+    "php",
+    "ruby",
+    "swift",
+    "kotlin",
+    "go",
+    "rust",
+    "scala",
+    "r",
     # Web frontend
-    "html", "css", "react", "angular", "vue", "bootstrap", "tailwind",
-    "jquery", "sass", "webpack", "next.js", "nuxt",
-
+    "html",
+    "css",
+    "react",
+    "angular",
+    "vue",
+    "bootstrap",
+    "tailwind",
+    "jquery",
+    "sass",
+    "webpack",
+    "next.js",
+    "nuxt",
     # Web backend
-    "flask", "django", "fastapi", "node", "express", "spring", "laravel",
-    "rest api", "graphql", "microservices",
-
+    "flask",
+    "django",
+    "fastapi",
+    "node",
+    "express",
+    "spring",
+    "laravel",
+    "rest api",
+    "graphql",
+    "microservices",
     # Databases
-    "mysql", "postgresql", "mongodb", "redis", "sqlite", "oracle",
-    "sql", "nosql", "elasticsearch",
-
+    "mysql",
+    "postgresql",
+    "mongodb",
+    "redis",
+    "sqlite",
+    "oracle",
+    "sql",
+    "nosql",
+    "elasticsearch",
     # Data science / ML
-    "machine learning", "deep learning", "neural network", "natural language processing",
-    "computer vision", "pandas", "numpy", "matplotlib", "scikit-learn",
-    "tensorflow", "keras", "pytorch", "statistics", "data analysis",
-    "data visualization", "feature engineering",
-
+    "machine learning",
+    "deep learning",
+    "neural network",
+    "natural language processing",
+    "computer vision",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "tensorflow",
+    "keras",
+    "pytorch",
+    "statistics",
+    "data analysis",
+    "data visualization",
+    "feature engineering",
     # DevOps / cloud
-    "docker", "kubernetes", "aws", "azure", "gcp", "linux", "git",
-    "ci/cd", "jenkins", "ansible", "terraform", "nginx",
-
+    "docker",
+    "kubernetes",
+    "aws",
+    "azure",
+    "gcp",
+    "linux",
+    "git",
+    "ci/cd",
+    "jenkins",
+    "ansible",
+    "terraform",
+    "nginx",
     # Tools
-    "excel", "power bi", "tableau", "jira", "figma", "postman",
+    "excel",
+    "power bi",
+    "tableau",
+    "jira",
+    "figma",
+    "postman",
 ]
 
 
@@ -43,13 +104,13 @@ def extract_text_from_pdf(pdf_path):
     text = ""
     try:
         with open(pdf_path, "rb") as f:
-            reader = PyPDF2.PdfReader(f)
+            reader = pypdf.PdfReader(f)
             for page in reader.pages:
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
-    except Exception as e:
-        print(f"PDF read error: {e}")
+    except Exception:
+        logger.exception(f"PDF read error for {pdf_path}")
     return text.strip()
 
 

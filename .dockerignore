@@ -1,0 +1,27 @@
+# Environment variables
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+env/
+
+# Tests (Runtime image intentionally excludes tests)
+.pytest_cache/
+tests/
+
+# Local uploads (Docker volume handles this)
+uploads/*
+!uploads/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+
+# Deployment config overrides
+docker-compose.override.yml

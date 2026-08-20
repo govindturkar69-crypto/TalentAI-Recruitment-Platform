@@ -40,6 +40,7 @@ def test_unknown_page_returns_404(client):
 # Access control: protected pages must redirect a logged-out visitor to login
 # ---------------------------------------------------------------------------
 
+
 def test_candidate_dashboard_requires_login(client):
     response = client.get("/candidate/dashboard")
     # 302 = redirect (to the login page)
@@ -66,5 +67,5 @@ def test_post_job_requires_login(client):
 
 
 def test_logout_redirects(client):
-    response = client.get("/logout")
+    response = client.post("/logout")
     assert response.status_code == 302

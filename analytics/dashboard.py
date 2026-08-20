@@ -1,10 +1,11 @@
 """Plotly chart builders for the recruiter analytics dashboard."""
 
 import json
-import plotly
-import plotly.graph_objects as go
-import plotly.express as px
+
 import pandas as pd
+import plotly
+import plotly.express as px
+import plotly.graph_objects as go
 
 
 def get_skill_distribution_chart(applications):
@@ -25,7 +26,10 @@ def get_skill_distribution_chart(applications):
     df = df.sort_values("Count", ascending=False).head(12)
 
     fig = px.bar(
-        df, x="Count", y="Skill", orientation="h",
+        df,
+        x="Count",
+        y="Skill",
+        orientation="h",
         title="Top Skills in Demand",
         color="Count",
         color_continuous_scale="Viridis",
@@ -49,7 +53,8 @@ def get_score_distribution_chart(applications):
         return None
 
     fig = px.histogram(
-        x=scores, nbins=10,
+        x=scores,
+        nbins=10,
         title="Candidate Score Distribution",
         labels={"x": "Score (%)", "y": "Number of Candidates"},
         color_discrete_sequence=["#6366f1"],
@@ -75,12 +80,16 @@ def get_job_applicants_chart(applications):
     if not job_count:
         return None
 
-    fig = go.Figure(data=[go.Pie(
-        labels=list(job_count.keys()),
-        values=list(job_count.values()),
-        hole=0.4,
-        marker=dict(colors=["#6366f1", "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444"]),
-    )])
+    fig = go.Figure(
+        data=[
+            go.Pie(
+                labels=list(job_count.keys()),
+                values=list(job_count.values()),
+                hole=0.4,
+                marker=dict(colors=["#6366f1", "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444"]),
+            )
+        ]
+    )
     fig.update_layout(
         title="Applicants per Job Role",
         font=dict(family="Segoe UI", size=12),
@@ -98,7 +107,7 @@ def get_top_candidates_chart(applications, top_n=10):
 
     sorted_apps = sorted(applications, key=lambda x: x.get("score", 0), reverse=True)[:top_n]
 
-    names  = [a.get("candidate_name", "Unknown") for a in sorted_apps]
+    names = [a.get("candidate_name", "Unknown") for a in sorted_apps]
     scores = [a.get("score", 0) for a in sorted_apps]
 
     colors = []
@@ -110,12 +119,15 @@ def get_top_candidates_chart(applications, top_n=10):
         else:
             colors.append("#ef4444")
 
-    fig = go.Figure(go.Bar(
-        x=names, y=scores,
-        marker_color=colors,
-        text=[f"{s:.1f}%" for s in scores],
-        textposition="outside",
-    ))
+    fig = go.Figure(
+        go.Bar(
+            x=names,
+            y=scores,
+            marker_color=colors,
+            text=[f"{s:.1f}%" for s in scores],
+            textposition="outside",
+        )
+    )
     fig.update_layout(
         title=f"Top {top_n} Candidates by Score",
         xaxis_title="Candidate",
@@ -141,19 +153,23 @@ def get_status_chart(applications):
         return None
 
     color_map = {
-        "applied"    : "#6366f1",
+        "applied": "#6366f1",
         "shortlisted": "#22c55e",
-        "rejected"   : "#ef4444",
-        "hired"      : "#f59e0b",
+        "rejected": "#ef4444",
+        "hired": "#f59e0b",
     }
 
-    fig = go.Figure(data=[go.Bar(
-        x=list(status_count.keys()),
-        y=list(status_count.values()),
-        marker_color=[color_map.get(k, "#64748b") for k in status_count.keys()],
-        text=list(status_count.values()),
-        textposition="outside",
-    )])
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=list(status_count.keys()),
+                y=list(status_count.values()),
+                marker_color=[color_map.get(k, "#64748b") for k in status_count.keys()],
+                text=list(status_count.values()),
+                textposition="outside",
+            )
+        ]
+    )
     fig.update_layout(
         title="Application Status Overview",
         xaxis_title="Status",

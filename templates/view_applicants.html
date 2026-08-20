@@ -11,10 +11,10 @@
       <strong>{{ applicants|length }}</strong> applications
     </p>
   </div>
-  <a href="{{ url_for('recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+  <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">
     <i class="bi bi-arrow-left"></i> Back
   </a>
-  <a href="{{ url_for('export_applicants', job_id=job.id) }}" class="btn btn-success btn-sm">
+  <a href="{{ url_for('recruiter.export_applicants', job_id=job.id) }}" class="btn btn-success btn-sm">
     <i class="bi bi-file-earmark-excel"></i> Export to Excel
   </a>
 </div>
@@ -29,7 +29,7 @@
 
 <!-- Applicants Table -->
 {% if applicants %}
-<form method="POST" action="{{ url_for('bulk_update_status') }}" id="bulkForm">
+<form method="POST" action="{{ url_for('recruiter.bulk_update_status') }}" id="bulkForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="job_id" value="{{ job.id }}">
 
@@ -157,7 +157,7 @@ function updateSingleStatus(appId, statusValue) {
     return;
   }
   const form = document.getElementById('singleStatusForm');
-  form.action = "{{ url_for('update_status', app_id=0) }}".replace('/0/', `/${appId}/`);
+  form.action = "{{ url_for('recruiter.update_status', app_id=0) }}".replace('/0/', `/${appId}/`);
   document.getElementById('singleStatusValue').value = statusValue;
   form.submit();
 }

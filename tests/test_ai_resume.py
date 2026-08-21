@@ -64,7 +64,7 @@ class TestLocalResumeScore:
         data = resp.get_json()
         assert data["success"] is True
         assert data["mode"] == "general"
-        assert "python" in data["skills"]
+        assert "python" in data["detected_skills"]
         assert mock_cur.execute.call_count == 1 # Only resume query
 
     @patch("routes.candidate.get_db_connection")
@@ -169,8 +169,7 @@ class TestAIResumeRoutes:
         mock_conn.cursor.return_value = mock_cur
 
         mock_cur.fetchone.side_effect = [
-            {"raw_text": "Sample valid resume"},  # resume fetch
-            None,  # Job fetch (not requested here)
+            {"raw_text": "Sample valid resume", "skills": "python"},  # resume fetch
         ]
 
         # Mock OpenAI parse
@@ -206,8 +205,8 @@ class TestAIResumeRoutes:
         mock_conn.cursor.return_value = mock_cur
 
         mock_cur.fetchone.side_effect = [
-            {"raw_text": "Sample valid resume"},
-            {"job_title": "Dev", "required_skills": "Python", "description": "Good job"},
+            {"raw_text": "Sample valid resume", "skills": "python"},
+            {"id": 10, "job_title": "Dev", "required_skills": "Python", "description": "Good job"},
         ]
 
         # Mock OpenAI parse
@@ -231,10 +230,10 @@ class TestAIResumeRoutes:
         assert resp.status_code == 200
         assert b"Job match good" in resp.data
 
-        # Ensure the prompt included the job description
+        # Ensure the prompt included the job context
         args, kwargs = mock_client_instance.responses.parse.call_args
         input_text = kwargs.get("input")
-        assert "<job_description>" in input_text
+        assert "<job_context>" in input_text
 
     @patch("routes.candidate.get_db_connection")
     @patch("services.ai_resume_service.openai.OpenAI")
@@ -245,7 +244,7 @@ class TestAIResumeRoutes:
         mock_cur = MagicMock()
         mock_conn.cursor.return_value = mock_cur
 
-        mock_cur.fetchone.side_effect = [{"raw_text": "Sample valid resume"}, None]  # Job not found
+        mock_cur.fetchone.side_effect = [{"raw_text": "Sample valid resume", "skills": "python"}, None]  # Job not found
 
         resp = client.post("/api/resume/analyze", json={"job_id": 999})
         assert resp.status_code == 400
@@ -260,7 +259,7 @@ class TestAIResumeRoutes:
         mock_cur = MagicMock()
         mock_conn.cursor.return_value = mock_cur
 
-        mock_cur.fetchone.return_value = {"raw_text": "Sample valid resume"}
+        mock_cur.fetchone.return_value = {"raw_text": "Sample valid resume", "skills": "python"}
 
         mock_client_instance = MagicMock()
         mock_openai.return_value = mock_client_instance
@@ -280,7 +279,7 @@ class TestAIResumeRoutes:
         mock_db.return_value = mock_conn
         mock_cur = MagicMock()
         mock_conn.cursor.return_value = mock_cur
-        mock_cur.fetchone.return_value = {"raw_text": "Sample"}
+        mock_cur.fetchone.return_value = {"raw_text": "Sample valid resume", "skills": "python"}
 
         resp = client.post("/api/resume/analyze", json={"job_id": None})
         assert resp.status_code == 500

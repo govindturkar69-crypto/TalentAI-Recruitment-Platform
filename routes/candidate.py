@@ -260,22 +260,23 @@ def resume_suggestions():
     return render_template("resume_suggestions.html", has_resume=has_resume, jobs=jobs)
 
 
-@candidate_bp.route("/api/resume/score_local", methods=["POST"])
-@login_required(role="candidate")
-def score_local_api():
-    req_data = request.get_json(silent=True) or {}
-    target_job_id = req_data.get("job_id")
-
+def _build_local_resume_analysis(user_id, target_job_id):
+    """
+    Helper to reconstruct the local analysis safely server-side.
+    Returns (error_tuple, data_tuple)
+    error_tuple: (json_dict, status_code)
+    data_tuple: (local_analysis_dict, raw_resume_text, job_record)
+    """
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
                 "SELECT raw_text, skills FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
-                (session["user_id"],),
+                (user_id,),
             )
             resume_record = cur.fetchone()
 
             if not resume_record:
-                return jsonify({"error": "No resume found. Please upload a resume first."}), 400
+                return ({"error": "No resume found. Please upload a resume first."}, 400), None
 
             candidate_skills = resume_record["skills"].split(",") if resume_record["skills"] else []
 
@@ -283,35 +284,51 @@ def score_local_api():
                 try:
                     job_id_int = int(target_job_id)
                 except ValueError:
-                    return jsonify({"error": "Invalid job ID provided."}), 400
+                    return ({"error": "Invalid job ID provided."}, 400), None
 
                 cur.execute(
-                    "SELECT job_title, required_skills, description FROM jobs WHERE id = %s AND is_active = TRUE",
+                    "SELECT id, job_title, required_skills, description FROM jobs WHERE id = %s AND is_active = TRUE",
                     (job_id_int,),
                 )
                 job_record = cur.fetchone()
                 
                 if not job_record:
-                    return jsonify({"error": "Selected target job not found or inactive."}), 400
+                    return ({"error": "Selected target job not found or inactive."}, 400), None
                 
                 result = get_final_score(
                     resume_record["raw_text"], candidate_skills, job_record["required_skills"], job_record["description"] or ""
                 )
                 
-                return jsonify({
-                    "success": True,
+                local_analysis = {
                     "mode": "job_specific",
                     "match_score": result["final_score"],
                     "matched_skills": result["matched"],
                     "missing_skills": result["missing"]
-                })
+                }
+                return None, (local_analysis, resume_record["raw_text"], job_record)
             
             else:
-                return jsonify({
-                    "success": True,
+                local_analysis = {
                     "mode": "general",
-                    "skills": candidate_skills
-                })
+                    "detected_skills": candidate_skills
+                }
+                return None, (local_analysis, resume_record["raw_text"], None)
+
+
+@candidate_bp.route("/api/resume/score_local", methods=["POST"])
+@login_required(role="candidate")
+def score_local_api():
+    req_data = request.get_json(silent=True) or {}
+    target_job_id = req_data.get("job_id")
+
+    err, data = _build_local_resume_analysis(session["user_id"], target_job_id)
+    if err:
+        return jsonify(err[0]), err[1]
+
+    local_analysis, _, _ = data
+    response_data = dict(local_analysis)
+    response_data["success"] = True
+    return jsonify(response_data)
 
 
 @candidate_bp.route("/api/resume/analyze", methods=["POST"])
@@ -320,37 +337,23 @@ def analyze_resume_api():
     req_data = request.get_json(silent=True) or {}
     target_job_id = req_data.get("job_id")
 
-    with closing(get_db_connection()) as conn:
-        with closing(conn.cursor()) as cur:
-            cur.execute(
-                "SELECT raw_text FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
-                (session["user_id"],),
-            )
-            resume_record = cur.fetchone()
+    err, data = _build_local_resume_analysis(session["user_id"], target_job_id)
+    if err:
+        return jsonify(err[0]), err[1]
 
-            if not resume_record or not resume_record["raw_text"]:
-                return jsonify({"error": "No resume found. Please upload a resume first."}), 400
+    local_analysis, raw_resume_text, job_record = data
+    
+    job_context = None
+    if job_record:
+        job_context = {
+            "title": job_record["job_title"],
+            "required_skills": job_record["required_skills"],
+            "description": job_record["description"]
+        }
 
-            job_text = None
-            if target_job_id:
-                cur.execute(
-                    "SELECT job_title, required_skills, description FROM jobs WHERE id = %s AND is_active = TRUE",
-                    (target_job_id,),
-                )
-                job_record = cur.fetchone()
-                if job_record:
-                    job_text = (
-                        f"Title: {job_record['job_title']}\n"
-                        f"Skills Required: {job_record['required_skills']}\n"
-                        f"Description: {job_record['description']}"
-                    )
-                else:
-                    return jsonify({"error": "Selected target job not found or inactive."}), 400
+    # Generate analysis via AI Service using the local context
+    result = analyze_resume(raw_resume_text, local_analysis, job_context)
 
-    # Generate analysis via AI Service
-    result = analyze_resume(resume_record["raw_text"], job_text)
-
-    # AI service returns a dictionary matching the schema, or a dict with "error"
     if "error" in result:
         return jsonify({"error": result["error"]}), 500
 

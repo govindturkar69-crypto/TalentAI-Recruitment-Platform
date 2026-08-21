@@ -67,7 +67,9 @@ def analyze_resume(resume_text: str, local_analysis: dict, job_context: dict = N
 
     local_analysis_json = json.dumps(local_analysis, indent=2)
 
-    user_content = f"<local_analysis>\n{local_analysis_json}\n</local_analysis>\n\n<resume_text>\n{safe_resume}\n</resume_text>"
+    user_content = (
+        f"<local_analysis>\n{local_analysis_json}\n</local_analysis>\n\n<resume_text>\n{safe_resume}\n</resume_text>"
+    )
 
     if job_context:
         safe_job_title = job_context.get("title", "")[:200]

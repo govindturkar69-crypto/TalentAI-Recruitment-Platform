@@ -5,6 +5,7 @@ from flask import Blueprint, current_app, flash, jsonify, redirect, render_templ
 from werkzeug.utils import secure_filename
 
 from core import get_db_connection, login_required
+from models.resume_parser import get_final_score
 from services.ai_resume_service import analyze_resume
 from services.candidate_service import (
     apply_for_job_service,
@@ -12,7 +13,6 @@ from services.candidate_service import (
     process_resume_upload,
     withdraw_application_service,
 )
-from models.resume_parser import get_final_score
 
 candidate_bp = Blueprint("candidate", __name__)
 
@@ -291,27 +291,27 @@ def _build_local_resume_analysis(user_id, target_job_id):
                     (job_id_int,),
                 )
                 job_record = cur.fetchone()
-                
+
                 if not job_record:
                     return ({"error": "Selected target job not found or inactive."}, 400), None
-                
+
                 result = get_final_score(
-                    resume_record["raw_text"], candidate_skills, job_record["required_skills"], job_record["description"] or ""
+                    resume_record["raw_text"],
+                    candidate_skills,
+                    job_record["required_skills"],
+                    job_record["description"] or "",
                 )
-                
+
                 local_analysis = {
                     "mode": "job_specific",
                     "match_score": result["final_score"],
                     "matched_skills": result["matched"],
-                    "missing_skills": result["missing"]
+                    "missing_skills": result["missing"],
                 }
                 return None, (local_analysis, resume_record["raw_text"], job_record)
-            
+
             else:
-                local_analysis = {
-                    "mode": "general",
-                    "detected_skills": candidate_skills
-                }
+                local_analysis = {"mode": "general", "detected_skills": candidate_skills}
                 return None, (local_analysis, resume_record["raw_text"], None)
 
 
@@ -342,13 +342,13 @@ def analyze_resume_api():
         return jsonify(err[0]), err[1]
 
     local_analysis, raw_resume_text, job_record = data
-    
+
     job_context = None
     if job_record:
         job_context = {
             "title": job_record["job_title"],
             "required_skills": job_record["required_skills"],
-            "description": job_record["description"]
+            "description": job_record["description"],
         }
 
     # Generate analysis via AI Service using the local context

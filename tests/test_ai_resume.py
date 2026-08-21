@@ -263,8 +263,8 @@ class TestAIResumeRoutes:
         )
 
         resp = client.post("/api/resume/analyze", json={"job_id": None})
-        assert resp.status_code == 500
-        assert b"busy" in resp.data
+        assert resp.status_code == 429
+        assert b"usage limits" in resp.data
 
     @patch("routes.candidate.get_db_connection")
     def test_missing_api_key_handled(self, mock_db, client):
@@ -277,5 +277,5 @@ class TestAIResumeRoutes:
         mock_cur.fetchone.return_value = {"raw_text": "Sample valid resume", "skills": "python"}
 
         resp = client.post("/api/resume/analyze", json={"job_id": None})
-        assert resp.status_code == 500
+        assert resp.status_code == 503
         assert b"temporarily unavailable" in resp.data

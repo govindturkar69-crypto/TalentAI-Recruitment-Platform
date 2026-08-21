@@ -355,6 +355,7 @@ def analyze_resume_api():
     result = analyze_resume(raw_resume_text, local_analysis, job_context)
 
     if "error" in result:
-        return jsonify({"error": result["error"]}), 500
+        status_code = result.get("status_code", 500)
+        return jsonify({"error": result["error"]}), status_code
 
     return jsonify(result)

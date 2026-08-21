@@ -43,7 +43,7 @@ def analyze_resume(resume_text: str, local_analysis: dict, job_context: dict = N
     api_key = current_app.config.get("OPENAI_API_KEY")
     if not api_key:
         logger.warning("OPENAI_API_KEY is not configured.")
-        return {"error": "AI Resume Suggestions are temporarily unavailable."}
+        return {"error": "AI Resume Suggestions are temporarily unavailable.", "status_code": 503}
 
     model = current_app.config.get("OPENAI_MODEL", "gpt-5.6-luna")
 
@@ -108,15 +108,27 @@ def analyze_resume(resume_text: str, local_analysis: dict, job_context: dict = N
 
         return result.model_dump()
 
-    except openai.RateLimitError:
-        logger.warning("OpenAI RateLimitError encountered.")
-        return {"error": "AI service is currently busy. Please try again later."}
+    except openai.RateLimitError as e:
+        status_code = getattr(e, "status_code", None)
+        err_body = getattr(e, "body", {}) or {}
+        err_dict = err_body.get("error", {}) if isinstance(err_body, dict) else {}
+        safe_code = err_dict.get("code")
+        safe_type = err_dict.get("type")
+        req_id = getattr(e, "request_id", None)
+
+        logger.warning(
+            f"OpenAI RateLimitError: status={status_code} code={safe_code} " f"type={safe_type} request_id={req_id}"
+        )
+        return {
+            "error": "AI suggestions are temporarily unavailable due to provider usage limits. Please try again later.",
+            "status_code": 429,
+        }
     except openai.APITimeoutError:
         logger.warning("OpenAI APITimeoutError encountered.")
-        return {"error": "AI service timed out. Please try again later."}
+        return {"error": "AI service timed out. Please try again later.", "status_code": 503}
     except openai.APIError as e:
         logger.error(f"OpenAI APIError encountered: {e.__class__.__name__}")
-        return {"error": "An error occurred with the AI provider."}
+        return {"error": "An error occurred with the AI provider.", "status_code": 503}
     except Exception:
         logger.exception("Unexpected error during resume analysis.")
-        return {"error": "An unexpected error occurred during analysis."}
+        return {"error": "An unexpected error occurred during analysis.", "status_code": 500}

@@ -39,8 +39,8 @@ class TestAIResumeSanitization:
         assert "[PHONE REDACTED]" in sanitized
 
     def test_input_length_limit(self):
-        long_text = "A" * 15000
-        # In analyze_resume it slices to 10000
+        pass  # In analyze_resume it slices to 10000
+        # We test this logic indirectly or directly via mocking
         # We test this logic indirectly or directly via mocking
         pass
 

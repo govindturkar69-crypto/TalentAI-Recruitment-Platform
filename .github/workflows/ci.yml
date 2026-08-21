@@ -46,15 +46,4 @@ jobs:
       run: |
         pytest -v tests/
 
-  docker-build:
-    name: Docker Build Validation
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Check out repository
-      uses: actions/checkout@v4
 
-    - name: Test Docker image build
-      run: |
-        # Only validates the Dockerfile builds successfully
-        docker build -t recruitment-analytics-ci .

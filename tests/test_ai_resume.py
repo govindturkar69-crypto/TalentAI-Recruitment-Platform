@@ -45,6 +45,81 @@ class TestAIResumeSanitization:
         pass
 
 
+class TestLocalResumeScore:
+    @patch("routes.candidate.get_db_connection")
+    def test_score_local_general(self, mock_db, client):
+        _login_as(client, role="candidate")
+        mock_conn = MagicMock()
+        mock_db.return_value = mock_conn
+        mock_cur = MagicMock()
+        mock_conn.cursor.return_value = mock_cur
+        
+        # Return a resume with skills
+        mock_cur.fetchone.side_effect = [
+            {"raw_text": "Sample text", "skills": "python,flask"}
+        ]
+        
+        resp = client.post("/api/resume/score_local", json={})
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["mode"] == "general"
+        assert "python" in data["skills"]
+        assert mock_cur.execute.call_count == 1 # Only resume query
+
+    @patch("routes.candidate.get_db_connection")
+    def test_score_local_job_specific(self, mock_db, client):
+        _login_as(client, role="candidate")
+        mock_conn = MagicMock()
+        mock_db.return_value = mock_conn
+        mock_cur = MagicMock()
+        mock_conn.cursor.return_value = mock_cur
+        
+        mock_cur.fetchone.side_effect = [
+            {"raw_text": "Experienced in python and flask", "skills": "python,flask"},
+            {"job_title": "Backend Dev", "required_skills": "python,docker", "description": "Needs python and docker"}
+        ]
+        
+        resp = client.post("/api/resume/score_local", json={"job_id": 1})
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["mode"] == "job_specific"
+        assert "python" in data["matched_skills"]
+        assert "docker" in data["missing_skills"]
+        assert data["match_score"] > 0
+        assert mock_cur.execute.call_count == 2 # Resume + Job queries
+
+    @patch("routes.candidate.get_db_connection")
+    def test_score_local_no_resume(self, mock_db, client):
+        _login_as(client, role="candidate")
+        mock_conn = MagicMock()
+        mock_db.return_value = mock_conn
+        mock_cur = MagicMock()
+        mock_conn.cursor.return_value = mock_cur
+        mock_cur.fetchone.return_value = None
+        
+        resp = client.post("/api/resume/score_local", json={})
+        assert resp.status_code == 400
+        assert b"No resume found" in resp.data
+
+    @patch("routes.candidate.get_db_connection")
+    def test_score_local_invalid_job(self, mock_db, client):
+        _login_as(client, role="candidate")
+        mock_conn = MagicMock()
+        mock_db.return_value = mock_conn
+        mock_cur = MagicMock()
+        mock_conn.cursor.return_value = mock_cur
+        mock_cur.fetchone.side_effect = [
+            {"raw_text": "Sample text", "skills": "python"},
+            None # Job not found
+        ]
+        
+        resp = client.post("/api/resume/score_local", json={"job_id": 999})
+        assert resp.status_code == 400
+        assert b"not found or inactive" in resp.data
+
+
 class TestAIResumeRoutes:
     def test_anonymous_denied(self, client):
         resp = client.get("/resume/suggestions")

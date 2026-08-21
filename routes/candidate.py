@@ -12,6 +12,7 @@ from services.candidate_service import (
     process_resume_upload,
     withdraw_application_service,
 )
+from models.resume_parser import get_final_score
 
 candidate_bp = Blueprint("candidate", __name__)
 
@@ -257,6 +258,60 @@ def resume_suggestions():
             jobs = cur.fetchall()
 
     return render_template("resume_suggestions.html", has_resume=has_resume, jobs=jobs)
+
+
+@candidate_bp.route("/api/resume/score_local", methods=["POST"])
+@login_required(role="candidate")
+def score_local_api():
+    req_data = request.get_json(silent=True) or {}
+    target_job_id = req_data.get("job_id")
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT raw_text, skills FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
+                (session["user_id"],),
+            )
+            resume_record = cur.fetchone()
+
+            if not resume_record:
+                return jsonify({"error": "No resume found. Please upload a resume first."}), 400
+
+            candidate_skills = resume_record["skills"].split(",") if resume_record["skills"] else []
+
+            if target_job_id:
+                try:
+                    job_id_int = int(target_job_id)
+                except ValueError:
+                    return jsonify({"error": "Invalid job ID provided."}), 400
+
+                cur.execute(
+                    "SELECT job_title, required_skills, description FROM jobs WHERE id = %s AND is_active = TRUE",
+                    (job_id_int,),
+                )
+                job_record = cur.fetchone()
+                
+                if not job_record:
+                    return jsonify({"error": "Selected target job not found or inactive."}), 400
+                
+                result = get_final_score(
+                    resume_record["raw_text"], candidate_skills, job_record["required_skills"], job_record["description"] or ""
+                )
+                
+                return jsonify({
+                    "success": True,
+                    "mode": "job_specific",
+                    "match_score": result["final_score"],
+                    "matched_skills": result["matched"],
+                    "missing_skills": result["missing"]
+                })
+            
+            else:
+                return jsonify({
+                    "success": True,
+                    "mode": "general",
+                    "skills": candidate_skills
+                })
 
 
 @candidate_bp.route("/api/resume/analyze", methods=["POST"])

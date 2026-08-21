@@ -33,7 +33,7 @@
         {% endif %}
       </div>
 
-      <div class="mb-2">
+      <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <label class="form-label text-muted small fw-bold text-uppercase mb-0">Target Job</label>
           <span class="badge bg-light text-muted border fw-normal">Optional</span>
@@ -46,6 +46,13 @@
         </select>
         <div class="form-text small mt-2">Select a job to tailor suggestions to its requirements.</div>
       </div>
+
+      <div id="localResult" class="mb-4 d-none p-3 bg-light rounded border">
+      </div>
+
+      <button id="analyzeBtn" class="btn btn-outline-primary w-100 py-2 fw-medium" {% if not has_resume %}disabled{% endif %}>
+        <i class="bi bi-gear-fill me-2"></i> Analyze Resume
+      </button>
     </div>
   </div>
 
@@ -55,14 +62,14 @@
       <div class="saas-empty-state-icon mb-3 text-primary d-inline-flex" style="font-size: 2.5rem;">
         <i class="bi bi-stars"></i>
       </div>
-      <h5 class="fw-bold mb-2">Ready for Analysis</h5>
-      <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">Generate personalized suggestions to improve your resume.</p>
+      <h5 class="fw-bold mb-2">Ready for Personalized Suggestions</h5>
+      <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">Generate personalized suggestions to improve your resume based on the resume analysis and selected target job.</p>
       
-      <div class="w-100 mx-auto" style="max-width: 250px;">
-        <button id="analyzeBtn" class="saas-btn-primary w-100 py-2 mb-2" {% if not has_resume %}disabled{% endif %}>
-          <i class="bi bi-stars me-2"></i> Analyze Resume
+      <div class="w-100 mx-auto" style="max-width: 350px;">
+        <button id="generateAiBtn" class="saas-btn-primary w-100 py-2 mb-2" disabled>
+          <i class="bi bi-stars me-2"></i> Generate Personalized Suggestions
         </button>
-        <div class="text-muted small">Uses your latest uploaded resume</div>
+        <div class="text-muted small">Uses your latest analyzed resume.</div>
       </div>
     </div>
 
@@ -138,24 +145,25 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const analyzeBtn = document.getElementById('analyzeBtn');
+  const generateAiBtn = document.getElementById('generateAiBtn');
   const targetJob = document.getElementById('targetJob');
   const loadingIndicator = document.getElementById('loadingIndicator');
   const errorAlert = document.getElementById('errorAlert');
   const emptyState = document.getElementById('emptyState');
   const resultsContainer = document.getElementById('resultsContainer');
-
+  const localResult = document.getElementById('localResult');
   const analyzeAgainBtn = document.getElementById('analyzeAgainBtn');
 
   if (!analyzeBtn) return;
 
   function appendListItems(containerId, items) {
     const container = document.getElementById(containerId);
-    container.innerHTML = ''; // safe clear
+    container.innerHTML = ''; 
     if (items && items.length > 0) {
       items.forEach(item => {
         const li = document.createElement('li');
         li.className = 'mb-2';
-        li.textContent = item; // prevents XSS/HTML injection
+        li.textContent = item; 
         container.appendChild(li);
       });
     } else {
@@ -166,9 +174,70 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  async function performAnalysis() {
-    // UI State: Loading
+  // Reset state on target job change
+  targetJob.addEventListener('change', function() {
+    if (generateAiBtn) generateAiBtn.disabled = true;
+    localResult.classList.add('d-none');
+    resultsContainer.classList.add('d-none');
+    emptyState.classList.remove('d-none');
+    emptyState.classList.add('d-flex');
+    errorAlert.classList.add('d-none');
+  });
+
+  // Local Analysis Action
+  analyzeBtn.addEventListener('click', async function() {
     analyzeBtn.disabled = true;
+    const originalText = analyzeBtn.innerHTML;
+    analyzeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing...';
+    errorAlert.classList.add('d-none');
+    localResult.classList.add('d-none');
+    
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}";
+      const payload = { job_id: targetJob.value || null };
+
+      const response = await fetch("{{ url_for('candidate.score_local_api') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to analyze resume locally.');
+      }
+
+      // Populate local result
+      localResult.classList.remove('d-none');
+      if (data.mode === 'job_specific') {
+        localResult.innerHTML = `
+          <div class="text-success fw-bold mb-2"><i class="bi bi-check-circle-fill me-1"></i> Resume analyzed</div>
+          <div class="mb-2"><strong>Match Score:</strong> ${data.match_score}%</div>
+          <div class="small mb-1"><strong>Matched Skills:</strong><br>${data.matched_skills.join(' &middot; ') || 'None'}</div>
+          <div class="small"><strong>Missing Skills:</strong><br>${data.missing_skills.join(' &middot; ') || 'None'}</div>
+        `;
+      } else {
+        localResult.innerHTML = `
+          <div class="text-success fw-bold mb-2"><i class="bi bi-check-circle-fill me-1"></i> Resume analyzed</div>
+          <div class="small"><strong>Detected Skills:</strong><br>${data.skills.join(' &middot; ') || 'None'}</div>
+        `;
+      }
+      
+      generateAiBtn.disabled = false;
+    } catch (error) {
+      errorAlert.textContent = error.message;
+      errorAlert.classList.remove('d-none');
+    } finally {
+      analyzeBtn.disabled = false;
+      analyzeBtn.innerHTML = originalText;
+    }
+  });
+
+  // AI Suggestions Action
+  async function performAIAnalysis() {
+    generateAiBtn.disabled = true;
     if (analyzeAgainBtn) analyzeAgainBtn.disabled = true;
     loadingIndicator.classList.remove('d-none');
     loadingIndicator.classList.add('d-flex');
@@ -177,14 +246,9 @@ document.addEventListener('DOMContentLoaded', function() {
     emptyState.classList.remove('d-flex');
     resultsContainer.classList.add('d-none');
 
-    const payload = {
-      job_id: targetJob.value || null
-    };
-
     try {
-      // Assuming a csrf_token is available globally or we must pass it.
-      // Since it's a POST API, we need the token. Let's add it to headers.
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}";
+      const payload = { job_id: targetJob.value || null };
       
       const response = await fetch("{{ url_for('candidate.analyze_resume_api') }}", {
         method: 'POST',
@@ -194,14 +258,11 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         body: JSON.stringify(payload)
       });
-
       const data = await response.json();
-
       if (!response.ok || data.error) {
-        throw new Error(data.error || 'An unexpected error occurred.');
+        throw new Error(data.error || 'An unexpected error occurred with the AI service.');
       }
 
-      // Populate Data securely using textContent
       document.getElementById('resSummary').textContent = data.summary || 'No summary provided.';
       appendListItems('resStrengths', data.strengths);
       appendListItems('resImprovements', data.priority_improvements);
@@ -210,25 +271,25 @@ document.addEventListener('DOMContentLoaded', function() {
       appendListItems('resProjects', data.projects);
       appendListItems('resATS', data.ats);
 
-      // Show results
       resultsContainer.classList.remove('d-none');
-
     } catch (error) {
       errorAlert.textContent = error.message;
       errorAlert.classList.remove('d-none');
       emptyState.classList.remove('d-none');
       emptyState.classList.add('d-flex');
     } finally {
-      analyzeBtn.disabled = false;
+      generateAiBtn.disabled = false;
       if (analyzeAgainBtn) analyzeAgainBtn.disabled = false;
       loadingIndicator.classList.add('d-none');
       loadingIndicator.classList.remove('d-flex');
     }
   }
 
-  analyzeBtn.addEventListener('click', performAnalysis);
+  if (generateAiBtn) {
+    generateAiBtn.addEventListener('click', performAIAnalysis);
+  }
   if (analyzeAgainBtn) {
-    analyzeAgainBtn.addEventListener('click', performAnalysis);
+    analyzeAgainBtn.addEventListener('click', performAIAnalysis);
   }
 });
 </script>

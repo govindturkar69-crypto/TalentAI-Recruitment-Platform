@@ -740,6 +740,274 @@ main.container { animation: fadeInUp 0.35s var(--ease); }
   border-bottom: none;
 }
 
+/* ── Recruiter Deep Workspace ────────────────────────────── */
+.recruiter-workspace {
+  /* Scope everything so candidate dashboard is entirely unaffected */
+}
+
+/* Hero */
+.recruiter-workspace .ats-workspace-hero {
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+.recruiter-workspace .ats-workspace-hero-content {
+  flex: 1;
+}
+.recruiter-workspace .ats-hero-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+.recruiter-workspace .ats-hero-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+}
+.recruiter-workspace .ats-hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Metric Strip (Dense Layout) */
+.recruiter-workspace .ats-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+.recruiter-workspace .ats-metric-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.recruiter-workspace .ats-metric-panel-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+/* Reusing the color variants from previous metric icons */
+.recruiter-workspace .ats-metric-panel-icon.primary { background: var(--primary-tint); color: var(--primary); }
+.recruiter-workspace .ats-metric-panel-icon.info { background: rgba(14, 165, 233, 0.1); color: #0284C7; }
+.recruiter-workspace .ats-metric-panel-icon.warning { background: var(--warning-tint); color: #92400E; }
+.recruiter-workspace .ats-metric-panel-icon.success { background: var(--success-tint); color: #15803D; }
+[data-theme="dark"] .recruiter-workspace .ats-metric-panel-icon.info { background: rgba(14, 165, 233, 0.15); color: #38BDF8; }
+[data-theme="dark"] .recruiter-workspace .ats-metric-panel-icon.warning { background: rgba(245,158,11,0.15); color: #FCD34D; }
+[data-theme="dark"] .recruiter-workspace .ats-metric-panel-icon.success { background: rgba(34,197,94,0.15); color: #4ADE80; }
+
+.recruiter-workspace .ats-metric-panel-data {
+  flex: 1;
+}
+.recruiter-workspace .ats-metric-panel-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+.recruiter-workspace .ats-metric-panel-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+.recruiter-workspace .ats-metric-panel-context {
+  font-size: 0.7rem;
+  color: var(--text-soft);
+}
+
+/* Horizontal Pipeline Row / Card */
+.recruiter-workspace .ats-pipeline-row {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.75rem;
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.recruiter-workspace .ats-pipeline-row:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-color: var(--border-strong);
+}
+[data-theme="dark"] .recruiter-workspace .ats-pipeline-row:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.recruiter-workspace .ats-pipeline-info {
+  flex: 1 1 300px;
+  min-width: 0;
+  padding-right: 1.5rem;
+}
+.recruiter-workspace .ats-pipeline-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.recruiter-workspace .ats-pipeline-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recruiter-workspace .ats-pipeline-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.recruiter-workspace .ats-pipeline-skills {
+  flex: 1 1 200px;
+  padding-right: 1.5rem;
+  border-left: 1px solid var(--border-color);
+  padding-left: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.recruiter-workspace .ats-pipeline-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-left: 1px solid var(--border-color);
+  padding-left: 1.5rem;
+}
+
+/* Compact Action Buttons */
+.recruiter-workspace .ats-btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.recruiter-workspace .ats-btn-primary:hover {
+  opacity: 0.9;
+  color: #fff;
+}
+.recruiter-workspace .ats-btn-secondary {
+  background: var(--bg-alt);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.recruiter-workspace .ats-btn-secondary:hover {
+  background: var(--border-color);
+}
+.recruiter-workspace .ats-btn-icon {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  text-decoration: none;
+  padding: 0;
+}
+.recruiter-workspace .ats-btn-icon:hover {
+  background: var(--bg-alt);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.recruiter-workspace .ats-btn-icon.danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Empty State */
+.recruiter-workspace .ats-empty-state {
+  background: var(--bg-card);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .recruiter-workspace .ats-metric-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .recruiter-workspace .ats-pipeline-row {
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .recruiter-workspace .ats-pipeline-info {
+    flex: 1 1 100%;
+    padding-right: 0;
+  }
+  .recruiter-workspace .ats-pipeline-skills {
+    flex: 1 1 100%;
+    border-left: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .recruiter-workspace .ats-pipeline-actions {
+    flex: 1 1 100%;
+    border-left: none;
+    padding-left: 0;
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 768px) {
+  .recruiter-workspace .ats-workspace-hero {
+    flex-direction: column;
+  }
+  .recruiter-workspace .ats-metric-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .hero-section  { padding: 40px 15px; }

@@ -10,47 +10,202 @@
   </div>
 </div>
 
-<div class="row g-4">
+<style>
+  .analysis-settings-card {
+    background: var(--bs-body-bg, #ffffff);
+    border: 1px solid var(--bs-border-color, #e2e8f0);
+    border-radius: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    padding: 24px;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .analysis-settings-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 22px;
+  }
+  
+  .analysis-settings-section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--bs-secondary-color, #6c757d);
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  
+  .analysis-resume-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .analysis-resume-icon {
+    width: 38px;
+    height: 38px;
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  [data-bs-theme="dark"] .analysis-resume-icon {
+    background-color: rgba(32, 201, 151, 0.15);
+    color: #20c997;
+  }
+  
+  .analysis-resume-icon.warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+  }
+  [data-bs-theme="dark"] .analysis-resume-icon.warning {
+    background-color: rgba(255, 193, 7, 0.15);
+  }
+  
+  .analysis-resume-text h6 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #198754;
+  }
+  [data-bs-theme="dark"] .analysis-resume-text h6 {
+    color: #20c997;
+  }
+  
+  .analysis-resume-text h6.warning {
+    color: #ffc107;
+  }
+  
+  .analysis-resume-text p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--bs-secondary-color, #6c757d);
+    line-height: 1.4;
+  }
+
+  .analysis-settings-divider {
+    height: 1px;
+    background: var(--bs-border-color, #e2e8f0);
+    margin: 22px 0;
+    width: 100%;
+  }
+
+  .analysis-target-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  .analysis-optional-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    border: 1px solid var(--bs-border-color, #e2e8f0);
+    border-radius: 6px;
+    color: var(--bs-secondary-color, #6c757d);
+  }
+
+  .analysis-target-select {
+    width: 100%;
+    height: 44px;
+    padding: 0 32px 0 14px;
+    border: 1px solid var(--bs-border-color, #e2e8f0);
+    border-radius: 10px;
+    font-size: 14px;
+    background-color: var(--bs-body-bg, #ffffff);
+    color: var(--bs-body-color, #212529);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px 12px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+  .analysis-target-select:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+  }
+
+  .analysis-settings-help {
+    font-size: 13px;
+    color: var(--bs-secondary-color, #6c757d);
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  .analysis-local-btn {
+    width: 100%;
+    margin-top: 24px;
+    height: 46px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+  }
+  
+  [data-bs-theme="dark"] #localResult {
+    background: var(--bs-tertiary-bg) !important;
+    border-color: var(--bs-border-color) !important;
+  }
+</style>
+
+<div class="row g-4 mb-5">
   <!-- Controls Column -->
   <div class="col-lg-4">
-    <div class="saas-card sticky-top" style="top: 2rem;">
-      <h5 class="fw-bold mb-3">Analysis Settings</h5>
+    <div class="analysis-settings-card">
+      <div class="analysis-settings-title">Analysis Settings</div>
       
-      <div class="mb-4 border-bottom pb-3">
-        <label class="form-label text-muted small fw-bold text-uppercase mb-2">Resume</label>
-        {% if has_resume %}
-          <div class="d-flex align-items-center text-success small mb-1">
-            <i class="bi bi-file-earmark-check-fill me-2 fs-6"></i>
-            <span class="fw-bold">Resume uploaded</span>
+      <div class="analysis-settings-section-label">RESUME</div>
+      
+      {% if has_resume %}
+        <div class="analysis-resume-status">
+          <div class="analysis-resume-icon">
+            <i class="bi bi-file-earmark-check"></i>
           </div>
-          <div class="text-muted small">Latest resume will be analyzed.</div>
-        {% else %}
-          <div class="d-flex align-items-center text-warning small mb-1">
-            <i class="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
-            <span class="fw-bold">No Resume Found</span>
+          <div class="analysis-resume-text">
+            <h6>Resume uploaded</h6>
+            <p>Latest resume ready for analysis.</p>
           </div>
-          <div class="text-muted small">Upload a resume in your <a href="{{ url_for('candidate.upload_resume') }}">Profile</a> first.</div>
-        {% endif %}
-      </div>
-
-      <div class="mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <label class="form-label text-muted small fw-bold text-uppercase mb-0">Target Job</label>
-          <span class="badge bg-light text-muted border fw-normal">Optional</span>
         </div>
-        <select id="targetJob" class="form-select form-select-sm shadow-none">
-          <option value="">General Analysis (No specific job)</option>
-          {% for job in jobs %}
-            <option value="{{ job.id }}">{{ job.job_title }} ({{ job.location }})</option>
-          {% endfor %}
-        </select>
-        <div class="form-text small mt-2">Select a job to tailor suggestions to its requirements.</div>
+      {% else %}
+        <div class="analysis-resume-status">
+          <div class="analysis-resume-icon warning">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+          <div class="analysis-resume-text">
+            <h6 class="warning">No Resume Found</h6>
+            <p>Upload a resume in your <a href="{{ url_for('candidate.upload_resume') }}">Profile</a> first.</p>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="analysis-settings-divider"></div>
+
+      <div class="analysis-target-header">
+        <div class="analysis-settings-section-label mb-0">TARGET JOB</div>
+        <div class="analysis-optional-badge">Optional</div>
+      </div>
+      
+      <select id="targetJob" name="targetJob" class="analysis-target-select">
+        <option value="">General Analysis (No specific job)</option>
+        {% for job in jobs %}
+          <option value="{{ job.id }}">{{ job.job_title }} ({{ job.location }})</option>
+        {% endfor %}
+      </select>
+      <div class="analysis-settings-help">Select a job to tailor the analysis and AI suggestions to its requirements.</div>
+
+      <div id="localResult" class="mt-4 d-none p-3 bg-light rounded border">
       </div>
 
-      <div id="localResult" class="mb-4 d-none p-3 bg-light rounded border">
-      </div>
-
-      <button id="analyzeBtn" class="btn btn-outline-primary w-100 py-2 fw-medium" {% if not has_resume %}disabled{% endif %}>
+      <button id="analyzeBtn" class="btn btn-outline-primary analysis-local-btn" {% if not has_resume %}disabled{% endif %}>
         <i class="bi bi-gear-fill me-2"></i> Analyze Resume
       </button>
     </div>
@@ -62,14 +217,14 @@
       <div class="saas-empty-state-icon mb-3 text-primary d-inline-flex" style="font-size: 2.5rem;">
         <i class="bi bi-stars"></i>
       </div>
-      <h5 class="fw-bold mb-2">Ready for Personalized Suggestions</h5>
-      <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">Generate personalized suggestions to improve your resume based on the resume analysis and selected target job.</p>
+      <h5 id="emptyStateTitle" class="fw-bold mb-2">Ready for Personalized Suggestions</h5>
+      <p id="emptyStateDesc" class="text-muted mb-4 mx-auto" style="max-width: 400px;">Generate personalized suggestions to improve your resume based on the resume analysis and selected target job.</p>
       
       <div class="w-100 mx-auto" style="max-width: 350px;">
         <button id="generateAiBtn" class="saas-btn-primary w-100 py-2 mb-2" disabled>
           <i class="bi bi-stars me-2"></i> Generate Personalized Suggestions
         </button>
-        <div class="text-muted small">Uses your latest analyzed resume.</div>
+        <div id="generateAiHelp" class="text-muted small">Analyze your resume first.</div>
       </div>
     </div>
 
@@ -174,6 +329,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  const emptyStateTitle = document.getElementById('emptyStateTitle');
+  const emptyStateDesc = document.getElementById('emptyStateDesc');
+  const generateAiHelp = document.getElementById('generateAiHelp');
+
   // Reset state on target job change
   targetJob.addEventListener('change', function() {
     if (generateAiBtn) generateAiBtn.disabled = true;
@@ -182,6 +341,10 @@ document.addEventListener('DOMContentLoaded', function() {
     emptyState.classList.remove('d-none');
     emptyState.classList.add('d-flex');
     errorAlert.classList.add('d-none');
+    
+    emptyStateTitle.innerHTML = 'Ready for Personalized Suggestions';
+    emptyStateDesc.textContent = 'Generate personalized suggestions to improve your resume based on the resume analysis and selected target job.';
+    generateAiHelp.textContent = 'Analyze your resume first.';
   });
 
   // Local Analysis Action
@@ -221,9 +384,13 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         localResult.innerHTML = `
           <div class="text-success fw-bold mb-2"><i class="bi bi-check-circle-fill me-1"></i> Resume analyzed</div>
-          <div class="small"><strong>Detected Skills:</strong><br>${data.skills.join(' &middot; ') || 'None'}</div>
+          <div class="small"><strong>Detected Skills:</strong><br>${data.detected_skills.join(' &middot; ') || 'None'}</div>
         `;
       }
+      
+      emptyStateTitle.innerHTML = '<i class="bi bi-check-circle-fill text-success me-2"></i>Analysis complete';
+      emptyStateDesc.textContent = 'Your resume analysis is ready. Generate personalized improvement suggestions based on this analysis and your selected target job.';
+      generateAiHelp.textContent = 'Uses your latest analyzed resume.';
       
       generateAiBtn.disabled = false;
     } catch (error) {

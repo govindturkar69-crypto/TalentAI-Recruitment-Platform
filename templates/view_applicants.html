@@ -11,19 +11,19 @@
       <strong>{{ applicants|length }}</strong> applications
     </p>
   </div>
-  <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+  <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="saas-btn-secondary btn-sm text-decoration-none">
     <i class="bi bi-arrow-left"></i> Back
   </a>
-  <a href="{{ url_for('recruiter.export_applicants', job_id=job.id) }}" class="btn btn-success btn-sm">
+  <a href="{{ url_for('recruiter.export_applicants', job_id=job.id) }}" class="saas-btn-primary btn-sm text-decoration-none">
     <i class="bi bi-file-earmark-excel"></i> Export to Excel
   </a>
 </div>
 
 <!-- Required Skills -->
-<div class="alert alert-light border mb-4">
-  <strong><i class="bi bi-check2-square"></i> Required Skills:</strong>
+<div class="saas-search-strip mb-4 d-flex align-items-center flex-wrap gap-2">
+  <strong class="text-muted small text-uppercase" style="letter-spacing: 0.5px;"><i class="bi bi-check2-square"></i> Required Skills:</strong>
   {% for skill in job.required_skills.split(',') %}
-    <span class="badge bg-primary ms-1">{{ skill.strip() }}</span>
+    <span class="saas-skill-chip">{{ skill.strip() }}</span>
   {% endfor %}
 </div>
 
@@ -34,23 +34,23 @@
   <input type="hidden" name="job_id" value="{{ job.id }}">
 
   <!-- Bulk Action Bar -->
-  <div class="filter-bar d-flex align-items-center gap-2 flex-wrap">
-    <span class="small fw-semibold text-muted"><i class="bi bi-check2-square"></i> Bulk actions:</span>
-    <select name="bulk_status" class="form-select form-select-sm" style="width:auto;" required>
+  <div class="saas-search-strip mb-4 d-flex align-items-center gap-2 flex-wrap">
+    <span class="small fw-semibold text-muted text-uppercase" style="letter-spacing: 0.5px;"><i class="bi bi-check2-square"></i> Bulk actions:</span>
+    <select name="bulk_status" class="form-select form-select-sm saas-input border" style="width:auto; border-color: var(--border-color) !important;" required>
       <option value="">Choose status...</option>
       <option value="shortlisted">Shortlist ✓</option>
       <option value="rejected">Reject ✗</option>
       <option value="hired">Hired 🎉</option>
     </select>
-    <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Apply this status to all selected candidates?');">
+    <button type="submit" class="saas-btn-primary btn-sm" onclick="return confirm('Apply this status to all selected candidates?');">
       Apply to Selected
     </button>
     <span class="text-muted small ms-auto" id="selectedCount">0 selected</span>
   </div>
 
   <div class="table-responsive">
-    <table class="table table-hover align-middle">
-      <thead class="table-dark">
+    <table class="saas-table">
+      <thead>
         <tr>
           <th><input type="checkbox" id="selectAllCheckbox" class="form-check-input"></th>
           <th>Rank</th>

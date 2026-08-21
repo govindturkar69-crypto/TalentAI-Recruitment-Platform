@@ -4,7 +4,7 @@
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-7">
-    <div class="card border-0 shadow-sm">
+    <div class="saas-card">
       <div class="card-body p-4">
         <div class="text-center mb-4">
           <div style="font-size:2.5rem">✏️</div>
@@ -45,10 +45,10 @@
           </div>
 
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary flex-fill py-2 fw-bold">
+            <button type="submit" class="saas-btn-primary flex-fill py-2 fw-bold">
               <i class="bi bi-check-circle"></i> Save Changes
             </button>
-            <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-outline-secondary py-2">
+            <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="saas-btn-secondary py-2 text-decoration-none text-center">
               Cancel
             </a>
           </div>

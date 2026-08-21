@@ -6,12 +6,14 @@ from core import get_db_connection
 def get_recruiter_analytics():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT a.*, u.name AS candidate_name, j.job_title
                 FROM applications a
                 JOIN users u ON a.candidate_id = u.id
                 JOIN jobs  j ON a.job_id = j.id
-            """)
+            """
+            )
             applications = cur.fetchall()
 
     apps_data = [dict(a) for a in applications]

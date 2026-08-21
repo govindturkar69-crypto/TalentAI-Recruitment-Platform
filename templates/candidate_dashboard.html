@@ -4,10 +4,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h2 class="fw-bold mb-1">👋 Welcome, {{ session.name }}!</h2>
+    <h2 class="mb-1" style="font-weight: 800; letter-spacing: -0.5px;">👋 Welcome, {{ session.name }}!</h2>
     <p class="text-muted mb-0">Track your applications and apply for new jobs</p>
   </div>
-  <a href="{{ url_for('candidate.upload_resume') }}" class="btn btn-primary">
+  <a href="{{ url_for('candidate.upload_resume') }}" class="saas-btn-primary text-decoration-none">
     <i class="bi bi-cloud-upload"></i> Upload Resume
   </a>
 </div>
@@ -15,7 +15,7 @@
 <!-- Resume Status -->
 <div class="row g-3 mb-4">
   <div class="col-md-4">
-    <div class="stat-mini-card p-3 rounded-3 border">
+    <div class="saas-stat-card">
       {% if resume %}
         <div class="d-flex align-items-center gap-3">
           <div style="font-size:2rem">📄</div>
@@ -47,13 +47,13 @@
     </div>
   </div>
   <div class="col-md-4">
-    <div class="stat-mini-card p-3 rounded-3 border text-center">
+    <div class="saas-stat-card text-center">
       <div class="stat-number-sm">{{ applications|length }}</div>
       <div class="text-muted small">Total Applications</div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="stat-mini-card p-3 rounded-3 border text-center">
+    <div class="saas-stat-card text-center">
       <div class="stat-number-sm text-success">
         {{ applications|selectattr('status','eq','shortlisted')|list|length }}
       </div>
@@ -63,25 +63,20 @@
 </div>
 
 <!-- Search & Filter Bar -->
-<div class="filter-bar">
-  <div class="row g-2 align-items-end">
-    <div class="col-md-5">
-      <label class="form-label small fw-semibold mb-1">Search Jobs</label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="text" id="jobSearchInput" class="form-control" placeholder="Search by title or skill...">
-      </div>
+<div class="saas-search-strip mb-4">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-5 d-flex align-items-center">
+      <i class="bi bi-search text-muted ms-2 me-2"></i>
+      <input type="text" id="jobSearchInput" class="form-control saas-input" placeholder="Search by title or skill...">
     </div>
-    <div class="col-md-3">
-      <label class="form-label small fw-semibold mb-1">Location</label>
-      <input type="text" id="jobLocationFilter" class="form-control" placeholder="e.g. Remote, Mumbai">
+    <div class="col-md-3 border-start">
+      <input type="text" id="jobLocationFilter" class="form-control saas-input" placeholder="Location...">
     </div>
-    <div class="col-md-3">
-      <label class="form-label small fw-semibold mb-1">Skill</label>
-      <input type="text" id="jobSkillFilter" class="form-control" placeholder="e.g. python">
+    <div class="col-md-3 border-start">
+      <input type="text" id="jobSkillFilter" class="form-control saas-input" placeholder="Skill...">
     </div>
-    <div class="col-md-1">
-      <button id="clearFiltersBtn" class="btn btn-outline-secondary w-100" title="Clear filters">
+    <div class="col-md-1 text-end">
+      <button id="clearFiltersBtn" class="btn btn-light btn-sm text-muted rounded-circle" title="Clear filters">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
@@ -99,7 +94,7 @@
        data-title="{{ job.job_title }}"
        data-location="{{ job.location or '' }}"
        data-skills="{{ job.required_skills }}">
-    <div class="card job-card h-100 border-0 shadow-sm">
+    <div class="saas-card h-100">
       <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <h5 class="fw-bold mb-0">{{ job.job_title }}</h5>
@@ -113,7 +108,7 @@
         <!-- Required Skills -->
         <div class="mb-3">
           {% for skill in job.required_skills.split(',')[:5] %}
-            <span class="badge bg-light text-dark me-1 mb-1">{{ skill.strip() }}</span>
+            <span class="saas-skill-chip me-1 mb-1">{{ skill.strip() }}</span>
           {% endfor %}
         </div>
 
@@ -131,7 +126,7 @@
           {% elif resume %}
             <form method="POST" action="{{ url_for('candidate.apply_job', job_id=job.id) }}" class="flex-fill">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-primary btn-sm w-100">
+              <button type="submit" class="saas-btn-primary btn-sm w-100">
                 <i class="bi bi-send"></i> Apply Now
               </button>
             </form>
@@ -174,8 +169,8 @@
 <h4 class="fw-bold mb-3">📋 My Applications</h4>
 {% if applications %}
 <div class="table-responsive">
-  <table class="table table-hover align-middle">
-    <thead class="table-light">
+  <table class="saas-table">
+    <thead>
       <tr>
         <th>#</th>
         <th>Job</th>

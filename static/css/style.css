@@ -422,6 +422,592 @@ main.container { animation: fadeInUp 0.35s var(--ease); }
   border-color: var(--border-color);
 }
 
+/* ── Premium SaaS Dashboard Components ───────────────────────── */
+.saas-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.saas-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  border-color: var(--border-strong);
+}
+[data-theme="dark"] .saas-card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.saas-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.saas-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+}
+[data-theme="dark"] .saas-stat-card:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+
+.saas-skill-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-alt);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.saas-skill-chip:hover {
+  background: var(--border-color);
+}
+
+.saas-search-strip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.saas-search-strip:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-tint);
+}
+[data-theme="dark"] .saas-search-strip:focus-within {
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.saas-input {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-primary) !important;
+}
+.saas-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.saas-btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: background-color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  box-shadow: 0 2px 4px rgba(37,99,235,0.2);
+}
+.saas-btn-primary:hover {
+  background: var(--primary-2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(37,99,235,0.3);
+  color: #fff;
+}
+
+.saas-btn-secondary {
+  background: var(--bg-alt);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: background-color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.saas-btn-secondary:hover {
+  background: var(--border-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.saas-btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: background-color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease), color 0.2s var(--ease);
+}
+.saas-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  transform: translateY(-1px);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.saas-btn-outline-primary {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: background-color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease), color 0.2s var(--ease);
+}
+.saas-btn-outline-primary:hover {
+  background: var(--primary-tint);
+  transform: translateY(-1px);
+}
+
+.saas-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.saas-table th {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.saas-table td {
+  padding: 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: background-color 0.2s var(--ease);
+}
+.saas-table tr:hover td {
+  background-color: var(--bg-alt);
+}
+.saas-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Premium ATS Structural Classes ──────────────────────────── */
+.ats-hero-header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 32px;
+}
+.ats-hero-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.ats-metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.ats-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+[data-theme="dark"] .ats-metric-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.ats-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.ats-metric-icon.primary { background: var(--primary-tint); color: var(--primary); }
+.ats-metric-icon.success { background: var(--success-tint); color: #15803D; }
+.ats-metric-icon.warning { background: var(--warning-tint); color: #92400E; }
+.ats-metric-icon.info { background: rgba(14, 165, 233, 0.1); color: #0284C7; }
+[data-theme="dark"] .ats-metric-icon.success { background: rgba(34,197,94,0.15); color: #4ADE80; }
+[data-theme="dark"] .ats-metric-icon.warning { background: rgba(245,158,11,0.15); color: #FCD34D; }
+[data-theme="dark"] .ats-metric-icon.info { background: rgba(14, 165, 233, 0.15); color: #38BDF8; }
+
+.ats-job-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.ats-job-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  border-color: var(--border-strong);
+}
+[data-theme="dark"] .ats-job-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+
+.ats-job-card-top {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.ats-job-card-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+.ats-job-card-meta i { margin-right: 4px; }
+.ats-job-card-middle {
+  padding: 20px 24px;
+  flex-grow: 1;
+}
+.ats-job-card-bottom {
+  padding: 16px 24px;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ats-form-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  overflow: hidden;
+}
+.ats-form-section {
+  padding: 32px;
+  border-bottom: 1px solid var(--border-color);
+}
+.ats-form-section:last-child {
+  border-bottom: none;
+}
+.ats-form-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+.ats-form-footer {
+  padding: 24px 32px;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.ats-pipeline-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.ats-pipeline-table th {
+  padding: 16px 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-alt);
+}
+.ats-pipeline-table td {
+  padding: 20px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
+  transition: background-color 0.2s var(--ease);
+}
+.ats-pipeline-table tr:hover td {
+  background-color: var(--bg-alt);
+}
+.ats-pipeline-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Recruiter Deep Workspace ────────────────────────────── */
+.recruiter-workspace {
+  /* Scope everything so candidate dashboard is entirely unaffected */
+}
+
+/* Hero */
+.recruiter-workspace .ats-workspace-hero {
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+.recruiter-workspace .ats-workspace-hero-content {
+  flex: 1;
+}
+.recruiter-workspace .ats-hero-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+.recruiter-workspace .ats-hero-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+}
+.recruiter-workspace .ats-hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Metric Strip (Dense Layout) */
+.recruiter-workspace .ats-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+.recruiter-workspace .ats-metric-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.recruiter-workspace .ats-metric-panel-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+/* Reusing the color variants from previous metric icons */
+.recruiter-workspace .ats-metric-panel-icon.primary { background: var(--primary-tint); color: var(--primary); }
+.recruiter-workspace .ats-metric-panel-icon.info { background: rgba(14, 165, 233, 0.1); color: #0284C7; }
+.recruiter-workspace .ats-metric-panel-icon.warning { background: var(--warning-tint); color: #92400E; }
+.recruiter-workspace .ats-metric-panel-icon.success { background: var(--success-tint); color: #15803D; }
+[data-theme="dark"] .recruiter-workspace .ats-metric-panel-icon.info { background: rgba(14, 165, 233, 0.15); color: #38BDF8; }
+[data-theme="dark"] .recruiter-workspace .ats-metric-panel-icon.warning { background: rgba(245,158,11,0.15); color: #FCD34D; }
+[data-theme="dark"] .recruiter-workspace .ats-metric-panel-icon.success { background: rgba(34,197,94,0.15); color: #4ADE80; }
+
+.recruiter-workspace .ats-metric-panel-data {
+  flex: 1;
+}
+.recruiter-workspace .ats-metric-panel-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+.recruiter-workspace .ats-metric-panel-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+.recruiter-workspace .ats-metric-panel-context {
+  font-size: 0.7rem;
+  color: var(--text-soft);
+}
+
+/* Horizontal Pipeline Row / Card */
+.recruiter-workspace .ats-pipeline-row {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.75rem;
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.recruiter-workspace .ats-pipeline-row:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-color: var(--border-strong);
+}
+[data-theme="dark"] .recruiter-workspace .ats-pipeline-row:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.recruiter-workspace .ats-pipeline-info {
+  flex: 1 1 300px;
+  min-width: 0;
+  padding-right: 1.5rem;
+}
+.recruiter-workspace .ats-pipeline-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.recruiter-workspace .ats-pipeline-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recruiter-workspace .ats-pipeline-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.recruiter-workspace .ats-pipeline-skills {
+  flex: 1 1 200px;
+  padding-right: 1.5rem;
+  border-left: 1px solid var(--border-color);
+  padding-left: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.recruiter-workspace .ats-pipeline-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-left: 1px solid var(--border-color);
+  padding-left: 1.5rem;
+}
+
+/* Compact Action Buttons */
+.recruiter-workspace .ats-btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.recruiter-workspace .ats-btn-primary:hover {
+  opacity: 0.9;
+  color: #fff;
+}
+.recruiter-workspace .ats-btn-secondary {
+  background: var(--bg-alt);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.recruiter-workspace .ats-btn-secondary:hover {
+  background: var(--border-color);
+}
+.recruiter-workspace .ats-btn-icon {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  text-decoration: none;
+  padding: 0;
+}
+.recruiter-workspace .ats-btn-icon:hover {
+  background: var(--bg-alt);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.recruiter-workspace .ats-btn-icon.danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Empty State */
+.recruiter-workspace .ats-empty-state {
+  background: var(--bg-card);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .recruiter-workspace .ats-metric-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .recruiter-workspace .ats-pipeline-row {
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .recruiter-workspace .ats-pipeline-info {
+    flex: 1 1 100%;
+    padding-right: 0;
+  }
+  .recruiter-workspace .ats-pipeline-skills {
+    flex: 1 1 100%;
+    border-left: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .recruiter-workspace .ats-pipeline-actions {
+    flex: 1 1 100%;
+    border-left: none;
+    padding-left: 0;
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 768px) {
+  .recruiter-workspace .ats-workspace-hero {
+    flex-direction: column;
+  }
+  .recruiter-workspace .ats-metric-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .hero-section  { padding: 40px 15px; }

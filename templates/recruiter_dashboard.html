@@ -2,113 +2,124 @@
 {% block title %}Recruiter Dashboard{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h2 class="fw-bold mb-1">🏢 Recruiter Dashboard</h2>
-    <p class="text-muted mb-0">Manage candidates and post new jobs</p>
-  </div>
-  <div class="d-flex gap-2">
-    <a href="{{ url_for('analytics.analytics') }}" class="btn btn-outline-primary">
-      <i class="bi bi-bar-chart-line"></i> Analytics
-    </a>
-    <a href="{{ url_for('recruiter.post_job') }}" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Post Job
-    </a>
-  </div>
-</div>
-
-<!-- Stats Row -->
-<div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">📋</div>
-      <div class="display-6 fw-bold text-primary">{{ jobs|length }}</div>
-      <div class="text-muted small">Active Jobs</div>
+<div class="recruiter-workspace">
+  
+  <div class="ats-workspace-hero">
+    <div class="ats-workspace-hero-content">
+      <div class="ats-hero-eyebrow">Recruiter Workspace</div>
+      <h1 class="ats-hero-title">Hiring Dashboard</h1>
+      <p class="text-muted mb-0">Manage open roles, review applicants, and track hiring progress.</p>
+    </div>
+    <div class="ats-hero-actions">
+      <a href="{{ url_for('analytics.analytics') }}" class="ats-btn-secondary">
+        <i class="bi bi-bar-chart-line"></i> Analytics
+      </a>
+      <a href="{{ url_for('recruiter.post_job') }}" class="ats-btn-primary">
+        <i class="bi bi-plus-circle"></i> Post New Job
+      </a>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">👥</div>
-      <div class="display-6 fw-bold text-info">{{ total_candidates }}</div>
-      <div class="text-muted small">Total Candidates</div>
+
+  <div class="ats-metric-strip">
+    <div class="ats-metric-panel">
+      <div class="ats-metric-panel-icon primary"><i class="bi bi-briefcase"></i></div>
+      <div class="ats-metric-panel-data">
+        <div class="ats-metric-panel-label">Active Jobs</div>
+        <div class="ats-metric-panel-value">{{ jobs|length }}</div>
+        <div class="ats-metric-panel-context">Currently accepting applications</div>
+      </div>
     </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">📨</div>
-      <div class="display-6 fw-bold text-warning">{{ total_applications }}</div>
-      <div class="text-muted small">Applications</div>
+    <div class="ats-metric-panel">
+      <div class="ats-metric-panel-icon info"><i class="bi bi-people"></i></div>
+      <div class="ats-metric-panel-data">
+        <div class="ats-metric-panel-label">Total Candidates</div>
+        <div class="ats-metric-panel-value">{{ total_candidates }}</div>
+        <div class="ats-metric-panel-context">Across all positions</div>
+      </div>
     </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">✅</div>
-      <div class="display-6 fw-bold text-success">{{ shortlisted }}</div>
-      <div class="text-muted small">Shortlisted</div>
+    <div class="ats-metric-panel">
+      <div class="ats-metric-panel-icon warning"><i class="bi bi-inbox"></i></div>
+      <div class="ats-metric-panel-data">
+        <div class="ats-metric-panel-label">Applications</div>
+        <div class="ats-metric-panel-value">{{ total_applications }}</div>
+        <div class="ats-metric-panel-context">Received total</div>
+      </div>
     </div>
-  </div>
-</div>
-
-<!-- Posted Jobs -->
-<h4 class="fw-bold mb-3">📌 My Posted Jobs</h4>
-{% if jobs %}
-<div class="row g-3">
-  {% for job in jobs %}
-  <div class="col-md-6">
-    <div class="card job-card border-0 shadow-sm h-100 {% if not job.is_active %}opacity-75{% endif %}">
-      <div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <h5 class="fw-bold mb-0">
-            {{ job.job_title }}
-            {% if not job.is_active %}<span class="badge bg-secondary ms-1">Closed</span>{% endif %}
-          </h5>
-          <span class="badge bg-primary">{{ job.experience }}</span>
-        </div>
-        <p class="text-muted small mb-2">
-          <i class="bi bi-geo-alt"></i> {{ job.location }}
-        </p>
-        <p class="text-muted small mb-3">{{ job.description[:80] if job.description else '' }}...</p>
-
-        <div class="mb-3">
-          {% for skill in job.required_skills.split(',')[:5] %}
-            <span class="badge bg-light text-dark me-1 mb-1">{{ skill.strip() }}</span>
-          {% endfor %}
-        </div>
-
-        <a href="{{ url_for('recruiter.view_applicants', job_id=job.id) }}"
-           class="btn btn-outline-primary btn-sm w-100 mb-2">
-          <i class="bi bi-people"></i> View Applicants
-        </a>
-
-        <div class="d-flex gap-2">
-          <a href="{{ url_for('recruiter.edit_job', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm flex-fill">
-            <i class="bi bi-pencil"></i> Edit
-          </a>
-          <form method="POST" action="{{ url_for('recruiter.toggle_job_active', job_id=job.id) }}" class="flex-fill">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-{{ 'success' if not job.is_active else 'warning' }} btn-sm w-100">
-              <i class="bi bi-{{ 'arrow-counterclockwise' if not job.is_active else 'pause-circle' }}"></i>
-              {{ 'Reopen' if not job.is_active else 'Close' }}
-            </button>
-          </form>
-          <form method="POST" action="{{ url_for('recruiter.delete_job', job_id=job.id) }}"
-                onsubmit="return confirm('Delete this job and all its applications permanently?');">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete permanently">
-              <i class="bi bi-trash"></i>
-            </button>
-          </form>
-        </div>
+    <div class="ats-metric-panel">
+      <div class="ats-metric-panel-icon success"><i class="bi bi-check2-circle"></i></div>
+      <div class="ats-metric-panel-data">
+        <div class="ats-metric-panel-label">Shortlisted</div>
+        <div class="ats-metric-panel-value">{{ shortlisted }}</div>
+        <div class="ats-metric-panel-context">Ready for review</div>
       </div>
     </div>
   </div>
-  {% endfor %}
+
+  <div class="mb-4">
+    <h4 class="fw-bold mb-1">Open Positions</h4>
+    <p class="text-muted small mb-0">Monitor roles and manage candidate pipelines.</p>
+  </div>
+
+  {% if jobs %}
+    {% for job in jobs %}
+    <div class="ats-pipeline-row {% if not job.is_active %}opacity-75{% endif %}">
+      
+      <div class="ats-pipeline-info">
+        <div class="ats-pipeline-title-row">
+          <h3 class="ats-pipeline-title">{{ job.job_title }}</h3>
+          {% if not job.is_active %}
+            <span class="badge bg-secondary rounded-pill px-2" style="font-size: 0.65rem;">Closed</span>
+          {% else %}
+            <span class="badge bg-success-light text-success border border-success border-opacity-25 rounded-pill px-2" style="font-size: 0.65rem;">Active</span>
+          {% endif %}
+        </div>
+        <div class="ats-pipeline-meta">
+          <span><i class="bi bi-geo-alt me-1"></i>{{ job.location or 'N/A' }}</span>
+          <span><i class="bi bi-briefcase me-1"></i>{{ job.experience or 'N/A' }}</span>
+        </div>
+      </div>
+
+      <div class="ats-pipeline-skills">
+        {% for skill in job.required_skills.split(',')[:5] %}
+          <span class="saas-skill-chip bg-alt border">{{ skill.strip() }}</span>
+        {% endfor %}
+      </div>
+
+      <div class="ats-pipeline-actions">
+        <a href="{{ url_for('recruiter.view_applicants', job_id=job.id) }}" class="ats-btn-primary">
+          View Applicants
+        </a>
+        <a href="{{ url_for('recruiter.edit_job', job_id=job.id) }}" class="ats-btn-icon" aria-label="Edit Job" title="Edit Job">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <form method="POST" action="{{ url_for('recruiter.toggle_job_active', job_id=job.id) }}" class="d-inline m-0 p-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="ats-btn-icon text-{{ 'success' if not job.is_active else 'warning' }}" aria-label="{{ 'Reopen' if not job.is_active else 'Close' }}" title="{{ 'Reopen' if not job.is_active else 'Close' }}">
+            <i class="bi bi-{{ 'arrow-counterclockwise' if not job.is_active else 'pause-circle' }}"></i>
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('recruiter.delete_job', job_id=job.id) }}" class="d-inline m-0 p-0" onsubmit="return confirm('Delete this job and all its applications permanently?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="ats-btn-icon danger" aria-label="Delete job" title="Delete permanently">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="ats-empty-state">
+      <div class="ats-metric-panel-icon mx-auto bg-light text-secondary mb-3" style="width: 64px; height: 64px; font-size: 2rem;">
+        <i class="bi bi-inbox"></i>
+      </div>
+      <h4 class="fw-bold">No Open Positions</h4>
+      <p class="text-muted mb-4">You haven't posted any jobs yet. Get started by creating your first listing.</p>
+      <a href="{{ url_for('recruiter.post_job') }}" class="ats-btn-primary">
+        <i class="bi bi-plus-circle"></i> Post Your First Job
+      </a>
+    </div>
+  {% endif %}
+
 </div>
-{% else %}
-<div class="text-center text-muted py-5 border rounded-3">
-  <i class="bi bi-briefcase" style="font-size:3rem"></i>
-  <p class="mt-3">You haven't posted any jobs yet.</p>
-  <a href="{{ url_for('recruiter.post_job') }}" class="btn btn-primary">Post Your First Job</a>
-</div>
-{% endif %}
 {% endblock %}

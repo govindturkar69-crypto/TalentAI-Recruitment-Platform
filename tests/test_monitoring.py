@@ -46,6 +46,7 @@ def test_404_handler(client):
 
 def test_500_handler(client):
     from app import app, internal_error
+
     with app.test_request_context("/"):
         response_tuple = internal_error(Exception("Test Exception"))
         assert response_tuple[1] == 500

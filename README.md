@@ -345,9 +345,7 @@ This project uses **GitHub Actions** for Continuous Integration (CI).
 Whenever you push to the repository or open a Pull Request, the CI pipeline automatically runs:
 1. **Syntax Validation**: Uses `compileall` to check all Python source files.
 2. **Automated Tests**: Runs the `pytest` suite to verify business logic and workflows without connecting to a real database.
-3. **Docker Build**: Builds the production `Dockerfile` to ensure there are no syntax errors or missing requirements.
 
-*(Note: The CI pipeline does not deploy the application or push images to Docker Hub; it is strictly for validation).*
 
 ### Running CI Checks Locally
 
@@ -381,10 +379,6 @@ python -m compileall -q app.py core.py config.py routes/ services/ models/
 pytest -v tests/
 ```
 
-**6. Test Docker Build**
-```bash
-docker build -t recruitment-analytics-ci .
-```
 
 ## 5. Production Monitoring
 

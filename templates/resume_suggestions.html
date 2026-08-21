@@ -16,64 +16,76 @@
     <div class="saas-card sticky-top" style="top: 2rem;">
       <h5 class="fw-bold mb-3">Analysis Settings</h5>
       
-      <div class="mb-4">
-        <label class="form-label text-muted small fw-bold text-uppercase">Resume Status</label>
+      <div class="mb-4 border-bottom pb-3">
+        <label class="form-label text-muted small fw-bold text-uppercase mb-2">Resume</label>
         {% if has_resume %}
-          <div class="d-flex align-items-center text-success mb-2">
-            <i class="bi bi-file-earmark-check-fill me-2 fs-5"></i>
-            <span>Resume Uploaded</span>
+          <div class="d-flex align-items-center text-success small mb-1">
+            <i class="bi bi-file-earmark-check-fill me-2 fs-6"></i>
+            <span class="fw-bold">Resume uploaded</span>
           </div>
-          <p class="text-muted small mb-0">Your latest uploaded resume will be analyzed.</p>
+          <div class="text-muted small">Latest resume will be analyzed.</div>
         {% else %}
-          <div class="d-flex align-items-center text-warning mb-2">
-            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-            <span>No Resume Found</span>
+          <div class="d-flex align-items-center text-warning small mb-1">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+            <span class="fw-bold">No Resume Found</span>
           </div>
-          <p class="text-muted small mb-0">Please upload a resume in your <a href="{{ url_for('candidate.upload_resume') }}">Profile</a> first.</p>
+          <div class="text-muted small">Upload a resume in your <a href="{{ url_for('candidate.upload_resume') }}">Profile</a> first.</div>
         {% endif %}
       </div>
 
-      <div class="mb-4">
-        <label class="form-label text-muted small fw-bold text-uppercase">Target Job (Optional)</label>
-        <select id="targetJob" class="form-select">
+      <div class="mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="form-label text-muted small fw-bold text-uppercase mb-0">Target Job</label>
+          <span class="badge bg-light text-muted border fw-normal">Optional</span>
+        </div>
+        <select id="targetJob" class="form-select form-select-sm shadow-none">
           <option value="">General Analysis (No specific job)</option>
           {% for job in jobs %}
             <option value="{{ job.id }}">{{ job.job_title }} ({{ job.location }})</option>
           {% endfor %}
         </select>
-        <div class="form-text small">Selecting a job tailors suggestions to its specific requirements.</div>
+        <div class="form-text small mt-2">Select a job to tailor suggestions to its requirements.</div>
       </div>
-
-      <button id="analyzeBtn" class="saas-btn-primary w-100 py-2" {% if not has_resume %}disabled{% endif %}>
-        <i class="bi bi-magic me-2"></i> Analyze Resume
-      </button>
-
-      <div id="loadingIndicator" class="mt-3 text-center d-none">
-        <div class="spinner-border text-primary spinner-border-sm mb-2" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="text-muted small mb-0">AI is reviewing your resume...</p>
-      </div>
-
-      <div id="errorAlert" class="alert alert-danger mt-3 d-none small"></div>
     </div>
   </div>
 
   <!-- Results Column -->
   <div class="col-lg-8">
-    <div id="emptyState" class="saas-card text-center py-5">
-      <div class="saas-empty-state-icon mb-3">
+    <div id="emptyState" class="saas-card text-center py-5 d-flex flex-column align-items-center justify-content-center" style="min-height: 400px;">
+      <div class="saas-empty-state-icon mb-3 text-primary d-inline-flex" style="font-size: 2.5rem;">
         <i class="bi bi-stars"></i>
       </div>
-      <h5 class="fw-bold">Ready for Analysis</h5>
-      <p class="text-muted mb-0">Click the button to generate personalized AI improvement suggestions.</p>
+      <h5 class="fw-bold mb-2">Ready for Analysis</h5>
+      <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">Generate personalized suggestions to improve your resume.</p>
+      
+      <div class="w-100 mx-auto" style="max-width: 250px;">
+        <button id="analyzeBtn" class="saas-btn-primary w-100 py-2 mb-2" {% if not has_resume %}disabled{% endif %}>
+          <i class="bi bi-stars me-2"></i> Analyze Resume
+        </button>
+        <div class="text-muted small">Uses your latest uploaded resume</div>
+      </div>
     </div>
+
+    <div id="loadingIndicator" class="saas-card text-center py-5 d-none flex-column align-items-center justify-content-center" style="min-height: 400px;">
+      <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <h5 class="fw-bold mb-2">Analyzing Resume...</h5>
+      <p class="text-muted small mb-0">Our AI is reviewing your experience and skills.</p>
+    </div>
+
+    <div id="errorAlert" class="alert alert-danger mt-3 d-none small"></div>
 
     <div id="resultsContainer" class="d-none">
       
       <!-- Summary -->
       <div class="saas-card mb-4 border-primary">
-        <h5 class="fw-bold text-primary mb-3"><i class="bi bi-card-text me-2"></i>Overall Assessment</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-primary mb-0"><i class="bi bi-card-text me-2"></i>Overall Assessment</h5>
+          <button id="analyzeAgainBtn" class="btn btn-sm btn-outline-primary" {% if not has_resume %}disabled{% endif %}>
+            <i class="bi bi-arrow-repeat me-1"></i> Analyze Again
+          </button>
+        </div>
         <p id="resSummary" class="mb-0" style="line-height: 1.6;"></p>
       </div>
 
@@ -132,6 +144,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const emptyState = document.getElementById('emptyState');
   const resultsContainer = document.getElementById('resultsContainer');
 
+  const analyzeAgainBtn = document.getElementById('analyzeAgainBtn');
+
   if (!analyzeBtn) return;
 
   function appendListItems(containerId, items) {
@@ -152,12 +166,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  analyzeBtn.addEventListener('click', async function() {
+  async function performAnalysis() {
     // UI State: Loading
     analyzeBtn.disabled = true;
+    if (analyzeAgainBtn) analyzeAgainBtn.disabled = true;
     loadingIndicator.classList.remove('d-none');
+    loadingIndicator.classList.add('d-flex');
     errorAlert.classList.add('d-none');
     emptyState.classList.add('d-none');
+    emptyState.classList.remove('d-flex');
     resultsContainer.classList.add('d-none');
 
     const payload = {
@@ -200,11 +217,19 @@ document.addEventListener('DOMContentLoaded', function() {
       errorAlert.textContent = error.message;
       errorAlert.classList.remove('d-none');
       emptyState.classList.remove('d-none');
+      emptyState.classList.add('d-flex');
     } finally {
       analyzeBtn.disabled = false;
+      if (analyzeAgainBtn) analyzeAgainBtn.disabled = false;
       loadingIndicator.classList.add('d-none');
+      loadingIndicator.classList.remove('d-flex');
     }
-  });
+  }
+
+  analyzeBtn.addEventListener('click', performAnalysis);
+  if (analyzeAgainBtn) {
+    analyzeAgainBtn.addEventListener('click', performAnalysis);
+  }
 });
 </script>
 {% endblock %}

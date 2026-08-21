@@ -2,24 +2,33 @@
 {% block title %}My Profile{% endblock %}
 
 {% block content %}
+<!-- Profile Hero Header -->
 <div class="profile-header mb-4">
-  <div class="row align-items-center">
-    <div class="col-auto">
-      <div class="avatar-circle-lg">{{ session.name[0]|upper }}</div>
-    </div>
-    <div class="col">
-      <h3 class="fw-bold mb-1">{{ session.name }}</h3>
-      <p class="mb-2" style="opacity:0.9">{{ profile.location if profile and profile.location else 'Location not set' }}</p>
+  <div class="d-flex align-items-center gap-4 flex-wrap">
+    <div class="avatar-circle-lg flex-shrink-0">{{ session.name[0]|upper }}</div>
+    <div class="flex-fill">
+      <div class="ats-hero-eyebrow mb-1" style="color:rgba(255,255,255,0.65)">Candidate Account</div>
+      <h2 class="fw-bold mb-1 text-white" style="letter-spacing:-0.5px">{{ session.name }}</h2>
+      <p class="mb-2" style="opacity:0.75;font-size:0.9rem">
+        <i class="bi bi-geo-alt me-1"></i>
+        {{ profile.location if profile and profile.location else 'Location not set' }}
+      </p>
       {% if profile %}
       <div class="d-flex gap-2 flex-wrap">
         {% if profile.linkedin_url %}
-          <a href="{{ profile.linkedin_url }}" target="_blank" class="social-link-btn"><i class="bi bi-linkedin"></i> LinkedIn</a>
+          <a href="{{ profile.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
+            <i class="bi bi-linkedin"></i> LinkedIn
+          </a>
         {% endif %}
         {% if profile.github_url %}
-          <a href="{{ profile.github_url }}" target="_blank" class="social-link-btn"><i class="bi bi-github"></i> GitHub</a>
+          <a href="{{ profile.github_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
+            <i class="bi bi-github"></i> GitHub
+          </a>
         {% endif %}
         {% if profile.portfolio_url %}
-          <a href="{{ profile.portfolio_url }}" target="_blank" class="social-link-btn"><i class="bi bi-globe"></i> Portfolio</a>
+          <a href="{{ profile.portfolio_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
+            <i class="bi bi-globe"></i> Portfolio
+          </a>
         {% endif %}
       </div>
       {% endif %}
@@ -28,88 +37,145 @@
 </div>
 
 <div class="row g-4">
+  <!-- LEFT: Edit Profile Form -->
   <div class="col-md-7">
-    <div class="card border-0 shadow-sm p-4">
-      <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square"></i> Edit Profile</h5>
-      <form method="POST" action="{{ url_for('candidate.candidate_profile') }}">
+    <div class="ats-form-panel">
+      <div class="ats-form-section">
+        <h5 class="ats-form-title"><i class="bi bi-person-lines-fill me-2" style="color:var(--primary)"></i>Personal Information</h5>
+        <form method="POST" action="{{ url_for('candidate.candidate_profile') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Bio</label>
-          <textarea name="bio" class="form-control" rows="3" placeholder="Tell recruiters about yourself...">{{ profile.bio if profile else '' }}</textarea>
-        </div>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Phone</label>
-            <input type="text" name="phone" class="form-control" placeholder="+91 9876543210" value="{{ profile.phone if profile else '' }}">
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold" style="font-size:0.85rem">Bio</label>
+            <textarea name="bio" class="form-control" rows="3"
+                      placeholder="Tell recruiters about yourself...">{{ profile.bio if profile else '' }}</textarea>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Location</label>
-            <input type="text" name="location" class="form-control" placeholder="Bangalore, India" value="{{ profile.location if profile else '' }}">
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size:0.85rem">Phone</label>
+              <input type="text" name="phone" class="form-control"
+                     placeholder="+91 9876543210"
+                     value="{{ profile.phone if profile else '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" style="font-size:0.85rem">Location</label>
+              <input type="text" name="location" class="form-control"
+                     placeholder="Bangalore, India"
+                     value="{{ profile.location if profile else '' }}">
+            </div>
           </div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Years of Experience</label>
-          <select name="experience_years" class="form-select">
-            <option value="">Select...</option>
-            <option value="Fresher" {% if profile and profile.experience_years == 'Fresher' %}selected{% endif %}>Fresher (0 years)</option>
-            <option value="1-2 years" {% if profile and profile.experience_years == '1-2 years' %}selected{% endif %}>1-2 years</option>
-            <option value="2-4 years" {% if profile and profile.experience_years == '2-4 years' %}selected{% endif %}>2-4 years</option>
-            <option value="4-6 years" {% if profile and profile.experience_years == '4-6 years' %}selected{% endif %}>4-6 years</option>
-            <option value="6+ years" {% if profile and profile.experience_years == '6+ years' %}selected{% endif %}>6+ years</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold"><i class="bi bi-linkedin"></i> LinkedIn URL</label>
-          <input type="url" name="linkedin_url" class="form-control" placeholder="https://linkedin.com/in/yourname" value="{{ profile.linkedin_url if profile else '' }}">
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold"><i class="bi bi-github"></i> GitHub URL</label>
-          <input type="url" name="github_url" class="form-control" placeholder="https://github.com/yourname" value="{{ profile.github_url if profile else '' }}">
-        </div>
-        <div class="mb-4">
-          <label class="form-label fw-semibold"><i class="bi bi-globe"></i> Portfolio URL</label>
-          <input type="url" name="portfolio_url" class="form-control" placeholder="https://yourportfolio.com" value="{{ profile.portfolio_url if profile else '' }}">
-        </div>
-        <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
-          <i class="bi bi-check-circle"></i> Save Profile
-        </button>
-      </form>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold" style="font-size:0.85rem">Years of Experience</label>
+            <select name="experience_years" class="form-select">
+              <option value="">Select...</option>
+              <option value="Fresher" {% if profile and profile.experience_years == 'Fresher' %}selected{% endif %}>Fresher (0 years)</option>
+              <option value="1-2 years" {% if profile and profile.experience_years == '1-2 years' %}selected{% endif %}>1–2 years</option>
+              <option value="2-4 years" {% if profile and profile.experience_years == '2-4 years' %}selected{% endif %}>2–4 years</option>
+              <option value="4-6 years" {% if profile and profile.experience_years == '4-6 years' %}selected{% endif %}>4–6 years</option>
+              <option value="6+ years" {% if profile and profile.experience_years == '6+ years' %}selected{% endif %}>6+ years</option>
+            </select>
+          </div>
+
+          <h5 class="ats-form-title" style="margin-top:0"><i class="bi bi-link-45deg me-2" style="color:var(--primary)"></i>Social Links</h5>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-linkedin me-1"></i>LinkedIn URL</label>
+            <input type="url" name="linkedin_url" class="form-control"
+                   placeholder="https://linkedin.com/in/yourname"
+                   value="{{ profile.linkedin_url if profile else '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-github me-1"></i>GitHub URL</label>
+            <input type="url" name="github_url" class="form-control"
+                   placeholder="https://github.com/yourname"
+                   value="{{ profile.github_url if profile else '' }}">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-globe me-1"></i>Portfolio URL</label>
+            <input type="url" name="portfolio_url" class="form-control"
+                   placeholder="https://yourportfolio.com"
+                   value="{{ profile.portfolio_url if profile else '' }}">
+          </div>
+
+          <div class="ats-form-footer" style="margin: 0 -32px -32px; border-radius: 0 0 12px 12px;">
+            <button type="submit" class="saas-btn-primary px-4 py-2">
+              <i class="bi bi-check-circle me-1"></i> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
+  <!-- RIGHT: Resume + Quick Stats -->
   <div class="col-md-5">
-    <div class="card border-0 shadow-sm p-4 mb-3">
-      <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-text"></i> Resume</h5>
-      {% if resume %}
-        <p class="text-success fw-semibold mb-2"><i class="bi bi-check-circle"></i> Resume on file</p>
-        <div class="mb-3">
-          {% for skill in resume.skills.split(',') %}
-            <span class="badge bg-primary-light me-1 mb-1">{{ skill }}</span>
-          {% endfor %}
-        </div>
-        <a href="{{ url_for('candidate.upload_resume') }}" class="btn btn-outline-primary btn-sm w-100">
-          <i class="bi bi-arrow-repeat"></i> Update Resume
-        </a>
-      {% else %}
-        <p class="text-muted">No resume uploaded yet.</p>
-        <a href="{{ url_for('candidate.upload_resume') }}" class="btn btn-primary btn-sm w-100">
-          <i class="bi bi-cloud-upload"></i> Upload Resume
-        </a>
-      {% endif %}
+    <!-- Resume Card -->
+    <div class="saas-profile-section">
+      <div class="saas-profile-section-header">
+        <i class="bi bi-file-earmark-text" style="color:var(--primary)"></i>
+        <span class="saas-profile-section-title">Resume</span>
+      </div>
+      <div class="saas-profile-section-body">
+        {% if resume %}
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--success-tint);display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-check-circle-fill text-success"></i>
+            </div>
+            <div>
+              <div class="fw-semibold" style="font-size:0.9rem;color:var(--text-primary)">Resume uploaded</div>
+              <small class="text-muted">{{ resume.skills.split(',')|length if resume.skills else 0 }} skills extracted</small>
+            </div>
+          </div>
+          {% if resume.skills %}
+          <div class="mb-3" style="line-height:2">
+            {% for skill in resume.skills.split(',')[:8] %}
+              <span class="saas-skill-chip me-1 mb-1">{{ skill.strip() }}</span>
+            {% endfor %}
+            {% if resume.skills.split(',')|length > 8 %}
+              <span class="text-muted small">+{{ resume.skills.split(',')|length - 8 }} more</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          <a href="{{ url_for('candidate.upload_resume') }}" class="saas-btn-secondary w-100 text-decoration-none text-center d-block py-2">
+            <i class="bi bi-arrow-repeat me-1"></i> Update Resume
+          </a>
+        {% else %}
+          <div class="saas-empty-state" style="padding:32px 16px;border-radius:10px">
+            <div class="saas-empty-state-icon" style="width:48px;height:48px;font-size:1.25rem;margin-bottom:12px">
+              <i class="bi bi-file-earmark-x"></i>
+            </div>
+            <h5 style="font-size:0.95rem">No resume yet</h5>
+            <p style="font-size:0.82rem;margin-bottom:14px">Upload a PDF to get personalized job recommendations.</p>
+            <a href="{{ url_for('candidate.upload_resume') }}" class="saas-btn-primary text-decoration-none px-4 py-2">
+              <i class="bi bi-cloud-upload me-1"></i> Upload Resume
+            </a>
+          </div>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="card border-0 shadow-sm p-4">
-      <h5 class="fw-bold mb-3"><i class="bi bi-graph-up"></i> Quick Stats</h5>
-      <div class="d-flex justify-content-between py-2 border-bottom">
-        <span class="text-muted">Applications Sent</span>
-        <strong>{{ application_count }}</strong>
+    <!-- Quick Stats Card -->
+    <div class="saas-profile-section">
+      <div class="saas-profile-section-header">
+        <i class="bi bi-graph-up" style="color:var(--primary)"></i>
+        <span class="saas-profile-section-title">Quick Stats</span>
       </div>
-      <div class="d-flex justify-content-between py-2">
-        <span class="text-muted">Profile Completion</span>
-        <strong>{{ profile_completion }}%</strong>
-      </div>
-      <div class="progress mt-2" style="height:8px;">
-        <div class="progress-bar bg-success" style="width:{{ profile_completion }}%"></div>
+      <div class="saas-profile-section-body" style="padding:0">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3" style="border-bottom:1px solid var(--border-color)">
+          <span class="text-muted" style="font-size:0.88rem">Applications Sent</span>
+          <strong class="fw-bold" style="font-size:1rem">{{ application_count }}</strong>
+        </div>
+        <div class="px-4 py-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted" style="font-size:0.88rem">Profile Completion</span>
+            <strong class="fw-bold" style="font-size:1rem">{{ profile_completion }}%</strong>
+          </div>
+          <div class="progress" style="height:6px;border-radius:4px;background:var(--bg-alt)">
+            <div class="progress-bar bg-success" style="width:{{ profile_completion }}%;border-radius:4px"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

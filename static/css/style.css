@@ -1016,6 +1016,232 @@ main.container { animation: fadeInUp 0.35s var(--ease); }
   .profile-header { padding: 28px 18px; }
 }
 
+/* ── SaaS Alert (flash messages) ─────────────────────────────── */
+.saas-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
+  position: relative;
+  animation: fadeInDown 0.25s var(--ease);
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.saas-alert-icon { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
+.saas-alert-body { flex: 1; }
+.saas-alert-close {
+  background: none; border: none; cursor: pointer;
+  color: inherit; opacity: 0.5; font-size: 1rem;
+  padding: 0; line-height: 1; flex-shrink: 0;
+  transition: opacity 0.15s var(--ease);
+}
+.saas-alert-close:hover { opacity: 1; }
+
+/* success */
+.saas-alert-success {
+  background: var(--success-tint);
+  border-color: rgba(34,197,94,0.25);
+  color: #15803D;
+}
+[data-theme="dark"] .saas-alert-success {
+  background: rgba(34,197,94,0.12);
+  border-color: rgba(34,197,94,0.3);
+  color: #4ADE80;
+}
+/* danger / error */
+.saas-alert-danger {
+  background: var(--danger-tint);
+  border-color: rgba(239,68,68,0.25);
+  color: #991B1B;
+}
+[data-theme="dark"] .saas-alert-danger {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.3);
+  color: #F87171;
+}
+/* warning */
+.saas-alert-warning {
+  background: var(--warning-tint);
+  border-color: rgba(245,158,11,0.25);
+  color: #92400E;
+}
+[data-theme="dark"] .saas-alert-warning {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.3);
+  color: #FCD34D;
+}
+/* info */
+.saas-alert-info {
+  background: var(--primary-tint);
+  border-color: rgba(37,99,235,0.2);
+  color: var(--primary);
+}
+[data-theme="dark"] .saas-alert-info {
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.3);
+  color: #93C5FD;
+}
+/* neutral fallback for unknown categories */
+.saas-alert-neutral {
+  background: var(--bg-alt);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* ── SaaS Empty State ────────────────────────────────────────── */
+.saas-empty-state {
+  background: var(--bg-card);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 56px 32px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.saas-empty-state-icon {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.75rem;
+  margin: 0 auto 20px;
+  background: var(--bg-alt);
+  color: var(--text-soft);
+}
+.saas-empty-state h5 {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.saas-empty-state p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+/* ── SaaS Page Header ────────────────────────────────────────── */
+.saas-page-header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.saas-page-header-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.saas-page-header-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.saas-page-header-sub {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+.saas-page-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .saas-page-header {
+    flex-direction: column;
+  }
+  .saas-page-header-actions {
+    width: 100%;
+  }
+}
+
+/* ── Profile Section Card ───────────────────────────────────── */
+.saas-profile-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  margin-bottom: 24px;
+}
+.saas-profile-section-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-alt);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.saas-profile-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.saas-profile-section-body {
+  padding: 24px;
+}
+
+/* ── Analytics chart container ──────────────────────────────── */
+.saas-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  overflow: hidden;
+}
+.saas-chart-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.saas-chart-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.saas-chart-card-body {
+  padding: 8px;
+}
+
+/* ── Nav active state for candidate links ───────────────────── */
+.navbar-nav .nav-link.nav-active {
+  color: #fff !important;
+  font-weight: 600;
+  position: relative;
+}
+.navbar-nav .nav-link.nav-active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 8px; right: 8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
 /* ── Reduce motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

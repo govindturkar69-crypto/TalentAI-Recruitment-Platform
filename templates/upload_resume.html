@@ -1,52 +1,77 @@
 {% extends "base.html" %}
-{% block title %}Resume Upload{% endblock %}
+{% block title %}Upload Resume{% endblock %}
 
 {% block content %}
+<!-- Page Header -->
+<div class="saas-page-header">
+  <div>
+    <div class="saas-page-header-eyebrow">Resume Management</div>
+    <h1 class="saas-page-header-title">Upload Your Resume</h1>
+    <p class="saas-page-header-sub">PDF format only &mdash; max 5 MB. The AI will extract skills and score you against open roles.</p>
+  </div>
+</div>
+
 <div class="row justify-content-center">
-  <div class="col-md-7">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-4">
-        <div class="text-center mb-4">
-          <div style="font-size:3rem">📤</div>
-          <h3 class="fw-bold">Upload Your Resume</h3>
-          <p class="text-muted small">PDF format only (max 5MB)</p>
+  <div class="col-lg-7 col-md-9">
+
+    <!-- Upload Form -->
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('candidate.upload_resume') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- Drag & Drop Zone — IDs/classes used by existing JS are preserved exactly -->
+      <div class="upload-zone p-5 text-center mb-4" id="dropZone">
+        <input type="file" name="resume" id="resumeFile" accept=".pdf" class="d-none" required>
+
+        <div id="uploadIcon" class="mb-3">
+          <div style="width:64px;height:64px;border-radius:16px;background:var(--primary-tint);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:1.75rem;color:var(--primary)">
+            <i class="bi bi-file-earmark-pdf"></i>
+          </div>
         </div>
 
-        <form method="POST" enctype="multipart/form-data" action="{{ url_for('candidate.upload_resume') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <!-- Drag & Drop Zone -->
-          <div class="upload-zone p-5 text-center rounded-3 mb-4" id="dropZone">
-            <input type="file" name="resume" id="resumeFile" accept=".pdf" class="d-none" required>
-            <div id="uploadIcon" style="font-size:3rem">📄</div>
-            <p class="fw-bold mb-1" id="uploadText">Drag and drop your PDF here</p>
-            <p class="text-muted small mb-3">or</p>
-            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('resumeFile').click()">
-              <i class="bi bi-folder2-open"></i> Choose File
-            </button>
-            <div id="fileName" class="mt-3 text-success fw-bold d-none"></div>
-          </div>
+        <p class="fw-bold mb-1" id="uploadText" style="font-size:1rem">Drag &amp; drop your PDF here</p>
+        <p class="text-muted small mb-3">or</p>
 
-          <!-- What AI Extracts -->
-          <div class="alert alert-info border-0 mb-4">
-            <strong><i class="bi bi-robot"></i> What the AI will do:</strong>
-            <ul class="mb-0 mt-2 small">
-              <li>Automatically extract text from your PDF</li>
-              <li>Identify programming skills, tools, and frameworks</li>
-              <li>Calculate a match score against every job</li>
-              <li>Suggest the best-fit jobs for you</li>
-            </ul>
-          </div>
+        <button type="button" class="saas-btn-outline-primary"
+                onclick="document.getElementById('resumeFile').click()">
+          <i class="bi bi-folder2-open me-1"></i> Choose File
+        </button>
 
-          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="uploadBtn" disabled>
-            <i class="bi bi-cloud-upload"></i> Upload & Analyze
-          </button>
-        </form>
+        <div id="fileName" class="mt-3 fw-semibold d-none" style="color:var(--success);font-size:0.9rem"></div>
       </div>
-    </div>
+
+      <!-- AI Feature List -->
+      <div class="saas-profile-section mb-4">
+        <div class="saas-profile-section-header">
+          <i class="bi bi-robot" style="color:var(--primary)"></i>
+          <span class="saas-profile-section-title">What the AI will do</span>
+        </div>
+        <div class="saas-profile-section-body" style="padding:0">
+          {% set ai_features = [
+            ('bi-file-earmark-text', 'Extract text from your PDF automatically'),
+            ('bi-tags-fill',         'Identify programming skills, tools &amp; frameworks'),
+            ('bi-bullseye',          'Calculate a match score against every open role'),
+            ('bi-stars',             'Suggest the best-fit jobs for you')
+          ] %}
+          {% for icon, text in ai_features %}
+          <div class="d-flex align-items-center gap-3 px-4 py-3" style="border-bottom:1px solid var(--border-color)">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--primary-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi {{ icon }}" style="color:var(--primary);font-size:0.9rem"></i>
+            </div>
+            <span style="font-size:0.88rem;color:var(--text-primary)">{{ text }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button type="submit" class="saas-btn-primary w-100 py-2" id="uploadBtn" disabled>
+        <i class="bi bi-cloud-upload me-1"></i> Upload &amp; Analyze
+      </button>
+    </form>
   </div>
 </div>
 
 <script>
+/* Existing upload logic — no changes to event listeners or IDs */
 const fileInput = document.getElementById('resumeFile');
 const uploadBtn = document.getElementById('uploadBtn');
 const fileNameDiv = document.getElementById('fileName');

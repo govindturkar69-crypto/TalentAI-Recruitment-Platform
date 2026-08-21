@@ -2,44 +2,64 @@
 {% block title %}Analytics{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Page Header -->
+<div class="saas-page-header">
   <div>
-    <h3 class="fw-bold mb-1">📊 Analytics Dashboard</h3>
-    <p class="text-muted mb-0">Real-time recruitment insights and trends</p>
+    <div class="saas-page-header-eyebrow">Recruiter Insights</div>
+    <h1 class="saas-page-header-title">Analytics Dashboard</h1>
+    <p class="saas-page-header-sub">Real-time recruitment insights and trends</p>
   </div>
-  <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left"></i> Back
-  </a>
+  <div class="saas-page-header-actions">
+    <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="saas-btn-secondary text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+  </div>
 </div>
 
-<!-- Top Stats -->
+<!-- Metric Cards -->
 <div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">📨</div>
-      <div class="display-6 fw-bold text-primary">{{ stats.total }}</div>
-      <div class="text-muted small">Total Applications</div>
+  <div class="col-md-3 col-sm-6">
+    <div class="ats-metric-card">
+      <div class="ats-metric-icon primary">
+        <i class="bi bi-send-fill"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Applications</div>
+        <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);line-height:1">{{ stats.total }}</div>
+      </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">📈</div>
-      <div class="display-6 fw-bold text-info">{{ stats.avg_score }}%</div>
-      <div class="text-muted small">Average Score</div>
+  <div class="col-md-3 col-sm-6">
+    <div class="ats-metric-card">
+      <div class="ats-metric-icon info">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Average Score</div>
+        <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);line-height:1">{{ stats.avg_score }}%</div>
+      </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">✅</div>
-      <div class="display-6 fw-bold text-success">{{ stats.shortlisted }}</div>
-      <div class="text-muted small">Shortlisted</div>
+  <div class="col-md-3 col-sm-6">
+    <div class="ats-metric-card">
+      <div class="ats-metric-icon success">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Shortlisted</div>
+        <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);line-height:1">{{ stats.shortlisted }}</div>
+      </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div style="font-size:2rem">🎉</div>
-      <div class="display-6 fw-bold text-warning">{{ stats.hired }}</div>
-      <div class="text-muted small">Hired</div>
+  <div class="col-md-3 col-sm-6">
+    <div class="ats-metric-card">
+      <div class="ats-metric-icon warning">
+        <i class="bi bi-trophy-fill"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Hired</div>
+        <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);line-height:1">{{ stats.hired }}</div>
+      </div>
     </div>
   </div>
 </div>
@@ -47,21 +67,39 @@
 <!-- Charts Row 1 -->
 <div class="row g-4 mb-4">
   <div class="col-md-8">
-    <div class="card border-0 shadow-sm p-3">
-      {% if chart1 %}
-        <div id="chart1"></div>
-      {% else %}
-        <div class="text-center text-muted py-5">No data available yet</div>
-      {% endif %}
+    <div class="saas-chart-card">
+      <div class="saas-chart-card-header">
+        <span class="saas-chart-card-title">Applications Over Time</span>
+      </div>
+      <div class="saas-chart-card-body">
+        {% if chart1 %}
+          <div id="chart1"></div>
+        {% else %}
+          <div class="saas-empty-state" style="border:none;padding:40px 16px">
+            <div class="saas-empty-state-icon"><i class="bi bi-bar-chart"></i></div>
+            <h5>No data yet</h5>
+            <p>Charts will appear as applications come in.</p>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card border-0 shadow-sm p-3">
-      {% if chart3 %}
-        <div id="chart3"></div>
-      {% else %}
-        <div class="text-center text-muted py-5">No data available yet</div>
-      {% endif %}
+    <div class="saas-chart-card">
+      <div class="saas-chart-card-header">
+        <span class="saas-chart-card-title">Status Breakdown</span>
+      </div>
+      <div class="saas-chart-card-body">
+        {% if chart3 %}
+          <div id="chart3"></div>
+        {% else %}
+          <div class="saas-empty-state" style="border:none;padding:40px 16px">
+            <div class="saas-empty-state-icon"><i class="bi bi-pie-chart"></i></div>
+            <h5>No data yet</h5>
+            <p>Status breakdown will appear here.</p>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
@@ -69,29 +107,52 @@
 <!-- Charts Row 2 -->
 <div class="row g-4 mb-4">
   <div class="col-md-6">
-    <div class="card border-0 shadow-sm p-3">
-      {% if chart2 %}
-        <div id="chart2"></div>
-      {% else %}
-        <div class="text-center text-muted py-5">No data available yet</div>
-      {% endif %}
+    <div class="saas-chart-card">
+      <div class="saas-chart-card-header">
+        <span class="saas-chart-card-title">Score Distribution</span>
+      </div>
+      <div class="saas-chart-card-body">
+        {% if chart2 %}
+          <div id="chart2"></div>
+        {% else %}
+          <div class="saas-empty-state" style="border:none;padding:40px 16px">
+            <div class="saas-empty-state-icon"><i class="bi bi-bar-chart-line"></i></div>
+            <h5>No data yet</h5>
+            <p>Score distribution will appear here.</p>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
   <div class="col-md-6">
-    <div class="card border-0 shadow-sm p-3">
-      {% if chart5 %}
-        <div id="chart5"></div>
-      {% else %}
-        <div class="text-center text-muted py-5">No data available yet</div>
-      {% endif %}
+    <div class="saas-chart-card">
+      <div class="saas-chart-card-header">
+        <span class="saas-chart-card-title">Skills Demand</span>
+      </div>
+      <div class="saas-chart-card-body">
+        {% if chart5 %}
+          <div id="chart5"></div>
+        {% else %}
+          <div class="saas-empty-state" style="border:none;padding:40px 16px">
+            <div class="saas-empty-state-icon"><i class="bi bi-tags"></i></div>
+            <h5>No data yet</h5>
+            <p>Skills demand data will appear here.</p>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
 
 <!-- Top Candidates Chart -->
 {% if chart4 %}
-<div class="card border-0 shadow-sm p-3 mb-4">
-  <div id="chart4"></div>
+<div class="saas-chart-card mb-4">
+  <div class="saas-chart-card-header">
+    <span class="saas-chart-card-title">Top Candidates</span>
+  </div>
+  <div class="saas-chart-card-body">
+    <div id="chart4"></div>
+  </div>
 </div>
 {% endif %}
 

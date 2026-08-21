@@ -34,10 +34,10 @@
       <ul class="navbar-nav ms-auto align-items-center gap-2">
         {% if session.get('user_id') %}
           {% if session.get('role') == 'candidate' %}
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('candidate.candidate_dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('candidate.upload_resume') }}"><i class="bi bi-cloud-upload"></i> Upload Resume</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('candidate.job_recommendations') }}"><i class="bi bi-stars"></i> Recommended</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('candidate.candidate_profile') }}"><i class="bi bi-person-badge"></i> Profile</a></li>
+            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_dashboard' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.upload_resume' %}nav-active{% endif %}" href="{{ url_for('candidate.upload_resume') }}"><i class="bi bi-cloud-upload"></i> Resume</a></li>
+            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.job_recommendations' %}nav-active{% endif %}" href="{{ url_for('candidate.job_recommendations') }}"><i class="bi bi-stars"></i> Recommended</a></li>
+            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_profile' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_profile') }}"><i class="bi bi-person-badge"></i> Profile</a></li>
           {% else %}
             <li class="nav-item"><a class="nav-link {% if request.endpoint == 'recruiter.recruiter_dashboard' %}active text-white fw-semibold{% endif %}" href="{{ url_for('recruiter.recruiter_dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
             <li class="nav-item"><a class="nav-link {% if request.endpoint == 'recruiter.post_job' %}active text-white fw-semibold{% endif %}" href="{{ url_for('recruiter.post_job') }}"><i class="bi bi-plus-circle"></i> Post Job</a></li>
@@ -90,9 +90,30 @@
 <div class="container mt-3">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      {% set cat = category|lower %}
+      {% if cat in ['success'] %}
+        {% set alert_cls = 'saas-alert-success' %}
+        {% set alert_icon = 'bi-check-circle-fill' %}
+      {% elif cat in ['danger', 'error'] %}
+        {% set alert_cls = 'saas-alert-danger' %}
+        {% set alert_icon = 'bi-exclamation-circle-fill' %}
+      {% elif cat == 'warning' %}
+        {% set alert_cls = 'saas-alert-warning' %}
+        {% set alert_icon = 'bi-exclamation-triangle-fill' %}
+      {% elif cat == 'info' %}
+        {% set alert_cls = 'saas-alert-info' %}
+        {% set alert_icon = 'bi-info-circle-fill' %}
+      {% else %}
+        {% set alert_cls = 'saas-alert-neutral' %}
+        {% set alert_icon = 'bi-bell-fill' %}
+      {% endif %}
+      <div class="saas-alert {{ alert_cls }} mb-2" role="alert" id="flash-{{ loop.index }}">
+        <i class="bi {{ alert_icon }} saas-alert-icon"></i>
+        <span class="saas-alert-body">{{ message }}</span>
+        <button type="button" class="saas-alert-close" aria-label="Dismiss"
+                onclick="this.parentElement.style.display='none'">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
     {% endfor %}
   {% endwith %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}AI Resume Suggestions{% endblock %}
+
+{% block content %}
+<div class="saas-page-header">
+  <div>
+    <div class="saas-page-header-eyebrow">Career Growth</div>
+    <h1 class="saas-page-header-title">AI Resume Suggestions</h1>
+    <p class="saas-page-header-sub">Get personalized feedback to improve your resume impact</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Controls Column -->
+  <div class="col-lg-4">
+    <div class="saas-card sticky-top" style="top: 2rem;">
+      <h5 class="fw-bold mb-3">Analysis Settings</h5>
+      
+      <div class="mb-4">
+        <label class="form-label text-muted small fw-bold text-uppercase">Resume Status</label>
+        {% if has_resume %}
+          <div class="d-flex align-items-center text-success mb-2">
+            <i class="bi bi-file-earmark-check-fill me-2 fs-5"></i>
+            <span>Resume Uploaded</span>
+          </div>
+          <p class="text-muted small mb-0">Your latest uploaded resume will be analyzed.</p>
+        {% else %}
+          <div class="d-flex align-items-center text-warning mb-2">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <span>No Resume Found</span>
+          </div>
+          <p class="text-muted small mb-0">Please upload a resume in your <a href="{{ url_for('candidate.upload_resume') }}">Profile</a> first.</p>
+        {% endif %}
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label text-muted small fw-bold text-uppercase">Target Job (Optional)</label>
+        <select id="targetJob" class="form-select">
+          <option value="">General Analysis (No specific job)</option>
+          {% for job in jobs %}
+            <option value="{{ job.id }}">{{ job.job_title }} ({{ job.location }})</option>
+          {% endfor %}
+        </select>
+        <div class="form-text small">Selecting a job tailors suggestions to its specific requirements.</div>
+      </div>
+
+      <button id="analyzeBtn" class="saas-btn-primary w-100 py-2" {% if not has_resume %}disabled{% endif %}>
+        <i class="bi bi-magic me-2"></i> Analyze Resume
+      </button>
+
+      <div id="loadingIndicator" class="mt-3 text-center d-none">
+        <div class="spinner-border text-primary spinner-border-sm mb-2" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted small mb-0">AI is reviewing your resume...</p>
+      </div>
+
+      <div id="errorAlert" class="alert alert-danger mt-3 d-none small"></div>
+    </div>
+  </div>
+
+  <!-- Results Column -->
+  <div class="col-lg-8">
+    <div id="emptyState" class="saas-card text-center py-5">
+      <div class="saas-empty-state-icon mb-3">
+        <i class="bi bi-stars"></i>
+      </div>
+      <h5 class="fw-bold">Ready for Analysis</h5>
+      <p class="text-muted mb-0">Click the button to generate personalized AI improvement suggestions.</p>
+    </div>
+
+    <div id="resultsContainer" class="d-none">
+      
+      <!-- Summary -->
+      <div class="saas-card mb-4 border-primary">
+        <h5 class="fw-bold text-primary mb-3"><i class="bi bi-card-text me-2"></i>Overall Assessment</h5>
+        <p id="resSummary" class="mb-0" style="line-height: 1.6;"></p>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <!-- Strengths -->
+        <div class="col-md-6">
+          <div class="saas-card h-100 border-success">
+            <h6 class="fw-bold text-success mb-3"><i class="bi bi-lightning-charge-fill me-2"></i>Strengths</h6>
+            <ul id="resStrengths" class="mb-0 ps-3" style="line-height: 1.6;"></ul>
+          </div>
+        </div>
+        
+        <!-- Priority Improvements -->
+        <div class="col-md-6">
+          <div class="saas-card h-100 border-danger">
+            <h6 class="fw-bold text-danger mb-3"><i class="bi bi-exclamation-circle-fill me-2"></i>Priority Improvements</h6>
+            <ul id="resImprovements" class="mb-0 ps-3" style="line-height: 1.6;"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sections -->
+      <div class="saas-card mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-tools me-2 text-muted"></i>Skills</h6>
+        <ul id="resSkills" class="mb-0 ps-3" style="line-height: 1.6;"></ul>
+      </div>
+
+      <div class="saas-card mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-briefcase-fill me-2 text-muted"></i>Experience Descriptions</h6>
+        <ul id="resExperience" class="mb-0 ps-3" style="line-height: 1.6;"></ul>
+      </div>
+
+      <div class="saas-card mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-journal-code me-2 text-muted"></i>Projects</h6>
+        <ul id="resProjects" class="mb-0 ps-3" style="line-height: 1.6;"></ul>
+      </div>
+
+      <div class="saas-card mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-search me-2 text-muted"></i>ATS Readability</h6>
+        <ul id="resATS" class="mb-0 ps-3" style="line-height: 1.6;"></ul>
+      </div>
+
+      <div class="text-center text-muted small mt-4">
+        <i class="bi bi-info-circle me-1"></i> These are AI-generated suggestions. Review them carefully before updating your resume.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const targetJob = document.getElementById('targetJob');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const errorAlert = document.getElementById('errorAlert');
+  const emptyState = document.getElementById('emptyState');
+  const resultsContainer = document.getElementById('resultsContainer');
+
+  if (!analyzeBtn) return;
+
+  function appendListItems(containerId, items) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = ''; // safe clear
+    if (items && items.length > 0) {
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'mb-2';
+        li.textContent = item; // prevents XSS/HTML injection
+        container.appendChild(li);
+      });
+    } else {
+      const li = document.createElement('li');
+      li.className = 'text-muted fst-italic';
+      li.textContent = 'No specific suggestions.';
+      container.appendChild(li);
+    }
+  }
+
+  analyzeBtn.addEventListener('click', async function() {
+    // UI State: Loading
+    analyzeBtn.disabled = true;
+    loadingIndicator.classList.remove('d-none');
+    errorAlert.classList.add('d-none');
+    emptyState.classList.add('d-none');
+    resultsContainer.classList.add('d-none');
+
+    const payload = {
+      job_id: targetJob.value || null
+    };
+
+    try {
+      // Assuming a csrf_token is available globally or we must pass it.
+      // Since it's a POST API, we need the token. Let's add it to headers.
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}";
+      
+      const response = await fetch("{{ url_for('candidate.analyze_resume_api') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'An unexpected error occurred.');
+      }
+
+      // Populate Data securely using textContent
+      document.getElementById('resSummary').textContent = data.summary || 'No summary provided.';
+      appendListItems('resStrengths', data.strengths);
+      appendListItems('resImprovements', data.priority_improvements);
+      appendListItems('resSkills', data.skills);
+      appendListItems('resExperience', data.experience);
+      appendListItems('resProjects', data.projects);
+      appendListItems('resATS', data.ats);
+
+      // Show results
+      resultsContainer.classList.remove('d-none');
+
+    } catch (error) {
+      errorAlert.textContent = error.message;
+      errorAlert.classList.remove('d-none');
+      emptyState.classList.remove('d-none');
+    } finally {
+      analyzeBtn.disabled = false;
+      loadingIndicator.classList.add('d-none');
+    }
+  });
+});
+</script>
+{% endblock %}

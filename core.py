@@ -6,12 +6,13 @@ each other (which would cause a circular import).
 """
 
 import os
+from contextlib import closing
 from functools import wraps
 
 import pymysql
 import pymysql.cursors
 from dbutils.pooled_db import PooledDB
-from flask import flash, redirect, session, url_for
+from flask import current_app, flash, redirect, session, url_for
 
 from config import Config
 
@@ -59,3 +60,29 @@ def login_required(role=None):
         return wrapper
 
     return decorator
+
+
+def admin_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Please log in first.", "warning")
+            return redirect(url_for("auth.login"))
+
+        admin_email = current_app.config.get("ADMIN_EMAIL")
+        if not admin_email or not admin_email.strip():
+            flash("Access denied.", "danger")
+            return redirect(url_for("index"))
+
+        with closing(get_db_connection()) as conn:
+            with closing(conn.cursor()) as cur:
+                cur.execute("SELECT email FROM users WHERE id = %s", (session["user_id"],))
+                user = cur.fetchone()
+
+        if not user or user["email"] != admin_email:
+            flash("Access denied.", "danger")
+            return redirect(url_for("index"))
+
+        return f(*args, **kwargs)
+
+    return wrapper

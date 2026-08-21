@@ -5,7 +5,7 @@ import secrets
 from contextlib import closing
 from datetime import datetime, timedelta
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import Config
@@ -32,7 +32,12 @@ def register():
             flash("Password must be at least 8 characters long.", "danger")
             return render_template("register.html")
 
-        role = "recruiter" if email == Config.ADMIN_EMAIL else "candidate"
+        if email == current_app.config.get("ADMIN_EMAIL"):
+            # L1: Generic message to prevent account enumeration, and securely block public admin registration.
+            flash("Registration could not be completed. The email may already be in use.", "danger")
+            return render_template("register.html")
+
+        role = "candidate"
 
         hashed = generate_password_hash(password)
         with closing(get_db_connection()) as conn:
@@ -71,6 +76,7 @@ def login():
             session["user_id"] = user["id"]
             session["name"] = user["name"]
             session["role"] = user["role"]
+            session["is_admin"] = user["email"] == current_app.config.get("ADMIN_EMAIL")
             session.permanent = True  # M4: Use PERMANENT_SESSION_LIFETIME
             flash(f"Welcome back, {user['name']}!", "success")
 

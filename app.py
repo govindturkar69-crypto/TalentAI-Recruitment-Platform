@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 from config import Config
 from core import get_db_connection, login_required
+from routes.admin import admin_bp
 from routes.analytics import analytics_bp
 
 # Blueprints
@@ -56,11 +57,13 @@ app.register_blueprint(auth_blueprint)
 app.register_blueprint(candidate_bp)
 app.register_blueprint(recruiter_bp)
 app.register_blueprint(analytics_bp)
+app.register_blueprint(admin_bp)
 
 # H6: Apply rate limits to auth endpoints
 limiter.limit("5/minute")(app.view_functions["auth.login"])
 limiter.limit("5/hour")(app.view_functions["auth.register"])
 limiter.limit("3/hour")(app.view_functions["auth.forgot_password"])
+limiter.limit("3/day")(app.view_functions["candidate.analyze_resume_api"])
 
 
 # ---------------------------------------------------------------------------

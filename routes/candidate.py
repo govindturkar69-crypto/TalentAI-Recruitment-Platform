@@ -1,10 +1,11 @@
 import os
 from contextlib import closing
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
 from core import get_db_connection, login_required
+from services.ai_resume_service import analyze_resume
 from services.candidate_service import (
     apply_for_job_service,
     get_job_recommendations_service,
@@ -233,3 +234,69 @@ def candidate_profile():
 def job_recommendations():
     resume, recommendations = get_job_recommendations_service(session["user_id"])
     return render_template("job_recommendations.html", resume=resume, recommendations=recommendations)
+
+
+@candidate_bp.route("/resume/suggestions")
+@login_required(role="candidate")
+def resume_suggestions():
+    has_resume = False
+    jobs = []
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT id FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (session["user_id"],)
+            )
+            if cur.fetchone():
+                has_resume = True
+
+            # Fetch active jobs for target selection
+            cur.execute(
+                "SELECT id, job_title, location FROM jobs WHERE is_active = TRUE ORDER BY created_at DESC LIMIT 50"
+            )
+            jobs = cur.fetchall()
+
+    return render_template("resume_suggestions.html", has_resume=has_resume, jobs=jobs)
+
+
+@candidate_bp.route("/api/resume/analyze", methods=["POST"])
+@login_required(role="candidate")
+def analyze_resume_api():
+    req_data = request.get_json(silent=True) or {}
+    target_job_id = req_data.get("job_id")
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT raw_text FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1",
+                (session["user_id"],),
+            )
+            resume_record = cur.fetchone()
+
+            if not resume_record or not resume_record["raw_text"]:
+                return jsonify({"error": "No resume found. Please upload a resume first."}), 400
+
+            job_text = None
+            if target_job_id:
+                cur.execute(
+                    "SELECT job_title, required_skills, description FROM jobs WHERE id = %s AND is_active = TRUE",
+                    (target_job_id,),
+                )
+                job_record = cur.fetchone()
+                if job_record:
+                    job_text = (
+                        f"Title: {job_record['job_title']}\n"
+                        f"Skills Required: {job_record['required_skills']}\n"
+                        f"Description: {job_record['description']}"
+                    )
+                else:
+                    return jsonify({"error": "Selected target job not found or inactive."}), 400
+
+    # Generate analysis via AI Service
+    result = analyze_resume(resume_record["raw_text"], job_text)
+
+    # AI service returns a dictionary matching the schema, or a dict with "error"
+    if "error" in result:
+        return jsonify({"error": result["error"]}), 500
+
+    return jsonify(result)

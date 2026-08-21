@@ -39,3 +39,7 @@ class Config:
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
     MAIL_FROM = os.environ.get("MAIL_FROM")
     APP_BASE_URL = os.environ.get("APP_BASE_URL")
+
+    # OpenAI / AI Services
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.6-luna")

@@ -69,8 +69,8 @@ def admin_required(f):
             flash("Please log in first.", "warning")
             return redirect(url_for("auth.login"))
 
-        admin_email = current_app.config.get("ADMIN_EMAIL")
-        if not admin_email or not admin_email.strip():
+        admin_email = (current_app.config.get("ADMIN_EMAIL") or "").strip().lower()
+        if not admin_email:
             flash("Access denied.", "danger")
             return redirect(url_for("index"))
 
@@ -79,7 +79,8 @@ def admin_required(f):
                 cur.execute("SELECT email FROM users WHERE id = %s", (session["user_id"],))
                 user = cur.fetchone()
 
-        if not user or user["email"] != admin_email:
+        user_email = (user["email"] or "").strip().lower() if user else ""
+        if not user_email or user_email != admin_email:
             flash("Access denied.", "danger")
             return redirect(url_for("index"))
 

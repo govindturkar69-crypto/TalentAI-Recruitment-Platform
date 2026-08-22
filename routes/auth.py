@@ -76,13 +76,20 @@ def login():
             session["user_id"] = user["id"]
             session["name"] = user["name"]
             session["role"] = user["role"]
-            session["is_admin"] = user["email"] == current_app.config.get("ADMIN_EMAIL")
+
+            admin_email = (current_app.config.get("ADMIN_EMAIL") or "").strip().lower()
+            user_email = (user["email"] or "").strip().lower()
+            session["is_admin"] = bool(admin_email and user_email == admin_email)
+
             session.permanent = True  # M4: Use PERMANENT_SESSION_LIFETIME
             flash(f"Welcome back, {user['name']}!", "success")
 
-            if user["role"] == "recruiter":
+            if session.get("is_admin"):
+                return redirect(url_for("admin.dashboard"))
+            elif user["role"] == "recruiter":
                 return redirect(url_for("recruiter.recruiter_dashboard"))
-            return redirect(url_for("candidate.candidate_dashboard"))
+            else:
+                return redirect(url_for("candidate.candidate_dashboard"))
 
         flash("Incorrect email or password.", "danger")
 

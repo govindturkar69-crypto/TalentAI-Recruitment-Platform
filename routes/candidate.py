@@ -939,7 +939,7 @@ def candidate_applications():
         with closing(conn.cursor()) as cur:
             cur.execute(
                 """
-                SELECT a.*, j.job_title, j.location, j.experience, j.is_active, 
+                SELECT a.*, j.job_title, j.location, j.experience, j.is_active,
                        COALESCE(c.name, 'Company not specified') as company_name
                 FROM applications a
                 JOIN jobs j ON a.job_id = j.id

@@ -55,14 +55,22 @@ class TestLocalResumeScore:
         mock_conn.cursor.return_value = mock_cur
 
         last_query = {}
-        def exe_se(q, p=None): last_query["q"] = q
+
+        def exe_se(q, p=None):
+            last_query["q"] = q
+
         mock_cur.execute.side_effect = exe_se
+
         def fetch_se():
             q = last_query.get("q", "")
-            if "users" in q: return {"role": "candidate", "is_active": True}
-            if "candidate_profiles" in q: return None
-            if "resumes" in q: return {"raw_text": "Sample text", "skills": "python, flask"}
+            if "users" in q:
+                return {"role": "candidate", "is_active": True}
+            if "candidate_profiles" in q:
+                return None
+            if "resumes" in q:
+                return {"raw_text": "Sample text", "skills": "python, flask"}
             return None
+
         mock_cur.fetchone.side_effect = fetch_se
 
         resp = client.post("/api/resume/score_local", json={})
@@ -81,15 +89,24 @@ class TestLocalResumeScore:
         mock_conn.cursor.return_value = mock_cur
 
         last_query = {}
-        def exe_se(q, p=None): last_query["q"] = q
+
+        def exe_se(q, p=None):
+            last_query["q"] = q
+
         mock_cur.execute.side_effect = exe_se
+
         def fetch_se():
             q = last_query.get("q", "")
-            if "users" in q: return {"role": "candidate", "is_active": True}
-            if "candidate_profiles" in q: return None
-            if "resumes" in q: return {"raw_text": "Experienced in python and flask", "skills": "python,flask"}
-            if "jobs" in q: return {"id": 1, "job_title": "Backend", "required_skills": "python, django", "description": "Desc"}
+            if "users" in q:
+                return {"role": "candidate", "is_active": True}
+            if "candidate_profiles" in q:
+                return None
+            if "resumes" in q:
+                return {"raw_text": "Experienced in python and flask", "skills": "python,flask"}
+            if "jobs" in q:
+                return {"id": 1, "job_title": "Backend", "required_skills": "python, django", "description": "Desc"}
             return None
+
         mock_cur.fetchone.side_effect = fetch_se
 
         resp = client.post("/api/resume/score_local", json={"job_id": 1})
@@ -122,15 +139,24 @@ class TestLocalResumeScore:
         mock_cur = MagicMock()
         mock_conn.cursor.return_value = mock_cur
         last_query = {}
-        def exe_se(q, p=None): last_query["q"] = q
+
+        def exe_se(q, p=None):
+            last_query["q"] = q
+
         mock_cur.execute.side_effect = exe_se
+
         def fetch_se():
             q = last_query.get("q", "")
-            if "users" in q: return {"role": "candidate", "is_active": True}
-            if "candidate_profiles" in q: return None
-            if "resumes" in q: return {"raw_text": "Sample text", "skills": "python"}
-            if "jobs" in q: return None
+            if "users" in q:
+                return {"role": "candidate", "is_active": True}
+            if "candidate_profiles" in q:
+                return None
+            if "resumes" in q:
+                return {"raw_text": "Sample text", "skills": "python"}
+            if "jobs" in q:
+                return None
             return None
+
         mock_cur.fetchone.side_effect = fetch_se
         resp = client.post("/api/resume/score_local", json={"job_id": 999})
         assert resp.status_code == 400
@@ -186,15 +212,24 @@ class TestAIResumeRoutes:
         mock_conn.cursor.return_value = mock_cur
 
         last_query = {}
-        def exe_se(q, p=None): last_query["q"] = q
+
+        def exe_se(q, p=None):
+            last_query["q"] = q
+
         mock_cur.execute.side_effect = exe_se
+
         def fetch_se():
             q = last_query.get("q", "")
-            if "users" in q: return {"role": "candidate", "is_active": True}
-            if "candidate_profiles" in q: return None
-            if "resumes" in q: return {"raw_text": "Sample valid resume", "skills": "python"}
-            if "jobs" in q: return None
+            if "users" in q:
+                return {"role": "candidate", "is_active": True}
+            if "candidate_profiles" in q:
+                return None
+            if "resumes" in q:
+                return {"raw_text": "Sample valid resume", "skills": "python"}
+            if "jobs" in q:
+                return None
             return None
+
         mock_cur.fetchone.side_effect = fetch_se
 
         # Mock OpenAI parse
@@ -230,15 +265,24 @@ class TestAIResumeRoutes:
         mock_conn.cursor.return_value = mock_cur
 
         last_query = {}
-        def exe_se(q, p=None): last_query["q"] = q
+
+        def exe_se(q, p=None):
+            last_query["q"] = q
+
         mock_cur.execute.side_effect = exe_se
+
         def fetch_se():
             q = last_query.get("q", "")
-            if "users" in q: return {"role": "candidate", "is_active": True}
-            if "candidate_profiles" in q: return None
-            if "resumes" in q: return {"raw_text": "Sample valid resume", "skills": "python"}
-            if "jobs" in q: return {"id": 10, "job_title": "Dev", "required_skills": "Python", "description": "Good job"}
+            if "users" in q:
+                return {"role": "candidate", "is_active": True}
+            if "candidate_profiles" in q:
+                return None
+            if "resumes" in q:
+                return {"raw_text": "Sample valid resume", "skills": "python"}
+            if "jobs" in q:
+                return {"id": 10, "job_title": "Dev", "required_skills": "Python", "description": "Good job"}
             return None
+
         mock_cur.fetchone.side_effect = fetch_se
 
         # Mock OpenAI parse
@@ -277,15 +321,24 @@ class TestAIResumeRoutes:
         mock_conn.cursor.return_value = mock_cur
 
         last_query = {}
-        def exe_se(q, p=None): last_query["q"] = q
+
+        def exe_se(q, p=None):
+            last_query["q"] = q
+
         mock_cur.execute.side_effect = exe_se
+
         def fetch_se():
             q = last_query.get("q", "")
-            if "users" in q: return {"role": "candidate", "is_active": True}
-            if "candidate_profiles" in q: return None
-            if "resumes" in q: return {"raw_text": "Sample valid resume", "skills": "python"}
-            if "jobs" in q: return None
+            if "users" in q:
+                return {"role": "candidate", "is_active": True}
+            if "candidate_profiles" in q:
+                return None
+            if "resumes" in q:
+                return {"raw_text": "Sample valid resume", "skills": "python"}
+            if "jobs" in q:
+                return None
             return None
+
         mock_cur.fetchone.side_effect = fetch_se
 
         resp = client.post("/api/resume/analyze", json={"job_id": 999})

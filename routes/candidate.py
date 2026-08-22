@@ -10,7 +10,6 @@ from services.ai_resume_service import analyze_resume
 from services.candidate_service import (
     apply_for_job_service,
     get_job_recommendations_service,
-    get_resolved_candidate_skills,
     process_resume_upload,
     withdraw_application_service,
 )
@@ -474,6 +473,7 @@ def edit_skills():
 
 from urllib.parse import urlparse
 
+
 def validate_url(url):
     if not url:
         return True
@@ -487,6 +487,7 @@ def validate_url(url):
         return True
     except Exception:
         return False
+
 
 def validate_dates(start, end):
     if not start or not end:
@@ -514,7 +515,8 @@ def add_education():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
-                "INSERT INTO candidate_education (user_id, institution, degree, field_of_study, start_date, end_date) VALUES (%s, %s, %s, %s, %s, %s)",
+                "INSERT INTO candidate_education (user_id, institution, degree, field_of_study, start_date, end_date) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
                 (session["user_id"], institution[:255], degree[:255], field_of_study[:255], start_date, end_date),
             )
             conn.commit()
@@ -542,7 +544,8 @@ def edit_education(id):
                 return jsonify({"error": "Access denied"}), 403
 
             cur.execute(
-                "UPDATE candidate_education SET institution=%s, degree=%s, field_of_study=%s, start_date=%s, end_date=%s WHERE id=%s",
+                "UPDATE candidate_education SET institution=%s, degree=%s, field_of_study=%s, "
+                "start_date=%s, end_date=%s WHERE id=%s",
                 (institution[:255], degree[:255], field_of_study[:255], start_date, end_date, id),
             )
             conn.commit()
@@ -583,7 +586,9 @@ def add_experience():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
-                "INSERT INTO candidate_experience (user_id, company, title, description, start_date, end_date, is_current) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO candidate_experience (user_id, company, title, description, "
+                "start_date, end_date, is_current) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (session["user_id"], company[:255], title[:255], description, start_date, end_date, is_current),
             )
             conn.commit()
@@ -614,7 +619,8 @@ def edit_experience(id):
                 return jsonify({"error": "Access denied"}), 403
 
             cur.execute(
-                "UPDATE candidate_experience SET company=%s, title=%s, description=%s, start_date=%s, end_date=%s, is_current=%s WHERE id=%s",
+                "UPDATE candidate_experience SET company=%s, title=%s, description=%s, "
+                "start_date=%s, end_date=%s, is_current=%s WHERE id=%s",
                 (company[:255], title[:255], description, start_date, end_date, is_current, id),
             )
             conn.commit()
@@ -651,7 +657,8 @@ def add_project():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
-                "INSERT INTO candidate_projects (user_id, title, description, url, technologies) VALUES (%s, %s, %s, %s, %s)",
+                "INSERT INTO candidate_projects (user_id, title, description, url, technologies) "
+                "VALUES (%s, %s, %s, %s, %s)",
                 (session["user_id"], title[:255], description, url[:500], technologies),
             )
             conn.commit()
@@ -715,7 +722,8 @@ def add_certification():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
-                "INSERT INTO candidate_certifications (user_id, name, issuer, issue_date, credential_url) VALUES (%s, %s, %s, %s, %s)",
+                "INSERT INTO candidate_certifications (user_id, name, issuer, issue_date, credential_url) "
+                "VALUES (%s, %s, %s, %s, %s)",
                 (session["user_id"], name[:255], issuer[:255], issue_date, credential_url[:500]),
             )
             conn.commit()
@@ -778,7 +786,8 @@ def add_achievement():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
-                "INSERT INTO candidate_achievements (user_id, title, description, achieved_date) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO candidate_achievements (user_id, title, description, achieved_date) "
+                "VALUES (%s, %s, %s, %s)",
                 (session["user_id"], title[:255], description, achieved_date),
             )
             conn.commit()

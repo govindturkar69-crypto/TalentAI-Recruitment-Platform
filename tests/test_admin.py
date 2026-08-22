@@ -37,7 +37,7 @@ class TestAdminPanel:
         mock_core_db.return_value = mock_conn
         mock_cur = MagicMock()
         mock_conn.cursor.return_value = mock_cur
-        mock_cur.fetchone.return_value = {"email": "candidate@test.com"}
+        mock_cur.fetchone.return_value = {"email": "candidate@test.com", "is_active": True}
 
         resp = client.get("/admin/dashboard")
         assert resp.status_code == 302
@@ -51,7 +51,7 @@ class TestAdminPanel:
         mock_core_db.return_value = mock_conn
         mock_cur = MagicMock()
         mock_conn.cursor.return_value = mock_cur
-        mock_cur.fetchone.return_value = {"email": "recruiter@test.com"}
+        mock_cur.fetchone.return_value = {"email": "recruiter@test.com", "is_active": True}
 
         resp = client.get("/admin/dashboard")
         assert resp.status_code == 302
@@ -66,7 +66,7 @@ class TestAdminPanel:
         mock_core_db.return_value = mock_core_conn
         mock_core_cur = MagicMock()
         mock_core_conn.cursor.return_value = mock_core_cur
-        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"]}
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
 
         # Mock admin dashboard queries
         mock_admin_conn = MagicMock()
@@ -81,7 +81,7 @@ class TestAdminPanel:
             {"total": 5},  # jobs
             {"total": 15},  # applications
         ]
-        test_user = {"id": 1, "name": "Test", "email": "a@a.com", "role": "candidate", "created_at": None}
+        test_user = {"id": 1, "name": "Test", "email": "a@a.com", "role": "candidate", "is_active": True, "created_at": None}
         mock_admin_cur.fetchall.side_effect = [
             [test_user],  # users
             [test_user],  # recent_users
@@ -103,13 +103,13 @@ class TestAdminPanel:
         mock_core_db.return_value = mock_core_conn
         mock_core_cur = MagicMock()
         mock_core_conn.cursor.return_value = mock_core_cur
-        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"]}
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
 
         mock_admin_conn = MagicMock()
         mock_admin_db.return_value = mock_admin_conn
         mock_admin_cur = MagicMock()
         mock_admin_conn.cursor.return_value = mock_admin_cur
-        mock_admin_cur.fetchone.return_value = {"id": 2}  # Target user exists
+        mock_admin_cur.fetchone.return_value = {"id": 2, "role": "candidate", "is_active": True}  # Target user exists
 
         resp = client.post("/admin/users/2/role", data={"role": "recruiter"})
         assert resp.status_code == 302
@@ -124,7 +124,7 @@ class TestAdminPanel:
         mock_core_db.return_value = mock_core_conn
         mock_core_cur = MagicMock()
         mock_core_conn.cursor.return_value = mock_core_cur
-        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"]}
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
 
         resp = client.post("/admin/users/1/role", data={"role": "candidate"})
         assert resp.status_code == 302
@@ -139,7 +139,7 @@ class TestAdminPanel:
         mock_core_db.return_value = mock_core_conn
         mock_core_cur = MagicMock()
         mock_core_conn.cursor.return_value = mock_core_cur
-        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"]}
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
 
         resp = client.post("/admin/users/2/role", data={"role": "superadmin"})
         assert resp.status_code == 302

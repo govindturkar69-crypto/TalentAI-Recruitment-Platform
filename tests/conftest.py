@@ -47,11 +47,13 @@ def mock_db():
         "routes.auth.get_db_connection",
         "routes.candidate.get_db_connection",
         "routes.recruiter.get_db_connection",
+        "routes.admin.get_db_connection",
         "routes.analytics.get_db_connection",
         "services.notification_service.get_db_connection",
         "services.candidate_service.get_db_connection",
         "services.recruiter_service.get_db_connection",
         "services.analytics_service.get_db_connection",
+        "services.audit_service.get_db_connection",
     ]
 
     patchers = []

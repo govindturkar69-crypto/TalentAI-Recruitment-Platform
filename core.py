@@ -52,6 +52,17 @@ def login_required(role=None):
             if "user_id" not in session:
                 flash("Please log in first.", "warning")
                 return redirect(url_for("auth.login"))
+
+            with closing(get_db_connection()) as conn:
+                with closing(conn.cursor()) as cur:
+                    cur.execute("SELECT is_active FROM users WHERE id = %s", (session["user_id"],))
+                    user = cur.fetchone()
+
+            if not user or not user.get("is_active", True):
+                session.clear()
+                flash("Your account has been deactivated.", "danger")
+                return redirect(url_for("auth.login"))
+
             if role and session.get("role") != role:
                 flash("Access denied.", "danger")
                 return redirect(url_for("index"))
@@ -76,8 +87,13 @@ def admin_required(f):
 
         with closing(get_db_connection()) as conn:
             with closing(conn.cursor()) as cur:
-                cur.execute("SELECT email FROM users WHERE id = %s", (session["user_id"],))
+                cur.execute("SELECT email, is_active FROM users WHERE id = %s", (session["user_id"],))
                 user = cur.fetchone()
+
+        if not user or not user.get("is_active", True):
+            session.clear()
+            flash("Your account has been deactivated.", "danger")
+            return redirect(url_for("auth.login"))
 
         user_email = (user["email"] or "").strip().lower() if user else ""
         if not user_email or user_email != admin_email:

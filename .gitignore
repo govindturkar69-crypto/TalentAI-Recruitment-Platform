@@ -36,5 +36,6 @@ instance/
 docker-compose.override.yml
 *.sql
 !database/schema.sql
+!database/migrations/*.sql
 *.dump
 backups/

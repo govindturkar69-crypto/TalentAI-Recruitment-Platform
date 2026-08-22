@@ -68,6 +68,9 @@
             <span class="text-light small fw-semibold px-2 border-end border-light border-opacity-25">
               <i class="bi bi-person-circle me-1 opacity-75"></i> {{ session.get('name') }}
             </span>
+            <a href="{{ url_for('auth.settings') }}" class="btn btn-sm btn-link text-light text-decoration-none py-0 px-2 border-end border-light border-opacity-25" aria-label="Settings" title="Settings">
+              <i class="bi bi-gear"></i>
+            </a>
             <form method="POST" action="{{ url_for('auth.logout') }}" class="m-0 ms-1">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-sm btn-link text-light text-decoration-none py-0 px-2" aria-label="Logout" title="Logout">

@@ -11,8 +11,9 @@ def test_apply_job_duplicate_prevented(client, mock_db):
         sess["role"] = "candidate"
         sess["name"] = "Candidate"
 
-    # First fetchone is the resume check, second is the duplicate application check
+    # First fetchone is is_active check, second is the resume check, third is the duplicate application check
     mock_db.fetchone.side_effect = [
+        {"is_active": True},
         {"id": 10, "skills": "python", "raw_text": "resume text"},  # Resume found
         {"id": 5},  # Duplicate application found
     ]
@@ -30,8 +31,11 @@ def test_withdraw_hired_application(client, mock_db):
         sess["user_id"] = 1
         sess["role"] = "candidate"
 
-    # Mock finding a hired application
-    mock_db.fetchone.return_value = {"id": 5, "job_title": "Dev", "status": "hired"}
+    # Mock finding a hired application (with is_active True for login_required)
+    mock_db.fetchone.side_effect = [
+        {"is_active": True},
+        {"id": 5, "job_title": "Dev", "status": "hired"}
+    ]
 
     response = client.post("/candidate/withdraw/5", follow_redirects=False)
     assert response.status_code == 302

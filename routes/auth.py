@@ -72,6 +72,10 @@ def login():
                 user = cur.fetchone()
 
         if user and check_password_hash(user["password"], password):
+            if not user.get("is_active", True):
+                flash("Your account has been deactivated.", "danger")
+                return render_template("login.html")
+
             session.clear()  # Prevent session fixation
             session["user_id"] = user["id"]
             session["name"] = user["name"]
@@ -188,6 +192,52 @@ def reset_password(token):
                 return redirect(url_for("auth.login"))
 
     return render_template("reset_password.html", token=token)
+
+
+@auth.route("/settings", methods=["GET", "POST"])
+def settings():
+    # Defer import to avoid circular dependency
+    from core import login_required
+    
+    @login_required()
+    def _settings():
+        if request.method == "POST":
+            current_password = request.form.get("current_password")
+            new_password = request.form.get("new_password")
+            confirm_password = request.form.get("confirm_password")
+
+            if not current_password or not new_password or not confirm_password:
+                flash("All fields are required.", "danger")
+                return redirect(url_for("auth.settings"))
+
+            if new_password != confirm_password:
+                flash("New passwords do not match.", "danger")
+                return redirect(url_for("auth.settings"))
+
+            if len(new_password) < 8:
+                flash("New password must be at least 8 characters long.", "danger")
+                return redirect(url_for("auth.settings"))
+
+            with closing(get_db_connection()) as conn:
+                with closing(conn.cursor()) as cur:
+                    cur.execute("SELECT password FROM users WHERE id = %s", (session["user_id"],))
+                    user = cur.fetchone()
+
+                    if not user or not check_password_hash(user["password"], current_password):
+                        flash("Incorrect current password.", "danger")
+                        return redirect(url_for("auth.settings"))
+
+                    hashed = generate_password_hash(new_password)
+                    cur.execute("UPDATE users SET password=%s WHERE id=%s", (hashed, session["user_id"]))
+                    conn.commit()
+
+            session.clear()
+            flash("Password updated successfully. Please log in again.", "success")
+            return redirect(url_for("auth.login"))
+
+        return render_template("settings.html")
+    
+    return _settings()
 
 
 # Deferred import to avoid circular dependency

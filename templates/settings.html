@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="saas-page-header">
+  <div>
+    <div class="saas-page-header-eyebrow">ACCOUNT</div>
+    <h1 class="saas-page-header-title">Settings</h1>
+    <p class="saas-page-header-sub">Manage your account security and preferences.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6">
+    <div class="saas-card">
+      <h5 class="fw-bold mb-4">Change Password</h5>
+      <form action="{{ url_for('auth.settings') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="mb-3">
+          <label class="form-label text-muted" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;">Current Password</label>
+          <input type="password" name="current_password" class="form-control" required>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label text-muted" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;">New Password</label>
+          <input type="password" name="new_password" class="form-control" required minlength="8">
+          <div class="form-text">Must be at least 8 characters long.</div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="form-label text-muted" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;">Confirm New Password</label>
+          <input type="password" name="confirm_password" class="form-control" required minlength="8">
+        </div>
+        
+        <button type="submit" class="saas-btn-primary w-100">Update Password</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,14 +1,19 @@
 # Environment variables (contains real passwords - never push this)
 .env
+.env.*
+!.env.example
 
 # Virtual environment
 venv/
+.venv/
 env/
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
+.ruff_cache/
 
 # Uploaded resumes (user data, shouldn't be in version control)
 uploads/*

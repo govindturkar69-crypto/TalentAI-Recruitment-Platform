@@ -81,7 +81,14 @@ class TestAdminPanel:
             {"total": 5},  # jobs
             {"total": 15},  # applications
         ]
-        test_user = {"id": 1, "name": "Test", "email": "a@a.com", "role": "candidate", "is_active": True, "created_at": None}
+        test_user = {
+            "id": 1,
+            "name": "Test",
+            "email": "a@a.com",
+            "role": "candidate",
+            "is_active": True,
+            "created_at": None,
+        }
         mock_admin_cur.fetchall.side_effect = [
             [test_user],  # users
             [test_user],  # recent_users

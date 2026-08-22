@@ -32,10 +32,7 @@ def test_withdraw_hired_application(client, mock_db):
         sess["role"] = "candidate"
 
     # Mock finding a hired application (with is_active True for login_required)
-    mock_db.fetchone.side_effect = [
-        {"is_active": True},
-        {"id": 5, "job_title": "Dev", "status": "hired"}
-    ]
+    mock_db.fetchone.side_effect = [{"is_active": True}, {"id": 5, "job_title": "Dev", "status": "hired"}]
 
     response = client.post("/candidate/withdraw/5", follow_redirects=False)
     assert response.status_code == 302

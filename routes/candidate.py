@@ -10,6 +10,7 @@ from services.ai_resume_service import analyze_resume
 from services.candidate_service import (
     apply_for_job_service,
     get_job_recommendations_service,
+    get_resolved_candidate_skills,
     process_resume_upload,
     withdraw_application_service,
 )
@@ -160,10 +161,10 @@ def candidate_profile():
                 github_url = request.form.get("github_url", "").strip()
                 portfolio_url = request.form.get("portfolio_url", "").strip()
 
-                # L4: Validate profile URLs — allow only http(s) schemes
+                # L4: Validate profile URLs — allow only valid http(s) schemes
                 for url_val in (linkedin_url, github_url, portfolio_url):
-                    if url_val and not url_val.startswith(("https://", "http://")):
-                        flash("Profile URLs must start with https:// or http://.", "danger")
+                    if not validate_url(url_val):
+                        flash("Profile URLs must be valid http(s) links.", "danger")
                         return redirect(url_for("candidate.candidate_profile"))
 
                 cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (session["user_id"],))
@@ -217,9 +218,70 @@ def candidate_profile():
             cur.execute("SELECT COUNT(*) AS cnt FROM applications WHERE candidate_id = %s", (session["user_id"],))
             application_count = cur.fetchone()["cnt"]
 
-    fields = ["bio", "phone", "location", "experience_years", "linkedin_url"]
+            cur.execute(
+                "SELECT * FROM candidate_education WHERE user_id = %s ORDER BY start_date DESC", (session["user_id"],)
+            )
+            education_list = cur.fetchall()
+
+            cur.execute(
+                "SELECT * FROM candidate_experience WHERE user_id = %s ORDER BY start_date DESC", (session["user_id"],)
+            )
+            experience_list = cur.fetchall()
+
+            cur.execute(
+                "SELECT * FROM candidate_projects WHERE user_id = %s ORDER BY created_at DESC", (session["user_id"],)
+            )
+            projects_list = cur.fetchall()
+
+            cur.execute(
+                "SELECT * FROM candidate_certifications WHERE user_id = %s ORDER BY issue_date DESC",
+                (session["user_id"],),
+            )
+            certifications_list = cur.fetchall()
+
+            cur.execute(
+                "SELECT * FROM candidate_achievements WHERE user_id = %s ORDER BY achieved_date DESC",
+                (session["user_id"],),
+            )
+            achievements_list = cur.fetchall()
+
+    # Profile Completion Formula
+    core = 0
+    fields = ["bio", "phone", "location", "linkedin_url", "github_url", "portfolio_url"]
     filled = sum(1 for f in fields if profile and profile.get(f)) if profile else 0
-    profile_completion = int(((filled + (1 if resume else 0)) / (len(fields) + 1)) * 100)
+    core += int((filled / len(fields)) * 30)
+
+    if resume:
+        core += 20
+
+    # Skills resolution: Curated > Resume
+    has_skills = False
+    resolved_skills = ""
+    if profile and profile.get("skills"):
+        resolved_skills = profile.get("skills")
+        has_skills = True
+    elif resume and resume.get("skills"):
+        resolved_skills = resume.get("skills")
+        has_skills = True
+
+    if has_skills:
+        core += 15
+
+    if education_list:
+        core += 15
+
+    optional = 0
+    if experience_list:
+        optional += 10
+    if projects_list:
+        optional += 10
+    if certifications_list:
+        optional += 5
+    if achievements_list:
+        optional += 5
+
+    optional = min(optional, 20)
+    profile_completion = min(core + optional, 100)
 
     return render_template(
         "candidate_profile.html",
@@ -227,6 +289,12 @@ def candidate_profile():
         resume=resume,
         application_count=application_count,
         profile_completion=profile_completion,
+        education_list=education_list,
+        experience_list=experience_list,
+        projects_list=projects_list,
+        certifications_list=certifications_list,
+        achievements_list=achievements_list,
+        resolved_skills=resolved_skills,
     )
 
 
@@ -278,8 +346,8 @@ def _build_local_resume_analysis(user_id, target_job_id):
             if not resume_record:
                 return ({"error": "No resume found. Please upload a resume first."}, 400), None
 
-            candidate_skills = resume_record["skills"].split(",") if resume_record["skills"] else []
-
+            raw_skills = resume_record.get("skills")
+            candidate_skills = [s.strip() for s in raw_skills.split(",") if s.strip()] if raw_skills else []
             if target_job_id:
                 try:
                     job_id_int = int(target_job_id)
@@ -359,3 +427,400 @@ def analyze_resume_api():
         return jsonify({"error": result["error"]}), status_code
 
     return jsonify(result)
+
+
+def normalize_skills(skills_str):
+    if not skills_str:
+        return ""
+    skills_list = [s.strip() for s in skills_str.split(",") if s.strip()]
+
+    seen = set()
+    normalized = []
+    for skill in skills_list:
+        lower = skill.lower()
+        if lower not in seen:
+            seen.add(lower)
+            normalized.append(skill)  # Keep original casing of first appearance
+
+    # Cap at reasonable limit, e.g., 100 skills
+    return ",".join(normalized[:100])
+
+
+@candidate_bp.route("/candidate/skills/edit", methods=["POST"])
+@login_required(role="candidate")
+def edit_skills():
+    skills_input = request.form.get("skills", "")
+    normalized_skills = normalize_skills(skills_input)
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (session["user_id"],))
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    "UPDATE candidate_profiles SET skills = %s WHERE user_id = %s",
+                    (normalized_skills, session["user_id"]),
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO candidate_profiles (user_id, skills) VALUES (%s, %s)",
+                    (session["user_id"], normalized_skills),
+                )
+            conn.commit()
+
+    flash("Skills updated successfully.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+from urllib.parse import urlparse
+
+def validate_url(url):
+    if not url:
+        return True
+    try:
+        parsed = urlparse(url)
+        # Require http or https scheme and a valid non-empty hostname/netloc
+        if parsed.scheme not in ("http", "https"):
+            return False
+        if not parsed.netloc:
+            return False
+        return True
+    except Exception:
+        return False
+
+def validate_dates(start, end):
+    if not start or not end:
+        return True
+    return start <= end
+
+
+@candidate_bp.route("/candidate/education/add", methods=["POST"])
+@login_required(role="candidate")
+def add_education():
+    institution = request.form.get("institution", "").strip()
+    degree = request.form.get("degree", "").strip()
+    field_of_study = request.form.get("field_of_study", "").strip()
+    start_date = request.form.get("start_date") or None
+    end_date = request.form.get("end_date") or None
+
+    if not institution:
+        flash("Institution is required.", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    if not validate_dates(start_date, end_date):
+        flash("End date cannot precede start date.", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "INSERT INTO candidate_education (user_id, institution, degree, field_of_study, start_date, end_date) VALUES (%s, %s, %s, %s, %s, %s)",
+                (session["user_id"], institution[:255], degree[:255], field_of_study[:255], start_date, end_date),
+            )
+            conn.commit()
+    flash("Education added.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/education/<int:id>/edit", methods=["POST"])
+@login_required(role="candidate")
+def edit_education(id):
+    institution = request.form.get("institution", "").strip()
+    degree = request.form.get("degree", "").strip()
+    field_of_study = request.form.get("field_of_study", "").strip()
+    start_date = request.form.get("start_date") or None
+    end_date = request.form.get("end_date") or None
+
+    if not validate_dates(start_date, end_date):
+        flash("End date cannot precede start date.", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM candidate_education WHERE id = %s AND user_id = %s", (id, session["user_id"]))
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+
+            cur.execute(
+                "UPDATE candidate_education SET institution=%s, degree=%s, field_of_study=%s, start_date=%s, end_date=%s WHERE id=%s",
+                (institution[:255], degree[:255], field_of_study[:255], start_date, end_date, id),
+            )
+            conn.commit()
+    flash("Education updated.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/education/<int:id>/delete", methods=["POST"])
+@login_required(role="candidate")
+def delete_education(id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM candidate_education WHERE id = %s AND user_id = %s", (id, session["user_id"]))
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+            cur.execute("DELETE FROM candidate_education WHERE id=%s", (id,))
+            conn.commit()
+    flash("Education deleted.", "info")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/experience/add", methods=["POST"])
+@login_required(role="candidate")
+def add_experience():
+    company = request.form.get("company", "").strip()
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    start_date = request.form.get("start_date") or None
+    end_date = request.form.get("end_date") or None
+    is_current = request.form.get("is_current") == "on"
+
+    if is_current:
+        end_date = None
+    elif not validate_dates(start_date, end_date):
+        flash("End date cannot precede start date.", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "INSERT INTO candidate_experience (user_id, company, title, description, start_date, end_date, is_current) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (session["user_id"], company[:255], title[:255], description, start_date, end_date, is_current),
+            )
+            conn.commit()
+    flash("Experience added.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/experience/<int:id>/edit", methods=["POST"])
+@login_required(role="candidate")
+def edit_experience(id):
+    company = request.form.get("company", "").strip()
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    start_date = request.form.get("start_date") or None
+    end_date = request.form.get("end_date") or None
+    is_current = request.form.get("is_current") == "on"
+
+    if is_current:
+        end_date = None
+    elif not validate_dates(start_date, end_date):
+        flash("End date cannot precede start date.", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM candidate_experience WHERE id = %s AND user_id = %s", (id, session["user_id"]))
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+
+            cur.execute(
+                "UPDATE candidate_experience SET company=%s, title=%s, description=%s, start_date=%s, end_date=%s, is_current=%s WHERE id=%s",
+                (company[:255], title[:255], description, start_date, end_date, is_current, id),
+            )
+            conn.commit()
+    flash("Experience updated.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/experience/<int:id>/delete", methods=["POST"])
+@login_required(role="candidate")
+def delete_experience(id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM candidate_experience WHERE id = %s AND user_id = %s", (id, session["user_id"]))
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+            cur.execute("DELETE FROM candidate_experience WHERE id=%s", (id,))
+            conn.commit()
+    flash("Experience deleted.", "info")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/projects/add", methods=["POST"])
+@login_required(role="candidate")
+def add_project():
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    url = request.form.get("url", "").strip()
+    technologies = request.form.get("technologies", "").strip()
+
+    if not validate_url(url):
+        flash("Project URL must start with http:// or https://", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "INSERT INTO candidate_projects (user_id, title, description, url, technologies) VALUES (%s, %s, %s, %s, %s)",
+                (session["user_id"], title[:255], description, url[:500], technologies),
+            )
+            conn.commit()
+    flash("Project added.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/projects/<int:id>/edit", methods=["POST"])
+@login_required(role="candidate")
+def edit_project(id):
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    url = request.form.get("url", "").strip()
+    technologies = request.form.get("technologies", "").strip()
+
+    if not validate_url(url):
+        flash("Project URL must start with http:// or https://", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM candidate_projects WHERE id = %s AND user_id = %s", (id, session["user_id"]))
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+
+            cur.execute(
+                "UPDATE candidate_projects SET title=%s, description=%s, url=%s, technologies=%s WHERE id=%s",
+                (title[:255], description, url[:500], technologies, id),
+            )
+            conn.commit()
+    flash("Project updated.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/projects/<int:id>/delete", methods=["POST"])
+@login_required(role="candidate")
+def delete_project(id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM candidate_projects WHERE id = %s AND user_id = %s", (id, session["user_id"]))
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+            cur.execute("DELETE FROM candidate_projects WHERE id=%s", (id,))
+            conn.commit()
+    flash("Project deleted.", "info")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/certifications/add", methods=["POST"])
+@login_required(role="candidate")
+def add_certification():
+    name = request.form.get("name", "").strip()
+    issuer = request.form.get("issuer", "").strip()
+    issue_date = request.form.get("issue_date") or None
+    credential_url = request.form.get("credential_url", "").strip()
+
+    if not validate_url(credential_url):
+        flash("Credential URL must start with http:// or https://", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "INSERT INTO candidate_certifications (user_id, name, issuer, issue_date, credential_url) VALUES (%s, %s, %s, %s, %s)",
+                (session["user_id"], name[:255], issuer[:255], issue_date, credential_url[:500]),
+            )
+            conn.commit()
+    flash("Certification added.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/certifications/<int:id>/edit", methods=["POST"])
+@login_required(role="candidate")
+def edit_certification(id):
+    name = request.form.get("name", "").strip()
+    issuer = request.form.get("issuer", "").strip()
+    issue_date = request.form.get("issue_date") or None
+    credential_url = request.form.get("credential_url", "").strip()
+
+    if not validate_url(credential_url):
+        flash("Credential URL must start with http:// or https://", "danger")
+        return redirect(url_for("candidate.candidate_profile"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT id FROM candidate_certifications WHERE id = %s AND user_id = %s", (id, session["user_id"])
+            )
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+
+            cur.execute(
+                "UPDATE candidate_certifications SET name=%s, issuer=%s, issue_date=%s, credential_url=%s WHERE id=%s",
+                (name[:255], issuer[:255], issue_date, credential_url[:500], id),
+            )
+            conn.commit()
+    flash("Certification updated.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/certifications/<int:id>/delete", methods=["POST"])
+@login_required(role="candidate")
+def delete_certification(id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT id FROM candidate_certifications WHERE id = %s AND user_id = %s", (id, session["user_id"])
+            )
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+            cur.execute("DELETE FROM candidate_certifications WHERE id=%s", (id,))
+            conn.commit()
+    flash("Certification deleted.", "info")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/achievements/add", methods=["POST"])
+@login_required(role="candidate")
+def add_achievement():
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    achieved_date = request.form.get("achieved_date") or None
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "INSERT INTO candidate_achievements (user_id, title, description, achieved_date) VALUES (%s, %s, %s, %s)",
+                (session["user_id"], title[:255], description, achieved_date),
+            )
+            conn.commit()
+    flash("Achievement added.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/achievements/<int:id>/edit", methods=["POST"])
+@login_required(role="candidate")
+def edit_achievement(id):
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    achieved_date = request.form.get("achieved_date") or None
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT id FROM candidate_achievements WHERE id = %s AND user_id = %s", (id, session["user_id"])
+            )
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+
+            cur.execute(
+                "UPDATE candidate_achievements SET title=%s, description=%s, achieved_date=%s WHERE id=%s",
+                (title[:255], description, achieved_date, id),
+            )
+            conn.commit()
+    flash("Achievement updated.", "success")
+    return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/achievements/<int:id>/delete", methods=["POST"])
+@login_required(role="candidate")
+def delete_achievement(id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "SELECT id FROM candidate_achievements WHERE id = %s AND user_id = %s", (id, session["user_id"])
+            )
+            if not cur.fetchone():
+                return jsonify({"error": "Access denied"}), 403
+            cur.execute("DELETE FROM candidate_achievements WHERE id=%s", (id,))
+            conn.commit()
+    flash("Achievement deleted.", "info")
+    return redirect(url_for("candidate.candidate_profile"))

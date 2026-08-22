@@ -1,7 +1,7 @@
 import logging
 from contextlib import closing
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for, session, current_app
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 
 from core import admin_required, get_db_connection
 from services.audit_service import log_audit_event
@@ -75,20 +75,18 @@ def update_role(user_id):
 
             cur.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, user_id))
             conn.commit()
-            
+
             log_audit_event(
                 actor_user_id=session.get("user_id"),
                 action="update_user_role",
                 target_type="user",
                 target_id=user_id,
-                details={
-                    "previous_role": user["role"],
-                    "new_role": new_role
-                }
+                details={"previous_role": user["role"], "new_role": new_role},
             )
 
     flash("User role updated successfully.", "success")
     return redirect(url_for("admin.dashboard"))
+
 
 @admin_bp.route("/users/<int:user_id>/status", methods=["POST"])
 @admin_required
@@ -102,7 +100,7 @@ def update_status(user_id):
         flash("Invalid status specified.", "danger")
         return redirect(url_for("admin.dashboard"))
 
-    is_active_val = (new_status == "active")
+    is_active_val = new_status == "active"
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -125,10 +123,7 @@ def update_status(user_id):
                 action="update_user_status",
                 target_type="user",
                 target_id=user_id,
-                details={
-                    "is_active_before": user["is_active"],
-                    "is_active_after": is_active_val
-                }
+                details={"is_active_before": user["is_active"], "is_active_after": is_active_val},
             )
 
     flash(f"User account {'activated' if is_active_val else 'deactivated'} successfully.", "success")

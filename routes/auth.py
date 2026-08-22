@@ -198,7 +198,7 @@ def reset_password(token):
 def settings():
     # Defer import to avoid circular dependency
     from core import login_required
-    
+
     @login_required()
     def _settings():
         if request.method == "POST":
@@ -236,7 +236,7 @@ def settings():
             return redirect(url_for("auth.login"))
 
         return render_template("settings.html")
-    
+
     return _settings()
 
 

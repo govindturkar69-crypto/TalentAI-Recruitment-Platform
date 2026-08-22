@@ -17,8 +17,9 @@ AUDIT_ALLOWLIST = {
     "ip_address",
     "is_active_before",
     "is_active_after",
-    "company_name"
+    "company_name",
 }
+
 
 def log_audit_event(actor_user_id: int, action: str, target_type: str, target_id: int, details: dict):
     """
@@ -32,7 +33,7 @@ def log_audit_event(actor_user_id: int, action: str, target_type: str, target_id
                 safe_details_dict[k] = v
             else:
                 logger.warning(f"Audit log dropped un-allowlisted key: {k}")
-    
+
     safe_details_json = json.dumps(safe_details_dict) if safe_details_dict else None
 
     try:
@@ -43,7 +44,7 @@ def log_audit_event(actor_user_id: int, action: str, target_type: str, target_id
                     INSERT INTO audit_logs (actor_user_id, action, target_type, target_id, safe_details)
                     VALUES (%s, %s, %s, %s, %s)
                     """,
-                    (actor_user_id, action, target_type, target_id, safe_details_json)
+                    (actor_user_id, action, target_type, target_id, safe_details_json),
                 )
                 conn.commit()
     except Exception as e:

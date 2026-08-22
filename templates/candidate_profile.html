@@ -33,151 +33,389 @@
       </div>
       {% endif %}
     </div>
-  </div>
-</div>
-
-<div class="row g-4">
-  <!-- LEFT: Edit Profile Form -->
-  <div class="col-md-7">
-    <div class="ats-form-panel">
-      <div class="ats-form-section">
-        <h5 class="ats-form-title"><i class="bi bi-person-lines-fill me-2" style="color:var(--primary)"></i>Personal Information</h5>
-        <form method="POST" action="{{ url_for('candidate.candidate_profile') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-          <div class="mb-4">
-            <label class="form-label fw-semibold" style="font-size:0.85rem">Bio</label>
-            <textarea name="bio" class="form-control" rows="3"
-                      placeholder="Tell recruiters about yourself...">{{ profile.bio if profile else '' }}</textarea>
-          </div>
-
-          <div class="row g-3 mb-4">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold" style="font-size:0.85rem">Phone</label>
-              <input type="text" name="phone" class="form-control"
-                     placeholder="+91 9876543210"
-                     value="{{ profile.phone if profile else '' }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold" style="font-size:0.85rem">Location</label>
-              <input type="text" name="location" class="form-control"
-                     placeholder="Bangalore, India"
-                     value="{{ profile.location if profile else '' }}">
-            </div>
-          </div>
-
-          <div class="mb-4">
-            <label class="form-label fw-semibold" style="font-size:0.85rem">Years of Experience</label>
-            <select name="experience_years" class="form-select">
-              <option value="">Select...</option>
-              <option value="Fresher" {% if profile and profile.experience_years == 'Fresher' %}selected{% endif %}>Fresher (0 years)</option>
-              <option value="1-2 years" {% if profile and profile.experience_years == '1-2 years' %}selected{% endif %}>1–2 years</option>
-              <option value="2-4 years" {% if profile and profile.experience_years == '2-4 years' %}selected{% endif %}>2–4 years</option>
-              <option value="4-6 years" {% if profile and profile.experience_years == '4-6 years' %}selected{% endif %}>4–6 years</option>
-              <option value="6+ years" {% if profile and profile.experience_years == '6+ years' %}selected{% endif %}>6+ years</option>
-            </select>
-          </div>
-
-          <h5 class="ats-form-title" style="margin-top:0"><i class="bi bi-link-45deg me-2" style="color:var(--primary)"></i>Social Links</h5>
-
-          <div class="mb-3">
-            <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-linkedin me-1"></i>LinkedIn URL</label>
-            <input type="url" name="linkedin_url" class="form-control"
-                   placeholder="https://linkedin.com/in/yourname"
-                   value="{{ profile.linkedin_url if profile else '' }}">
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-github me-1"></i>GitHub URL</label>
-            <input type="url" name="github_url" class="form-control"
-                   placeholder="https://github.com/yourname"
-                   value="{{ profile.github_url if profile else '' }}">
-          </div>
-          <div class="mb-4">
-            <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-globe me-1"></i>Portfolio URL</label>
-            <input type="url" name="portfolio_url" class="form-control"
-                   placeholder="https://yourportfolio.com"
-                   value="{{ profile.portfolio_url if profile else '' }}">
-          </div>
-
-          <div class="ats-form-footer" style="margin: 0 -32px -32px; border-radius: 0 0 12px 12px;">
-            <button type="submit" class="saas-btn-primary px-4 py-2">
-              <i class="bi bi-check-circle me-1"></i> Save Changes
-            </button>
-          </div>
-        </form>
+    <div class="text-end">
+      <div class="text-white mb-1" style="font-size:0.85rem">Profile Completion</div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="progress" style="width:150px;height:8px;background:rgba(255,255,255,0.2)">
+          <div class="progress-bar bg-success" style="width:{{ profile_completion }}%"></div>
+        </div>
+        <strong class="text-white">{{ profile_completion }}%</strong>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- RIGHT: Resume + Quick Stats -->
-  <div class="col-md-5">
-    <!-- Resume Card -->
-    <div class="saas-profile-section">
-      <div class="saas-profile-section-header">
-        <i class="bi bi-file-earmark-text" style="color:var(--primary)"></i>
-        <span class="saas-profile-section-title">Resume</span>
+<ul class="nav nav-tabs ats-tabs mb-4" id="profileTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview" type="button">Overview</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#education" type="button">Education</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#experience" type="button">Experience</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#projects" type="button">Projects</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#certifications" type="button">Certifications</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#achievements" type="button">Achievements</button>
+  </li>
+</ul>
+
+<div class="tab-content" id="profileTabsContent">
+  <!-- OVERVIEW TAB -->
+  <div class="tab-pane fade show active" id="overview" role="tabpanel">
+    <div class="row g-4">
+      <div class="col-md-7">
+        <div class="ats-form-panel mb-4">
+          <div class="ats-form-section">
+            <h5 class="ats-form-title"><i class="bi bi-person-lines-fill me-2" style="color:var(--primary)"></i>Personal Information</h5>
+            <form method="POST" action="{{ url_for('candidate.candidate_profile') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-4">
+                <label class="form-label fw-semibold" style="font-size:0.85rem">Bio</label>
+                <textarea name="bio" class="form-control" rows="3" placeholder="Tell recruiters about yourself...">{{ profile.bio if profile else '' }}</textarea>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" style="font-size:0.85rem">Phone</label>
+                  <input type="text" name="phone" class="form-control" placeholder="+91 9876543210" value="{{ profile.phone if profile else '' }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" style="font-size:0.85rem">Location</label>
+                  <input type="text" name="location" class="form-control" placeholder="Bangalore, India" value="{{ profile.location if profile else '' }}">
+                </div>
+              </div>
+              <h5 class="ats-form-title" style="margin-top:0"><i class="bi bi-link-45deg me-2" style="color:var(--primary)"></i>Social Links</h5>
+              <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-linkedin me-1"></i>LinkedIn URL</label>
+                <input type="url" name="linkedin_url" class="form-control" value="{{ profile.linkedin_url if profile else '' }}">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-github me-1"></i>GitHub URL</label>
+                <input type="url" name="github_url" class="form-control" value="{{ profile.github_url if profile else '' }}">
+              </div>
+              <div class="mb-4">
+                <label class="form-label fw-semibold" style="font-size:0.85rem"><i class="bi bi-globe me-1"></i>Portfolio URL</label>
+                <input type="url" name="portfolio_url" class="form-control" value="{{ profile.portfolio_url if profile else '' }}">
+              </div>
+              <div class="text-end">
+                <button type="submit" class="saas-btn-primary px-4 py-2"><i class="bi bi-check-circle me-1"></i> Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-      <div class="saas-profile-section-body">
-        {% if resume %}
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <div style="width:36px;height:36px;border-radius:8px;background:var(--success-tint);display:flex;align-items:center;justify-content:center;">
-              <i class="bi bi-check-circle-fill text-success"></i>
-            </div>
-            <div>
-              <div class="fw-semibold" style="font-size:0.9rem;color:var(--text-primary)">Resume uploaded</div>
-              <small class="text-muted">{{ resume.skills.split(',')|length if resume.skills else 0 }} skills extracted</small>
-            </div>
+      
+      <div class="col-md-5">
+        <!-- Skills -->
+        <div class="saas-profile-section mb-4">
+          <div class="saas-profile-section-header">
+            <i class="bi bi-stars" style="color:var(--primary)"></i>
+            <span class="saas-profile-section-title">Skills</span>
           </div>
-          {% if resume.skills %}
-          <div class="mb-3" style="line-height:2">
-            {% for skill in resume.skills.split(',')[:8] %}
-              <span class="saas-skill-chip me-1 mb-1">{{ skill.strip() }}</span>
-            {% endfor %}
-            {% if resume.skills.split(',')|length > 8 %}
-              <span class="text-muted small">+{{ resume.skills.split(',')|length - 8 }} more</span>
+          <div class="saas-profile-section-body">
+            <form method="POST" action="{{ url_for('candidate.edit_skills') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-3">
+                <label class="form-label text-muted small">Comma-separated skills</label>
+                <textarea name="skills" class="form-control" rows="3" placeholder="Python, React, SQL">{{ resolved_skills }}</textarea>
+              </div>
+              <button type="submit" class="saas-btn-primary w-100 py-2">Save Skills</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Resume -->
+        <div class="saas-profile-section">
+          <div class="saas-profile-section-header">
+            <i class="bi bi-file-earmark-text" style="color:var(--primary)"></i>
+            <span class="saas-profile-section-title">Resume</span>
+          </div>
+          <div class="saas-profile-section-body">
+            {% if resume %}
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <div style="width:36px;height:36px;border-radius:8px;background:var(--success-tint);display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-check-circle-fill text-success"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold" style="font-size:0.9rem;color:var(--text-primary)">Resume uploaded</div>
+                </div>
+              </div>
+            {% else %}
+              <div class="text-center py-3">
+                <p class="text-muted small mb-2">No resume uploaded</p>
+              </div>
             {% endif %}
-          </div>
-          {% endif %}
-          <a href="{{ url_for('candidate.upload_resume') }}" class="saas-btn-secondary w-100 text-decoration-none text-center d-block py-2">
-            <i class="bi bi-arrow-repeat me-1"></i> Update Resume
-          </a>
-        {% else %}
-          <div class="saas-empty-state" style="padding:32px 16px;border-radius:10px">
-            <div class="saas-empty-state-icon" style="width:48px;height:48px;font-size:1.25rem;margin-bottom:12px">
-              <i class="bi bi-file-earmark-x"></i>
-            </div>
-            <h5 style="font-size:0.95rem">No resume yet</h5>
-            <p style="font-size:0.82rem;margin-bottom:14px">Upload a PDF to get personalized job recommendations.</p>
-            <a href="{{ url_for('candidate.upload_resume') }}" class="saas-btn-primary text-decoration-none px-4 py-2">
+            <a href="{{ url_for('candidate.upload_resume') }}" class="saas-btn-secondary w-100 text-decoration-none text-center d-block py-2">
               <i class="bi bi-cloud-upload me-1"></i> Upload Resume
             </a>
           </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Quick Stats Card -->
-    <div class="saas-profile-section">
-      <div class="saas-profile-section-header">
-        <i class="bi bi-graph-up" style="color:var(--primary)"></i>
-        <span class="saas-profile-section-title">Quick Stats</span>
-      </div>
-      <div class="saas-profile-section-body" style="padding:0">
-        <div class="d-flex justify-content-between align-items-center px-4 py-3" style="border-bottom:1px solid var(--border-color)">
-          <span class="text-muted" style="font-size:0.88rem">Applications Sent</span>
-          <strong class="fw-bold" style="font-size:1rem">{{ application_count }}</strong>
-        </div>
-        <div class="px-4 py-3">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="text-muted" style="font-size:0.88rem">Profile Completion</span>
-            <strong class="fw-bold" style="font-size:1rem">{{ profile_completion }}%</strong>
-          </div>
-          <div class="progress" style="height:6px;border-radius:4px;background:var(--bg-alt)">
-            <div class="progress-bar bg-success" style="width:{{ profile_completion }}%;border-radius:4px"></div>
-          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- EDUCATION TAB -->
+  <div class="tab-pane fade" id="education" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="m-0">Education</h4>
+      <button class="saas-btn-primary" data-bs-toggle="modal" data-bs-target="#addEduModal"><i class="bi bi-plus-lg me-1"></i> Add</button>
+    </div>
+    {% if education_list %}
+      {% for edu in education_list %}
+        <div class="saas-profile-section mb-3">
+          <div class="saas-profile-section-body d-flex justify-content-between">
+            <div>
+              <h5 class="mb-1">{{ edu.institution }}</h5>
+              <p class="mb-1 text-muted">{{ edu.degree }} in {{ edu.field_of_study }}</p>
+              <small class="text-muted">{{ edu.start_date }} - {{ edu.end_date or 'Present' }}</small>
+            </div>
+            <div>
+              <form action="{{ url_for('candidate.delete_education', id=edu.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this record?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="saas-empty-state">No education added yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- EXPERIENCE TAB -->
+  <div class="tab-pane fade" id="experience" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="m-0">Work Experience</h4>
+      <button class="saas-btn-primary" data-bs-toggle="modal" data-bs-target="#addExpModal"><i class="bi bi-plus-lg me-1"></i> Add</button>
+    </div>
+    {% if experience_list %}
+      {% for exp in experience_list %}
+        <div class="saas-profile-section mb-3">
+          <div class="saas-profile-section-body d-flex justify-content-between">
+            <div>
+              <h5 class="mb-1">{{ exp.title }} at {{ exp.company }}</h5>
+              <small class="text-muted">{{ exp.start_date }} - {{ 'Present' if exp.is_current else exp.end_date }}</small>
+              <p class="mt-2 mb-0">{{ exp.description }}</p>
+            </div>
+            <div>
+              <form action="{{ url_for('candidate.delete_experience', id=exp.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this record?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="saas-empty-state">No experience added yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- PROJECTS TAB -->
+  <div class="tab-pane fade" id="projects" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="m-0">Projects</h4>
+      <button class="saas-btn-primary" data-bs-toggle="modal" data-bs-target="#addProjModal"><i class="bi bi-plus-lg me-1"></i> Add</button>
+    </div>
+    {% if projects_list %}
+      {% for proj in projects_list %}
+        <div class="saas-profile-section mb-3">
+          <div class="saas-profile-section-body d-flex justify-content-between">
+            <div>
+              <h5 class="mb-1">{{ proj.title }}</h5>
+              {% if proj.url %}<a href="{{ proj.url }}" target="_blank" class="small mb-2 d-block">{{ proj.url }}</a>{% endif %}
+              <p class="mb-1">{{ proj.description }}</p>
+              <small class="text-muted">Tech: {{ proj.technologies }}</small>
+            </div>
+            <div>
+              <form action="{{ url_for('candidate.delete_project', id=proj.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this record?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="saas-empty-state">No projects added yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- CERTIFICATIONS TAB -->
+  <div class="tab-pane fade" id="certifications" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="m-0">Certifications</h4>
+      <button class="saas-btn-primary" data-bs-toggle="modal" data-bs-target="#addCertModal"><i class="bi bi-plus-lg me-1"></i> Add</button>
+    </div>
+    {% if certifications_list %}
+      {% for cert in certifications_list %}
+        <div class="saas-profile-section mb-3">
+          <div class="saas-profile-section-body d-flex justify-content-between">
+            <div>
+              <h5 class="mb-1">{{ cert.name }}</h5>
+              <p class="mb-1 text-muted">{{ cert.issuer }} ({{ cert.issue_date }})</p>
+              {% if cert.credential_url %}<a href="{{ cert.credential_url }}" target="_blank" class="small">View Credential</a>{% endif %}
+            </div>
+            <div>
+              <form action="{{ url_for('candidate.delete_certification', id=cert.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this record?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="saas-empty-state">No certifications added yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- ACHIEVEMENTS TAB -->
+  <div class="tab-pane fade" id="achievements" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="m-0">Achievements</h4>
+      <button class="saas-btn-primary" data-bs-toggle="modal" data-bs-target="#addAchModal"><i class="bi bi-plus-lg me-1"></i> Add</button>
+    </div>
+    {% if achievements_list %}
+      {% for ach in achievements_list %}
+        <div class="saas-profile-section mb-3">
+          <div class="saas-profile-section-body d-flex justify-content-between">
+            <div>
+              <h5 class="mb-1">{{ ach.title }}</h5>
+              <small class="text-muted">{{ ach.achieved_date }}</small>
+              <p class="mt-2 mb-0">{{ ach.description }}</p>
+            </div>
+            <div>
+              <form action="{{ url_for('candidate.delete_achievement', id=ach.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this record?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="saas-empty-state">No achievements added yet.</div>
+    {% endif %}
+  </div>
 </div>
+
+<!-- MODALS -->
+
+<!-- Education Modal -->
+<div class="modal fade" id="addEduModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="POST" action="{{ url_for('candidate.add_education') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Education</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label>Institution</label><input type="text" name="institution" class="form-control" required maxlength="255"></div>
+        <div class="mb-3"><label>Degree</label><input type="text" name="degree" class="form-control" maxlength="255"></div>
+        <div class="mb-3"><label>Field of Study</label><input type="text" name="field_of_study" class="form-control" maxlength="255"></div>
+        <div class="row g-2">
+          <div class="col-6"><label>Start Date</label><input type="date" name="start_date" class="form-control"></div>
+          <div class="col-6"><label>End Date</label><input type="date" name="end_date" class="form-control"></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="saas-btn-primary">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Experience Modal -->
+<div class="modal fade" id="addExpModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="POST" action="{{ url_for('candidate.add_experience') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Experience</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label>Company</label><input type="text" name="company" class="form-control" required maxlength="255"></div>
+        <div class="mb-3"><label>Title</label><input type="text" name="title" class="form-control" required maxlength="255"></div>
+        <div class="mb-3"><label>Description</label><textarea name="description" class="form-control"></textarea></div>
+        <div class="row g-2 mb-2">
+          <div class="col-6"><label>Start Date</label><input type="date" name="start_date" class="form-control"></div>
+          <div class="col-6"><label>End Date</label><input type="date" name="end_date" class="form-control"></div>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" name="is_current" class="form-check-input" id="is_current">
+          <label class="form-check-label" for="is_current">I currently work here</label>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="saas-btn-primary">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Project Modal -->
+<div class="modal fade" id="addProjModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="POST" action="{{ url_for('candidate.add_project') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Project</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label>Title</label><input type="text" name="title" class="form-control" required maxlength="255"></div>
+        <div class="mb-3"><label>URL</label><input type="url" name="url" class="form-control" placeholder="https://" maxlength="500"></div>
+        <div class="mb-3"><label>Technologies</label><input type="text" name="technologies" class="form-control" placeholder="React, Node.js"></div>
+        <div class="mb-3"><label>Description</label><textarea name="description" class="form-control"></textarea></div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="saas-btn-primary">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Certification Modal -->
+<div class="modal fade" id="addCertModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="POST" action="{{ url_for('candidate.add_certification') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Certification</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label>Name</label><input type="text" name="name" class="form-control" required maxlength="255"></div>
+        <div class="mb-3"><label>Issuer</label><input type="text" name="issuer" class="form-control" maxlength="255"></div>
+        <div class="mb-3"><label>Issue Date</label><input type="date" name="issue_date" class="form-control"></div>
+        <div class="mb-3"><label>Credential URL</label><input type="url" name="credential_url" class="form-control" placeholder="https://" maxlength="500"></div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="saas-btn-primary">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Achievement Modal -->
+<div class="modal fade" id="addAchModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="POST" action="{{ url_for('candidate.add_achievement') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Achievement</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label>Title</label><input type="text" name="title" class="form-control" required maxlength="255"></div>
+        <div class="mb-3"><label>Date</label><input type="date" name="achieved_date" class="form-control"></div>
+        <div class="mb-3"><label>Description</label><textarea name="description" class="form-control"></textarea></div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="saas-btn-primary">Save</button></div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}

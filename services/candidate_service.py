@@ -5,6 +5,26 @@ from models.resume_parser import extract_skills, extract_text_from_pdf, get_fina
 from services.notification_service import create_notification
 
 
+def get_resolved_candidate_skills(user_id, cur):
+    """
+    Preferred skill resolution:
+    1. Candidate curated Profile Skills
+    2. Otherwise latest resumes.skills
+    3. Otherwise empty list
+    """
+    cur.execute("SELECT skills FROM candidate_profiles WHERE user_id = %s", (user_id,))
+    profile = cur.fetchone()
+    if profile and profile.get("skills"):
+        return [s.strip() for s in profile["skills"].split(",") if s.strip()]
+
+    cur.execute("SELECT skills FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (user_id,))
+    resume = cur.fetchone()
+    if resume and resume.get("skills"):
+        return [s.strip() for s in resume["skills"].split(",") if s.strip()]
+
+    return []
+
+
 def process_resume_upload(user_id, save_path, filename):
     raw_text = extract_text_from_pdf(save_path)
     skills = extract_skills(raw_text)
@@ -38,7 +58,7 @@ def apply_for_job_service(user_id, user_name, job_id):
             if not job:
                 return {"success": False, "message": "Job not found.", "type": "danger"}
 
-            candidate_skills = resume["skills"].split(",") if resume["skills"] else []
+            candidate_skills = get_resolved_candidate_skills(user_id, cur)
             result = get_final_score(
                 resume["raw_text"], candidate_skills, job["required_skills"], job["description"] or ""
             )
@@ -107,15 +127,16 @@ def get_job_recommendations_service(user_id):
         with closing(conn.cursor()) as cur:
             cur.execute("SELECT * FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (user_id,))
             resume = cur.fetchone()
-            if not resume:
-                return None, []
+
+            candidate_skills = get_resolved_candidate_skills(user_id, cur)
+            if not candidate_skills:
+                return resume, []
 
             cur.execute("SELECT * FROM jobs WHERE is_active = TRUE ORDER BY created_at DESC")
             jobs = cur.fetchall()
             cur.execute("SELECT job_id FROM applications WHERE candidate_id = %s", (user_id,))
             applied_job_ids = {row["job_id"] for row in cur.fetchall()}
 
-    candidate_skills = resume["skills"].split(",") if resume["skills"] else []
     recommendations = []
     for job in jobs:
         result = score_candidate(candidate_skills, job["required_skills"])

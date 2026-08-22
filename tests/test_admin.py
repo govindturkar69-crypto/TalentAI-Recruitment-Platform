@@ -78,14 +78,18 @@ class TestAdminPanel:
             {"total": 10},  # total
             {"total": 8},  # candidates
             {"total": 2},  # recruiters
+            {"total": 5},  # jobs
+            {"total": 15},  # applications
         ]
-        mock_admin_cur.fetchall.return_value = [
-            {"id": 1, "name": "Test", "email": "a@a.com", "role": "candidate", "created_at": None}
+        test_user = {"id": 1, "name": "Test", "email": "a@a.com", "role": "candidate", "created_at": None}
+        mock_admin_cur.fetchall.side_effect = [
+            [test_user],  # users
+            [test_user],  # recent_users
         ]
 
         resp = client.get("/admin/dashboard")
         assert resp.status_code == 200
-        assert b"Admin Dashboard" in resp.data
+        assert b"Admin Console" in resp.data
         assert b"Total Users" in resp.data
         # Ensure password hashes are never accidentally mocked/shown
         assert b"pbkdf2:sha256" not in resp.data

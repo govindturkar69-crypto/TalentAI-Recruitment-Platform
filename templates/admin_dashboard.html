@@ -1,131 +1,194 @@
 {% extends "base.html" %}
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Admin Console{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
 <div class="saas-page-header">
   <div>
-    <div class="saas-page-header-eyebrow">Platform Administration</div>
-    <h1 class="saas-page-header-title">Admin Dashboard</h1>
-    <p class="saas-page-header-sub">Manage users and platform settings</p>
+    <div class="saas-page-header-eyebrow">PLATFORM ADMINISTRATION</div>
+    <h1 class="saas-page-header-title">Admin Console</h1>
+    <p class="saas-page-header-sub">Manage users, roles and platform activity across TalentAI.</p>
   </div>
 </div>
 
-<!-- Metrics Strip -->
-<div class="row g-3 mb-4">
-  <div class="col-md-4 col-sm-12">
-    <div class="ats-metric-card">
+<!-- Metrics Strip (5 Cards) -->
+<div class="row g-3 mb-4 row-cols-2 row-cols-md-3 row-cols-lg-5">
+  <div class="col">
+    <div class="ats-metric-card h-100">
       <div class="ats-metric-icon primary">
         <i class="bi bi-people-fill"></i>
       </div>
       <div>
-        <div class="text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Users</div>
-        <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_users }}</div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Users</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_users }}</div>
       </div>
     </div>
   </div>
-  <div class="col-md-4 col-sm-6">
-    <div class="ats-metric-card">
+  <div class="col">
+    <div class="ats-metric-card h-100">
       <div class="ats-metric-icon info">
         <i class="bi bi-person-badge"></i>
       </div>
       <div>
-        <div class="text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Candidates</div>
-        <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_candidates }}</div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Candidates</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_candidates }}</div>
       </div>
     </div>
   </div>
-  <div class="col-md-4 col-sm-6">
-    <div class="ats-metric-card">
+  <div class="col">
+    <div class="ats-metric-card h-100">
       <div class="ats-metric-icon warning">
+        <i class="bi bi-person-lines-fill"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Recruiters</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_recruiters }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="ats-metric-card h-100">
+      <div class="ats-metric-icon success">
         <i class="bi bi-briefcase-fill"></i>
       </div>
       <div>
-        <div class="text-muted" style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Recruiters</div>
-        <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_recruiters }}</div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Jobs</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_jobs }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="ats-metric-card h-100">
+      <div class="ats-metric-icon danger">
+        <i class="bi bi-file-earmark-person-fill"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Applications</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_applications }}</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- User Management Table -->
-<div class="saas-card">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="fw-bold mb-0">User Management</h5>
-    
-    <!-- Simple JS-based filter to avoid query parameter logic -->
-    <div class="d-flex gap-2">
-      <input type="text" id="userSearch" class="form-control form-control-sm" placeholder="Search users..." style="width: 200px;">
-      <select id="roleFilter" class="form-select form-select-sm" style="width: 120px;">
-        <option value="all">All Roles</option>
-        <option value="candidate">Candidate</option>
-        <option value="recruiter">Recruiter</option>
-      </select>
+<div class="row g-4">
+  <!-- Main Column: User Management -->
+  <div class="col-lg-8">
+    <div class="saas-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
+        <!-- Simple JS-based filter -->
+        <div class="d-flex gap-2 flex-grow-1 justify-content-lg-end">
+          <div class="input-group input-group-sm" style="max-width: 250px;">
+            <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+            <input type="text" id="userSearch" class="form-control" placeholder="Search users...">
+          </div>
+          <select id="roleFilter" class="form-select form-select-sm" style="width: 130px;">
+            <option value="all">Role: All</option>
+            <option value="candidate">Candidate</option>
+            <option value="recruiter">Recruiter</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table saas-table table-sm align-middle" id="usersTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Joined</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr class="user-row" data-role="{{ user.role }}" data-name="{{ user.name | lower }}" data-email="{{ user.email | lower }}">
+              <td class="fw-semibold">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="saas-avatar-sm rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:28px;height:28px;font-size:0.75rem;">
+                    {{ user.name[:2] | upper }}
+                  </div>
+                  {{ user.name }}
+                </div>
+              </td>
+              <td><span class="text-muted small">{{ user.email }}</span></td>
+              <td>
+                {% if user.role == 'recruiter' %}
+                  <span class="saas-skill-chip" style="background:var(--warning-tint);color:#b45309;border-color:rgba(245,158,11,0.25);padding:2px 6px;font-size:0.7rem;">
+                    Recruiter
+                  </span>
+                {% else %}
+                  <span class="saas-skill-chip" style="background:var(--info-tint);color:#0369a1;border-color:rgba(14,165,233,0.25);padding:2px 6px;font-size:0.7rem;">
+                    Candidate
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="text-muted" style="font-size: 0.8rem;">
+                  {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'Unknown' }}
+                </span>
+              </td>
+              <td class="text-end">
+                <!-- Action Form -->
+                <form action="{{ url_for('admin.update_role', user_id=user.id) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="role" class="form-select" style="width: 100px; font-size: 0.75rem; padding: 2px 4px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
+                    <option value="candidate" {% if user.role == 'candidate' %}selected{% endif %}>Candidate</option>
+                    <option value="recruiter" {% if user.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
+                  </select>
+                  <button type="submit" class="saas-btn-primary" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
+                    Save
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if not users %}
+      <div class="saas-empty-state">
+        <div class="saas-empty-state-icon">
+          <i class="bi bi-people"></i>
+        </div>
+        <h5>No users found</h5>
+      </div>
+      {% endif %}
     </div>
   </div>
 
-  <div class="table-responsive">
-    <table class="table saas-table align-middle" id="usersTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Joined</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for user in users %}
-        <tr class="user-row" data-role="{{ user.role }}" data-name="{{ user.name | lower }}" data-email="{{ user.email | lower }}">
-          <td><span class="text-muted small">#{{ user.id }}</span></td>
-          <td class="fw-semibold">{{ user.name }}</td>
-          <td>{{ user.email }}</td>
-          <td>
-            {% if user.role == 'recruiter' %}
-              <span class="saas-skill-chip" style="background:var(--warning-tint);color:#b45309;border-color:rgba(245,158,11,0.25)">
-                <i class="bi bi-briefcase me-1"></i> Recruiter
+  <!-- Side Column: Recent Registrations -->
+  <div class="col-lg-4">
+    <div class="saas-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Recent Registrations</h6>
+      
+      {% if recent_users %}
+        <div class="list-group list-group-flush">
+          {% for ru in recent_users %}
+          <div class="list-group-item px-0 py-2 border-bottom-0 mb-2">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <span class="fw-semibold" style="font-size:0.85rem;">{{ ru.name }}</span>
+              <small class="text-muted" style="font-size:0.7rem;">
+                {{ ru.created_at.strftime('%b %d, %Y') if ru.created_at else '' }}
+              </small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted text-truncate" style="font-size:0.75rem; max-width: 180px;">{{ ru.email }}</span>
+              <span style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:{% if ru.role == 'recruiter' %}#b45309{% else %}#0369a1{% endif %}">
+                {{ ru.role }}
               </span>
-            {% else %}
-              <span class="saas-skill-chip" style="background:var(--info-tint);color:#0369a1;border-color:rgba(14,165,233,0.25)">
-                <i class="bi bi-person me-1"></i> Candidate
-              </span>
-            {% endif %}
-          </td>
-          <td>
-            <span class="text-muted small">
-              <i class="bi bi-calendar3 me-1"></i>
-              {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'Unknown' }}
-            </span>
-          </td>
-          <td class="text-end">
-            <!-- Action Form -->
-            <form action="{{ url_for('admin.update_role', user_id=user.id) }}" method="POST" class="d-inline-flex align-items-center gap-2">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <select name="role" class="form-select form-select-sm" style="width: 110px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
-                <option value="candidate" {% if user.role == 'candidate' %}selected{% endif %}>Candidate</option>
-                <option value="recruiter" {% if user.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
-              </select>
-              <button type="submit" class="saas-btn-primary py-1 px-2" style="font-size:0.8rem;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
-                Update
-              </button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% if not users %}
-  <div class="saas-empty-state">
-    <div class="saas-empty-state-icon">
-      <i class="bi bi-people"></i>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center text-muted mt-4">
+          <small>No recent registrations.</small>
+        </div>
+      {% endif %}
     </div>
-    <h5>No users found</h5>
-    <p>There are no users registered on the platform yet.</p>
   </div>
-  {% endif %}
 </div>
 
 <!-- Filtering JS -->
@@ -155,8 +218,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  searchInput.addEventListener('input', filterUsers);
-  roleFilter.addEventListener('change', filterUsers);
+  if(searchInput && roleFilter) {
+    searchInput.addEventListener('input', filterUsers);
+    roleFilter.addEventListener('change', filterUsers);
+  }
 });
 </script>
 {% endblock %}

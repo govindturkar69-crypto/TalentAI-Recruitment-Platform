@@ -25,17 +25,29 @@ def dashboard():
             cur.execute("SELECT COUNT(*) AS total FROM users WHERE role = 'recruiter'")
             total_recruiters = cur.fetchone()["total"]
 
+            cur.execute("SELECT COUNT(*) AS total FROM jobs")
+            total_jobs = cur.fetchone()["total"]
+
+            cur.execute("SELECT COUNT(*) AS total FROM applications")
+            total_applications = cur.fetchone()["total"]
+
             # Users list (safe fields only)
             cur.execute("SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC")
             users = cur.fetchall()
+
+            # Recent registrations (safe fields only)
+            cur.execute("SELECT name, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5")
+            recent_users = cur.fetchall()
 
     metrics = {
         "total_users": total_users,
         "total_candidates": total_candidates,
         "total_recruiters": total_recruiters,
+        "total_jobs": total_jobs,
+        "total_applications": total_applications,
     }
 
-    return render_template("admin_dashboard.html", metrics=metrics, users=users)
+    return render_template("admin_dashboard.html", metrics=metrics, users=users, recent_users=recent_users)
 
 
 @admin_bp.route("/users/<int:user_id>/role", methods=["POST"])

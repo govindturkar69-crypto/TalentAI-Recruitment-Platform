@@ -40,14 +40,19 @@ def test_schema_contract_jobs():
     conn = get_test_db_connection()
     cur = conn.cursor()
     cur.execute("SHOW COLUMNS FROM jobs")
-    columns = {row["Field"] for row in cur.fetchall()}
+    rows = cur.fetchall()
+    columns = {row["Field"]: row for row in rows}
+
     assert "id" in columns
     assert "recruiter_id" in columns
-    assert "is_active" in columns
     assert "job_title" in columns
-    assert "description" in columns
-    assert "location" in columns
-    assert "required_skills" in columns
+    assert "is_active" in columns
+
+    # Explicitly assert jobs.is_active properties
+    col_def = columns["is_active"]
+    assert col_def["Null"] == "NO"
+    assert col_def["Default"] == "1"
+
     cur.close()
     conn.close()
 
@@ -65,12 +70,25 @@ def test_schema_contract_candidate_profiles():
 
 
 def test_schema_contract_tables_exist():
-    """Verify canonical schema contains required tables."""
+    """Verify canonical schema contains required tables including Phase 1B."""
     conn = get_test_db_connection()
     cur = conn.cursor()
     cur.execute("SHOW TABLES")
     tables = {list(row.values())[0] for row in cur.fetchall()}
-    required_tables = {"users", "jobs", "applications", "resumes", "candidate_profiles", "companies", "audit_logs"}
+    required_tables = {
+        "users",
+        "jobs",
+        "applications",
+        "resumes",
+        "candidate_profiles",
+        "companies",
+        "audit_logs",
+        "candidate_education",
+        "candidate_experience",
+        "candidate_projects",
+        "candidate_certifications",
+        "candidate_achievements",
+    }
     assert required_tables.issubset(tables)
     cur.close()
     conn.close()

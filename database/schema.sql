@@ -2,8 +2,7 @@
 -- AI Recruitment Platform - Database Schema
 -- ============================================
 
-CREATE DATABASE IF NOT EXISTS recruitment_db;
-USE recruitment_db;
+
 
 -- Users Table (Candidates + Recruiters)
 CREATE TABLE IF NOT EXISTS users (

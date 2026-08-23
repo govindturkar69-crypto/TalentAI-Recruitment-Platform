@@ -21,6 +21,7 @@ def get_test_db_connection():
         cursorclass=pymysql.cursors.DictCursor,
     )
 
+
 def test_schema_contract_users():
     """Verify canonical schema contains required users table objects."""
     conn = get_test_db_connection()
@@ -32,6 +33,7 @@ def test_schema_contract_users():
     assert "company_id" in columns
     cur.close()
     conn.close()
+
 
 def test_schema_contract_jobs():
     """Verify canonical schema contains required jobs table objects."""
@@ -54,6 +56,7 @@ def test_schema_contract_jobs():
     cur.close()
     conn.close()
 
+
 def test_schema_contract_candidate_profiles():
     """Verify canonical schema contains required candidate_profiles table objects."""
     conn = get_test_db_connection()
@@ -65,6 +68,7 @@ def test_schema_contract_candidate_profiles():
     cur.close()
     conn.close()
 
+
 def test_schema_contract_tables_exist():
     """Verify canonical schema contains required tables including Phase 1B."""
     conn = get_test_db_connection()
@@ -72,10 +76,18 @@ def test_schema_contract_tables_exist():
     cur.execute("SHOW TABLES")
     tables = {list(row.values())[0] for row in cur.fetchall()}
     required_tables = {
-        "users", "jobs", "applications", "resumes", "candidate_profiles",
-        "companies", "audit_logs",
-        "candidate_education", "candidate_experience", "candidate_projects",
-        "candidate_certifications", "candidate_achievements"
+        "users",
+        "jobs",
+        "applications",
+        "resumes",
+        "candidate_profiles",
+        "companies",
+        "audit_logs",
+        "candidate_education",
+        "candidate_experience",
+        "candidate_projects",
+        "candidate_certifications",
+        "candidate_achievements",
     }
     assert required_tables.issubset(tables)
     cur.close()

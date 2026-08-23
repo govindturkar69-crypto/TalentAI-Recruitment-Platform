@@ -79,12 +79,12 @@ jobs:
         # Reset database
         mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE test_db; CREATE DATABASE test_db;"
         
-        # Load pre-repair Phase 1B schema from the stable rollback commit
-        git show bb58cc7:database/schema.sql | mysql -h 127.0.0.1 -u root -proot test_db
+        # Load pre-repair Phase 1B schema from fixture
+        mysql -h 127.0.0.1 -u root -proot test_db < tests/fixtures/pre_003_004_schema.sql
         
-        # Insert existing data to verify backfill logic
-        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO users (id, email, password_hash, role) VALUES (1, 'test@example.com', 'hash', 'CANDIDATE');"
-        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO jobs (id, recruiter_id, job_title, description, location) VALUES (1, 1, 'Title', 'Desc', 'Loc');"
+        # Insert safe dummy existing records
+        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO users (id, name, email, password, role) VALUES (1, 'Test User', 'test@example.com', 'hash', 'candidate');"
+        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO jobs (id, recruiter_id, job_title, required_skills, description, location) VALUES (1, 1, 'Title', 'skill', 'Desc', 'Loc');"
 
         # Apply migrations
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/003_reconcile_foundation.sql

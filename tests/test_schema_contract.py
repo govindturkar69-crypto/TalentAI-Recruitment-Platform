@@ -1,0 +1,76 @@
+import os
+
+import pymysql
+import pytest
+
+
+def get_test_db_connection():
+    test_db = os.environ.get("TEST_DB_NAME", "test_db")
+    if test_db not in ["test_db"]:
+        pytest.fail(f"ABORT: TEST_DB_NAME '{test_db}' is not an explicitly whitelisted test database.")
+
+    host = os.environ.get("TEST_DB_HOST", "127.0.0.1")
+    if host not in ["localhost", "127.0.0.1", "mysql"]:
+        pytest.fail(f"ABORT: Host '{host}' is forbidden in schema integration tests.")
+
+    return pymysql.connect(
+        host=host,
+        user=os.environ.get("TEST_DB_USER", "root"),
+        password=os.environ.get("TEST_DB_PASSWORD", "root"),
+        database=test_db,
+        cursorclass=pymysql.cursors.DictCursor,
+    )
+
+
+def test_schema_contract_users():
+    """Verify canonical schema contains required users table objects."""
+    conn = get_test_db_connection()
+    cur = conn.cursor()
+    cur.execute("SHOW COLUMNS FROM users")
+    columns = {row["Field"] for row in cur.fetchall()}
+    assert "id" in columns
+    assert "is_active" in columns
+    assert "company_id" in columns
+    cur.close()
+    conn.close()
+
+
+def test_schema_contract_jobs():
+    """Verify canonical schema contains required jobs table objects."""
+    conn = get_test_db_connection()
+    cur = conn.cursor()
+    cur.execute("SHOW COLUMNS FROM jobs")
+    columns = {row["Field"] for row in cur.fetchall()}
+    assert "id" in columns
+    assert "recruiter_id" in columns
+    assert "is_active" in columns
+    assert "job_title" in columns
+    assert "description" in columns
+    assert "location" in columns
+    assert "required_skills" in columns
+    cur.close()
+    conn.close()
+
+
+def test_schema_contract_candidate_profiles():
+    """Verify canonical schema contains required candidate_profiles table objects."""
+    conn = get_test_db_connection()
+    cur = conn.cursor()
+    cur.execute("SHOW COLUMNS FROM candidate_profiles")
+    columns = {row["Field"] for row in cur.fetchall()}
+    assert "user_id" in columns
+    assert "skills" in columns
+    cur.close()
+    conn.close()
+
+
+def test_schema_contract_tables_exist():
+    """Verify canonical schema contains required tables."""
+    conn = get_test_db_connection()
+    cur = conn.cursor()
+    cur.execute("SHOW TABLES")
+    tables = {list(row.values())[0] for row in cur.fetchall()}
+    required_tables = {"users", "jobs", "applications", "resumes", "candidate_profiles", "companies", "audit_logs"}
+    assert required_tables.issubset(tables)
+    cur.close()
+    conn.close()

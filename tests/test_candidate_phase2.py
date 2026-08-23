@@ -8,7 +8,7 @@ def test_candidate_jobs_unauthenticated(client):
 
 
 def test_candidate_jobs_recruiter_blocked(client, mock_db):
-    mock_db.fetchone.return_value = {"id": 2, "role": "recruiter", "is_active": True, "email": "recruiter@test.com"}  # noqa: E501
+    mock_db.fetchone.return_value = {"id": 2, "role": "recruiter", "is_active": True, "email": "recruiter@test.com"}
     with client.session_transaction() as sess:
         sess["user_id"] = 2
         sess["role"] = "recruiter"

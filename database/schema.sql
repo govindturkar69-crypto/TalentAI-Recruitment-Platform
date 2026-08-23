@@ -12,8 +12,40 @@ CREATE TABLE IF NOT EXISTS users (
     email       VARCHAR(100)  NOT NULL UNIQUE,
     password    VARCHAR(255)  NOT NULL,
     role        ENUM('candidate','recruiter') NOT NULL DEFAULT 'candidate',
+    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    company_id  INT NULL,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Companies Table
+CREATE TABLE IF NOT EXISTS companies (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    website VARCHAR(255),
+    logo_path VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+ALTER TABLE users ADD CONSTRAINT fk_user_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL;
+CREATE INDEX idx_users_company_id ON users(company_id);
+
+-- Audit Logs Table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    actor_user_id INT NULL, 
+    action VARCHAR(255) NOT NULL,
+    target_type VARCHAR(100) NOT NULL, 
+    target_id INT,
+    safe_details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_auditlogs_actor ON audit_logs(actor_user_id);
+CREATE INDEX idx_auditlogs_created ON audit_logs(created_at);
 
 -- Jobs Table (created by recruiters)
 CREATE TABLE IF NOT EXISTS jobs (
@@ -24,6 +56,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     description      TEXT,
     location         VARCHAR(100),
     experience       VARCHAR(50),
+    is_active        BOOLEAN NOT NULL DEFAULT TRUE,
     created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (recruiter_id) REFERENCES users(id) ON DELETE CASCADE
 );

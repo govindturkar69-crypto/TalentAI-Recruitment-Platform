@@ -10,6 +10,19 @@ jobs:
   test:
     name: Code Quality & Tests
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
     - name: Check out repository
@@ -40,10 +53,49 @@ jobs:
         # Use compileall to statically validate all project Python files
         python -m compileall -q app.py core.py config.py routes/ services/ models/
 
-    - name: Run pytest
+    - name: Run pytest (Unit tests)
       env:
         FLASK_SECRET_KEY: dummy-ci-secret
       run: |
-        pytest -v tests/
+        pytest -v tests/ -k "not test_schema_contract"
 
+    - name: Run Schema Integration Test (Fresh Schema)
+      env:
+        TEST_DB_HOST: 127.0.0.1
+        TEST_DB_USER: root
+        TEST_DB_PASSWORD: root
+        TEST_DB_NAME: test_db
+      run: |
+        mysql -h 127.0.0.1 -u root -proot test_db < database/schema.sql
+        pytest -v tests/test_schema_contract.py
 
+    - name: Run Schema Integration Test (Migration Path & Backfill)
+      env:
+        TEST_DB_HOST: 127.0.0.1
+        TEST_DB_USER: root
+        TEST_DB_PASSWORD: root
+        TEST_DB_NAME: test_db
+      run: |
+        # Reset database
+        mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE test_db; CREATE DATABASE test_db;"
+        
+        # Load pre-repair Phase 1B schema from the stable rollback commit
+        git show bb58cc7:database/schema.sql | mysql -h 127.0.0.1 -u root -proot test_db
+        
+        # Insert existing data to verify backfill logic
+        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO users (id, email, password_hash, role) VALUES (1, 'test@example.com', 'hash', 'CANDIDATE');"
+        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO jobs (id, recruiter_id, job_title, description, location) VALUES (1, 1, 'Title', 'Desc', 'Loc');"
+
+        # Apply migrations
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/003_reconcile_foundation.sql
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/004_job_lifecycle.sql
+
+        # Verify backfill
+        mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT is_active, company_id FROM users WHERE id = 1;"
+        mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT is_active FROM jobs WHERE id = 1;"
+
+        # Verify schema contract on migrated schema
+        pytest -v tests/test_schema_contract.py
+
+        # Dump schema metadata for manual review
+        mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_SCHEMA = 'test_db' AND REFERENCED_TABLE_NAME IS NOT NULL;"

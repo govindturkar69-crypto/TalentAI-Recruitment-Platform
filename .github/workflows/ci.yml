@@ -99,3 +99,32 @@ jobs:
 
         # Dump schema metadata for manual review
         mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_SCHEMA = 'test_db' AND REFERENCED_TABLE_NAME IS NOT NULL;"
+
+    - name: Run Schema Integration Test (Actual Production Drift & Reconciliation)
+      env:
+        TEST_DB_HOST: 127.0.0.1
+        TEST_DB_USER: root
+        TEST_DB_PASSWORD: root
+        TEST_DB_NAME: test_db
+      run: |
+        # Reset database
+        mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE test_db; CREATE DATABASE test_db;"
+        
+        # Load actual production drift schema from fixture
+        mysql -h 127.0.0.1 -u root -proot test_db < tests/fixtures/current_production_drift_schema.sql
+        
+        # Insert safe dummy existing records including candidate profile with NULL is_active for job
+        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO users (id, name, email, password, role) VALUES (1, 'Test User', 'test@example.com', 'hash', 'candidate');"
+        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO jobs (id, recruiter_id, job_title, required_skills, description, location, is_active) VALUES (1, 1, 'Title', 'skill', 'Desc', 'Loc', NULL);"
+        mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO candidate_profiles (user_id) VALUES (1);"
+
+        # Apply migrations
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/003_reconcile_foundation.sql
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/005_reconcile_candidate_profile.sql
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/006_reconcile_job_lifecycle.sql
+
+        # Verify backfill
+        mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT is_active FROM jobs WHERE id = 1;" | grep -q "1"
+
+        # Verify schema contract on migrated schema
+        pytest -v tests/test_schema_contract.py

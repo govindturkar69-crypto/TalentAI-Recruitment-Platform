@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Search Jobs - TalentAI{% endblock %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12 text-center">
+    <h2 class="fw-bold">Discover Your Next Role</h2>
+    <p class="text-muted">Search through active opportunities and find your perfect match.</p>
+  </div>
+</div>
+
+<div class="row mb-4 justify-content-center">
+  <div class="col-md-8">
+    <form method="GET" action="{{ url_for('candidate.candidate_jobs') }}" class="card saas-card shadow-sm p-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <input type="text" name="keyword" class="form-control bg-light text-dark border-0" placeholder="Job title or keywords..." value="{{ keyword }}">
+        </div>
+        <div class="col-md-4">
+          <input type="text" name="location" class="form-control bg-light text-dark border-0" placeholder="Location..." value="{{ location }}">
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  {% if jobs %}
+    {% for job in jobs %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card saas-card h-100 shadow-sm border-0 position-relative">
+          <div class="card-body">
+            <h5 class="card-title fw-bold text-truncate" title="{{ job.job_title }}">{{ job.job_title }}</h5>
+            <p class="text-muted small mb-2"><i class="bi bi-geo-alt"></i> {{ job.location or 'Remote' }} &nbsp;|&nbsp; <i class="bi bi-briefcase"></i> {{ job.experience or 'Any' }}</p>
+            <div class="mb-3">
+              {% set skills = job.required_skills.split(',') %}
+              {% for s in skills[:3] %}
+                <span class="badge bg-secondary text-light fw-normal me-1">{{ s | trim }}</span>
+              {% endfor %}
+              {% if skills|length > 3 %}
+                <span class="badge bg-light text-dark border fw-normal">+{{ skills|length - 3 }}</span>
+              {% endif %}
+            </div>
+            
+            {% if job.id in applied_job_ids %}
+              <div class="mb-2"><span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle"></i> Applied</span></div>
+            {% elif job.id in saved_job_ids %}
+              <div class="mb-2"><span class="badge bg-warning-subtle text-warning"><i class="bi bi-bookmark-fill"></i> Saved</span></div>
+            {% endif %}
+          </div>
+          <div class="card-footer bg-transparent border-0 text-end">
+            <a href="{{ url_for('candidate.candidate_job_details', job_id=job.id) }}" class="btn btn-sm btn-outline-primary w-100">View Details</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="col-12 text-center py-5">
+      <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+      <h4 class="mt-3">No jobs found</h4>
+      <p class="text-muted">We couldn't find any active jobs matching your criteria.</p>
+      <a href="{{ url_for('candidate.candidate_jobs') }}" class="btn btn-outline-primary">Clear Search</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

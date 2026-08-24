@@ -95,18 +95,25 @@ def withdraw_application(app_id):
     return redirect(url_for("candidate.candidate_dashboard"))
 
 
+import pymysql
+
 @candidate_bp.route("/candidate/save_job/<int:job_id>", methods=["POST"])
 @login_required(role="candidate")
 def save_job(job_id):
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id FROM jobs WHERE id = %s", (job_id,))
+            if not cur.fetchone():
+                flash("Job not found.", "danger")
+                return redirect(url_for("candidate.candidate_dashboard"))
+                
             try:
                 cur.execute(
                     "INSERT INTO saved_jobs (candidate_id, job_id) VALUES (%s,%s)", (session["user_id"], job_id)
                 )
                 conn.commit()
                 flash("Job saved for later.", "success")
-            except Exception:
+            except pymysql.err.IntegrityError:
                 flash("This job is already in your saved list.", "info")
 
     from app import safe_redirect
@@ -833,3 +840,123 @@ def delete_achievement(id):
             conn.commit()
     flash("Achievement deleted.", "info")
     return redirect(url_for("candidate.candidate_profile"))
+
+
+@candidate_bp.route("/candidate/jobs")
+@login_required(role="candidate")
+def candidate_jobs():
+    keyword = request.args.get("keyword", "").strip()
+    location = request.args.get("location", "").strip()
+
+    query = "SELECT * FROM jobs WHERE is_active = TRUE"
+    params = []
+
+    if keyword:
+        query += " AND (job_title LIKE %s OR description LIKE %s)"
+        like_kw = f"%{keyword[:100]}%"
+        params.extend([like_kw, like_kw])
+
+    if location:
+        query += " AND location LIKE %s"
+        params.append(f"%{location[:100]}%")
+
+    query += " ORDER BY created_at DESC LIMIT 100"
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(query, tuple(params))
+            jobs = cur.fetchall()
+
+            cur.execute("SELECT job_id FROM saved_jobs WHERE candidate_id = %s", (session["user_id"],))
+            saved_job_ids = {row["job_id"] for row in cur.fetchall()}
+
+            cur.execute("SELECT job_id FROM applications WHERE candidate_id = %s", (session["user_id"],))
+            applied_job_ids = {row["job_id"] for row in cur.fetchall()}
+
+    return render_template(
+        "candidate_jobs.html",
+        jobs=jobs,
+        saved_job_ids=saved_job_ids,
+        applied_job_ids=applied_job_ids,
+        keyword=keyword,
+        location=location,
+    )
+
+
+@candidate_bp.route("/candidate/job/<int:job_id>")
+@login_required(role="candidate")
+def candidate_job_details(job_id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            # First check if applied
+            cur.execute(
+                "SELECT * FROM applications WHERE candidate_id = %s AND job_id = %s", (session["user_id"], job_id)
+            )
+            application = cur.fetchone()
+
+            cur.execute(
+                "SELECT j.*, COALESCE(c.name, 'Company not specified') as company_name "
+                "FROM jobs j "
+                "JOIN users u ON j.recruiter_id = u.id "
+                "LEFT JOIN companies c ON u.company_id = c.id "
+                "WHERE j.id = %s",
+                (job_id,),
+            )
+            job = cur.fetchone()
+
+            if not job:
+                flash("Job not found.", "danger")
+                return redirect(url_for("candidate.candidate_jobs"))
+
+            # Policy: if inactive and not applied -> deny
+            if not job["is_active"] and not application:
+                flash("This job is no longer available.", "warning")
+                return redirect(url_for("candidate.candidate_jobs"))
+
+            cur.execute(
+                "SELECT 1 FROM saved_jobs WHERE candidate_id = %s AND job_id = %s", (session["user_id"], job_id)
+            )
+            is_saved = cur.fetchone() is not None
+
+            # Get match score if available
+            from services.candidate_service import get_resolved_candidate_skills
+
+            candidate_skills = get_resolved_candidate_skills(session["user_id"], cur)
+
+            match_data = None
+            if candidate_skills:
+                from models.resume_parser import score_candidate
+
+                match_data = score_candidate(candidate_skills, job["required_skills"])
+
+    return render_template(
+        "candidate_job_details.html",
+        job=job,
+        application=application,
+        is_saved=is_saved,
+        match_data=match_data,
+        has_skills=bool(candidate_skills),
+    )
+
+
+@candidate_bp.route("/candidate/applications")
+@login_required(role="candidate")
+def candidate_applications():
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                SELECT a.*, j.job_title, j.location, j.experience, j.is_active, 
+                       COALESCE(c.name, 'Company not specified') as company_name
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                JOIN users u ON j.recruiter_id = u.id
+                LEFT JOIN companies c ON u.company_id = c.id
+                WHERE a.candidate_id = %s
+                ORDER BY a.applied_at DESC
+            """,
+                (session["user_id"],),
+            )
+            applications = cur.fetchall()
+
+    return render_template("candidate_applications.html", applications=applications)

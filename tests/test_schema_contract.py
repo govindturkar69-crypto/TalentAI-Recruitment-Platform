@@ -88,7 +88,46 @@ def test_schema_contract_tables_exist():
         "candidate_projects",
         "candidate_certifications",
         "candidate_achievements",
+        "saved_jobs",
     }
     assert required_tables.issubset(tables)
+    cur.close()
+    conn.close()
+
+
+def test_schema_contract_saved_jobs():
+    """Verify canonical schema contains required saved_jobs table objects."""
+    conn = get_test_db_connection()
+    cur = conn.cursor()
+    cur.execute("SHOW COLUMNS FROM saved_jobs")
+    rows = cur.fetchall()
+    columns = {row["Field"]: row for row in rows}
+
+    assert "id" in columns
+    assert "candidate_id" in columns
+    assert "job_id" in columns
+    assert "saved_at" in columns
+
+    # Verify attributes
+    assert columns["id"]["Key"] == "PRI"
+    assert "auto_increment" in columns["id"]["Extra"].lower()
+
+    assert columns["candidate_id"]["Null"] == "NO"
+    assert columns["job_id"]["Null"] == "NO"
+    
+    # Check default on saved_at (could be CURRENT_TIMESTAMP)
+    assert columns["saved_at"]["Default"] is not None or columns["saved_at"]["Extra"] != ""
+
+    cur.execute("SHOW CREATE TABLE saved_jobs")
+    create_table = cur.fetchone()["Create Table"]
+    
+    # Check foreign keys ignoring auto-generated names
+    assert "FOREIGN KEY (`candidate_id`) REFERENCES `users` (`id`) ON DELETE CASCADE" in create_table or "FOREIGN KEY (`candidate_id`) REFERENCES `users` (`id`)\n  ON DELETE CASCADE" in create_table or "FOREIGN KEY (`candidate_id`) REFERENCES `users` (`id`) ON DELETE CASCADE" in create_table.replace("\n", " ").replace("  ", " ")
+    
+    assert "FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE" in create_table or "FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE" in create_table.replace("\n", " ").replace("  ", " ")
+
+    # Check UNIQUE constraint
+    assert "UNIQUE KEY" in create_table and "`candidate_id`" in create_table and "`job_id`" in create_table
+    
     cur.close()
     conn.close()

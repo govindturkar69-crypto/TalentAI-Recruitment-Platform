@@ -57,6 +57,8 @@ def apply_for_job_service(user_id, user_name, job_id):
             job = cur.fetchone()
             if not job:
                 return {"success": False, "message": "Job not found.", "type": "danger"}
+            if not job.get("is_active"):
+                return {"success": False, "message": "This job is no longer active.", "type": "warning"}
 
             candidate_skills = get_resolved_candidate_skills(user_id, cur)
             result = get_final_score(

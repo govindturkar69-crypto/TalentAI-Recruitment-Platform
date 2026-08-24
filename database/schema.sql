@@ -195,3 +195,13 @@ CREATE TABLE IF NOT EXISTS candidate_achievements (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_cand_ach_userid ON candidate_achievements(user_id);
+
+CREATE TABLE IF NOT EXISTS saved_jobs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    candidate_id INT NOT NULL,
+    job_id INT NOT NULL,
+    saved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (candidate_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_save (candidate_id, job_id)
+);

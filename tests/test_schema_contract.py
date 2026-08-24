@@ -129,11 +129,12 @@ def test_schema_contract_saved_jobs():
     assert "FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE" in normalized_create
 
     # Check UNIQUE constraint
-    assert (
+    has_unique = (
         "UNIQUE KEY" in normalized_create
         and "`candidate_id`" in normalized_create
         and "`job_id`" in normalized_create
     )
+    assert has_unique
 
     cur.close()
     conn.close()

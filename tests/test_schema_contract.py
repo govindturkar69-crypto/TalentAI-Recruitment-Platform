@@ -114,20 +114,22 @@ def test_schema_contract_saved_jobs():
 
     assert columns["candidate_id"]["Null"] == "NO"
     assert columns["job_id"]["Null"] == "NO"
-    
+
     # Check default on saved_at (could be CURRENT_TIMESTAMP)
     assert columns["saved_at"]["Default"] is not None or columns["saved_at"]["Extra"] != ""
 
     cur.execute("SHOW CREATE TABLE saved_jobs")
     create_table = cur.fetchone()["Create Table"]
-    
+
+    normalized_create = " ".join(create_table.split())
+
     # Check foreign keys ignoring auto-generated names
-    assert "FOREIGN KEY (`candidate_id`) REFERENCES `users` (`id`) ON DELETE CASCADE" in create_table or "FOREIGN KEY (`candidate_id`) REFERENCES `users` (`id`)\n  ON DELETE CASCADE" in create_table or "FOREIGN KEY (`candidate_id`) REFERENCES `users` (`id`) ON DELETE CASCADE" in create_table.replace("\n", " ").replace("  ", " ")
-    
-    assert "FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE" in create_table or "FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE" in create_table.replace("\n", " ").replace("  ", " ")
+    assert "FOREIGN KEY (`candidate_id`) REFERENCES `users` (`id`) ON DELETE CASCADE" in normalized_create
+
+    assert "FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE" in normalized_create
 
     # Check UNIQUE constraint
-    assert "UNIQUE KEY" in create_table and "`candidate_id`" in create_table and "`job_id`" in create_table
-    
+    assert "UNIQUE KEY" in normalized_create and "`candidate_id`" in normalized_create and "`job_id`" in normalized_create
+
     cur.close()
     conn.close()

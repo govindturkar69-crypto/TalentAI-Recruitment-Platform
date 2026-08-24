@@ -317,20 +317,12 @@ def test_save_job(client, mock_db):
 
     calls = mock_db.execute.call_args_list
 
-    job_check_calls = [
-        call
-        for call in calls
-        if "SELECT id FROM jobs WHERE id = %s" in call.args[0]
-    ]
+    job_check_calls = [call for call in calls if "SELECT id FROM jobs WHERE id = %s" in call.args[0]]
 
     assert len(job_check_calls) == 1
     assert job_check_calls[0].args[1] == (1,)
 
-    insert_calls = [
-        call
-        for call in calls
-        if "INSERT INTO saved_jobs" in call.args[0]
-    ]
+    insert_calls = [call for call in calls if "INSERT INTO saved_jobs" in call.args[0]]
 
     assert len(insert_calls) == 1
     assert insert_calls[0].args[1] == (3, 1)

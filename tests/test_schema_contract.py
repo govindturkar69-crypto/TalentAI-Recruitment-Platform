@@ -130,9 +130,7 @@ def test_schema_contract_saved_jobs():
 
     # Check UNIQUE constraint
     has_unique = (
-        "UNIQUE KEY" in normalized_create
-        and "`candidate_id`" in normalized_create
-        and "`job_id`" in normalized_create
+        "UNIQUE KEY" in normalized_create and "`candidate_id`" in normalized_create and "`job_id`" in normalized_create
     )
     assert has_unique
 

@@ -89,6 +89,7 @@ jobs:
         # Apply migrations
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/003_reconcile_foundation.sql
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/004_job_lifecycle.sql
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/007_add_saved_jobs.sql
 
         # Verify backfill
         mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT is_active, company_id FROM users WHERE id = 1;"

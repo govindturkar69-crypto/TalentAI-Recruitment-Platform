@@ -1,6 +1,7 @@
 import os
 from contextlib import closing
 
+import pymysql
 from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
@@ -95,8 +96,6 @@ def withdraw_application(app_id):
     return redirect(url_for("candidate.candidate_dashboard"))
 
 
-import pymysql
-
 @candidate_bp.route("/candidate/save_job/<int:job_id>", methods=["POST"])
 @login_required(role="candidate")
 def save_job(job_id):
@@ -106,7 +105,7 @@ def save_job(job_id):
             if not cur.fetchone():
                 flash("Job not found.", "danger")
                 return redirect(url_for("candidate.candidate_dashboard"))
-                
+
             try:
                 cur.execute(
                     "INSERT INTO saved_jobs (candidate_id, job_id) VALUES (%s,%s)", (session["user_id"], job_id)
@@ -946,7 +945,7 @@ def candidate_applications():
         with closing(conn.cursor()) as cur:
             cur.execute(
                 """
-                SELECT a.*, j.job_title, j.location, j.experience, j.is_active, 
+                SELECT a.*, j.job_title, j.location, j.experience, j.is_active,
                        COALESCE(c.name, 'Company not specified') as company_name
                 FROM applications a
                 JOIN jobs j ON a.job_id = j.id

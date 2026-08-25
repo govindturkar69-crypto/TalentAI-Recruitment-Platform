@@ -208,6 +208,10 @@ def test_view_candidate_resume_non_pdf(client, mock_db, tmp_path, monkeypatch):
 
 
 def test_view_candidate_resume_symlink_escape(client, mock_db, tmp_path, monkeypatch):
+    import os
+
+    import pytest
+
     with client.session_transaction() as sess:
         sess["user_id"] = 2
         sess["role"] = "recruiter"
@@ -215,16 +219,20 @@ def test_view_candidate_resume_symlink_escape(client, mock_db, tmp_path, monkeyp
     upload_dir = tmp_path / "uploads"
     upload_dir.mkdir()
 
-
     outside_dir = tmp_path / "outside"
     outside_dir.mkdir()
     outside_pdf = outside_dir / "secret.pdf"
     outside_pdf.write_text("secret")
 
-    # Try to create symlink if os supports it, or just use absolute path to simulate
+    symlink_path = upload_dir / "escape.pdf"
+    try:
+        os.symlink(outside_pdf, symlink_path)
+    except OSError:
+        pytest.skip("Symlinks not supported on this platform/configuration")
+
     monkeypatch.setitem(current_app.config, "UPLOAD_FOLDER", str(upload_dir))
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"resume_path": str(outside_pdf.resolve())}]
+    mock_db.fetchone.side_effect = [{"cnt": 0}, {"resume_path": "escape.pdf"}]
     response = client.get("/recruiter/application/1/resume", follow_redirects=True)
     assert b"Invalid resume file path" in response.data
 

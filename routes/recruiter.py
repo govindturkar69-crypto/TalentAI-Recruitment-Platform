@@ -295,13 +295,21 @@ def view_candidate_resume(app_id):
 
         return safe_redirect(url_for("recruiter.recruiter_dashboard"))
 
-    filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-    if not os.path.exists(filepath):
+    from pathlib import Path
+
+    upload_dir = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
+    candidate_path = (upload_dir / filename).resolve()
+
+    if not candidate_path.is_relative_to(upload_dir):
+        flash("Invalid resume file path.", "danger")
+        from app import safe_redirect
+
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    if not candidate_path.is_file():
         flash("Resume file not found on server.", "danger")
         from app import safe_redirect
 
         return safe_redirect(url_for("recruiter.recruiter_dashboard"))
 
-    return send_from_directory(
-        current_app.config["UPLOAD_FOLDER"], filename, mimetype="application/pdf", as_attachment=False
-    )
+    return send_from_directory(str(upload_dir), filename, mimetype="application/pdf", as_attachment=False)

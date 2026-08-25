@@ -9,14 +9,16 @@ from services.audit_service import log_audit_event
 
 logger = logging.getLogger(__name__)
 
+
 def is_valid_url(url_str):
     if not url_str:
         return True
     try:
         parsed = urllib.parse.urlparse(url_str)
-        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
-    except Exception:
+        return parsed.scheme in ("http", "https") and bool(parsed.hostname)
+    except (TypeError, ValueError):
         return False
+
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -243,7 +245,7 @@ def create_company():
         with closing(conn.cursor()) as cur:
             cur.execute(
                 "INSERT INTO companies (name, description, website, is_active) VALUES (%s, %s, %s, TRUE)",
-                (name, description, website)
+                (name, description, website),
             )
             company_id = cur.lastrowid
             conn.commit()
@@ -285,7 +287,7 @@ def edit_company(company_id):
 
             cur.execute(
                 "UPDATE companies SET name = %s, description = %s, website = %s WHERE id = %s",
-                (name, description, website, company_id)
+                (name, description, website, company_id),
             )
             conn.commit()
 

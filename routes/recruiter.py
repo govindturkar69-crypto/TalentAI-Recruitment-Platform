@@ -1,9 +1,20 @@
-from contextlib import closing
 import os
+from contextlib import closing
 from io import BytesIO
 
 import openpyxl
-from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, send_from_directory, session, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    send_from_directory,
+    session,
+    url_for,
+)
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from core import get_db_connection, login_required
@@ -269,28 +280,28 @@ def view_candidate_resume(app_id):
     if not filename:
         flash("Resume file not found.", "danger")
         from app import safe_redirect
+
         return safe_redirect(url_for("recruiter.recruiter_dashboard"))
 
     if filename != os.path.basename(filename):
         flash("Invalid resume file path.", "danger")
         from app import safe_redirect
+
         return safe_redirect(url_for("recruiter.recruiter_dashboard"))
 
     if not filename.lower().endswith(".pdf"):
         flash("Invalid resume file format.", "danger")
         from app import safe_redirect
+
         return safe_redirect(url_for("recruiter.recruiter_dashboard"))
 
     filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
     if not os.path.exists(filepath):
         flash("Resume file not found on server.", "danger")
         from app import safe_redirect
+
         return safe_redirect(url_for("recruiter.recruiter_dashboard"))
 
     return send_from_directory(
-        current_app.config["UPLOAD_FOLDER"],
-        filename,
-        mimetype="application/pdf",
-        as_attachment=False
+        current_app.config["UPLOAD_FOLDER"], filename, mimetype="application/pdf", as_attachment=False
     )
-

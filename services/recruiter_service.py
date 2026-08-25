@@ -152,19 +152,27 @@ def get_application_candidate_profile(app_id, recruiter_id):
             cur.execute("SELECT * FROM candidate_profiles WHERE user_id = %s", (candidate_id,))
             profile = cur.fetchone()
 
-            cur.execute("SELECT * FROM candidate_education WHERE user_id = %s ORDER BY start_date DESC", (candidate_id,))
+            cur.execute(
+                "SELECT * FROM candidate_education WHERE user_id = %s ORDER BY start_date DESC", (candidate_id,)
+            )
             education = cur.fetchall()
 
-            cur.execute("SELECT * FROM candidate_experience WHERE user_id = %s ORDER BY start_date DESC", (candidate_id,))
+            cur.execute(
+                "SELECT * FROM candidate_experience WHERE user_id = %s ORDER BY start_date DESC", (candidate_id,)
+            )
             experience = cur.fetchall()
 
             cur.execute("SELECT * FROM candidate_projects WHERE user_id = %s ORDER BY created_at DESC", (candidate_id,))
             projects = cur.fetchall()
 
-            cur.execute("SELECT * FROM candidate_certifications WHERE user_id = %s ORDER BY issue_date DESC", (candidate_id,))
+            cur.execute(
+                "SELECT * FROM candidate_certifications WHERE user_id = %s ORDER BY issue_date DESC", (candidate_id,)
+            )
             certifications = cur.fetchall()
 
-            cur.execute("SELECT * FROM candidate_achievements WHERE user_id = %s ORDER BY achieved_date DESC", (candidate_id,))
+            cur.execute(
+                "SELECT * FROM candidate_achievements WHERE user_id = %s ORDER BY achieved_date DESC", (candidate_id,)
+            )
             achievements = cur.fetchall()
 
             return {
@@ -174,7 +182,7 @@ def get_application_candidate_profile(app_id, recruiter_id):
                 "experience": experience,
                 "projects": projects,
                 "certifications": certifications,
-                "achievements": achievements
+                "achievements": achievements,
             }, None
 
 
@@ -183,7 +191,7 @@ def get_application_resume(app_id, recruiter_id):
         with closing(conn.cursor()) as cur:
             cur.execute(
                 """
-                SELECT r.resume_path 
+                SELECT r.resume_path
                 FROM applications a
                 JOIN jobs j ON a.job_id = j.id
                 JOIN resumes r ON a.resume_id = r.id
@@ -195,4 +203,3 @@ def get_application_resume(app_id, recruiter_id):
             if not resume:
                 return None, {"error": "Resume not found or unauthorized.", "type": "danger"}
             return resume["resume_path"], None
-

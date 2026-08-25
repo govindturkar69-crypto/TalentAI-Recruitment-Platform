@@ -70,10 +70,40 @@ def test_admin_create_company_validation(client, monkeypatch, mock_db):
     # Empty name
     response = client.post("/admin/companies/create", data={"name": "   ", "website": ""}, follow_redirects=False)
     assert response.status_code == 302
+    for call in mock_db.execute.call_args_list:
+        assert "INSERT INTO companies" not in call[0][0]
 
-    # Bad website
-    response = client.post("/admin/companies/create", data={"name": "Test", "website": "javascript:alert(1)"}, follow_redirects=False)
+    # Bad websites
+    bad_urls = [
+        "javascript:alert(1)",
+        "https://",
+        "http://",
+        "ftp://example.com"
+    ]
+    for url in bad_urls:
+        mock_db.execute.reset_mock()
+        response = client.post(
+            "/admin/companies/create",
+            data={"name": "Test", "website": url},
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+        for call in mock_db.execute.call_args_list:
+            assert "INSERT INTO companies" not in call[0][0]
+
+    # Good website
+    mock_db.execute.reset_mock()
+    response = client.post(
+        "/admin/companies/create",
+        data={"name": "Test", "website": "https://example.com"},
+        follow_redirects=False,
+    )
     assert response.status_code == 302
+    insert_found = False
+    for call in mock_db.execute.call_args_list:
+        if "INSERT INTO companies" in call[0][0]:
+            insert_found = True
+    assert insert_found
 
 def test_admin_edit_company(client, monkeypatch, mock_db):
     monkeypatch.setitem(client.application.config, "ADMIN_EMAIL", "admin@company.com")
@@ -174,6 +204,34 @@ def test_admin_assign_inactive_company(client, monkeypatch, mock_db):
     ]
 
     response = client.post("/admin/users/2/company", data={"company_id": "5"}, follow_redirects=False)
+    assert response.status_code == 302
+
+    for call in mock_db.execute.call_args_list:
+        assert "UPDATE users SET company_id" not in call[0][0]
+
+
+def test_admin_assign_company_invalid_id(client, monkeypatch, mock_db):
+    monkeypatch.setitem(client.application.config, "ADMIN_EMAIL", "admin@company.com")
+    _login_as(client, email="admin@company.com")
+
+    mock_db.fetchone.side_effect = [
+        {"email": "admin@company.com", "is_active": True},
+        {"id": 2, "role": "recruiter", "company_id": None},
+    ]
+
+    response = client.post("/admin/users/2/company", data={"company_id": "abc"}, follow_redirects=False)
+    assert response.status_code == 302
+
+    for call in mock_db.execute.call_args_list:
+        assert "UPDATE users SET company_id" not in call[0][0]
+
+    mock_db.execute.reset_mock()
+    mock_db.fetchone.side_effect = [
+        {"email": "admin@company.com", "is_active": True},
+        {"id": 2, "role": "recruiter", "company_id": None},
+    ]
+
+    response = client.post("/admin/users/2/company", data={"company_id": "-1"}, follow_redirects=False)
     assert response.status_code == 302
 
     for call in mock_db.execute.call_args_list:

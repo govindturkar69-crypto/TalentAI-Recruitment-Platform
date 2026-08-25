@@ -1,4 +1,5 @@
 import logging
+import urllib.parse
 from contextlib import closing
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
@@ -7,6 +8,15 @@ from core import admin_required, get_db_connection
 from services.audit_service import log_audit_event
 
 logger = logging.getLogger(__name__)
+
+def is_valid_url(url_str):
+    if not url_str:
+        return True
+    try:
+        parsed = urllib.parse.urlparse(url_str)
+        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+    except Exception:
+        return False
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -34,10 +44,10 @@ def dashboard():
 
             # Users list (safe fields only)
             cur.execute("""
-                SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at, 
-                       u.company_id, c.name as company_name 
-                FROM users u 
-                LEFT JOIN companies c ON u.company_id = c.id 
+                SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at,
+                       u.company_id, c.name as company_name
+                FROM users u
+                LEFT JOIN companies c ON u.company_id = c.id
                 ORDER BY u.created_at DESC
             """)
             users = cur.fetchall()
@@ -58,7 +68,13 @@ def dashboard():
         "total_applications": total_applications,
     }
 
-    return render_template("admin_dashboard.html", metrics=metrics, users=users, recent_users=recent_users, companies=companies)
+    return render_template(
+        "admin_dashboard.html",
+        metrics=metrics,
+        users=users,
+        recent_users=recent_users,
+        companies=companies,
+    )
 
 
 @admin_bp.route("/users/<int:user_id>/role", methods=["POST"])
@@ -144,7 +160,16 @@ def update_status(user_id):
 @admin_required
 def assign_company(user_id):
     company_id_str = request.form.get("company_id")
-    company_id = int(company_id_str) if company_id_str and company_id_str.strip() else None
+    if not company_id_str or not company_id_str.strip():
+        company_id = None
+    else:
+        try:
+            company_id = int(company_id_str)
+            if company_id <= 0:
+                raise ValueError("Invalid ID")
+        except (TypeError, ValueError):
+            flash("Invalid company selection.", "danger")
+            return redirect(url_for("admin.dashboard"))
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -190,7 +215,8 @@ def list_companies():
         with closing(conn.cursor()) as cur:
             cur.execute("""
                 SELECT c.id, c.name, c.description, c.website, c.is_active, c.created_at, c.updated_at,
-                       (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id AND u.role = 'recruiter') as recruiter_count
+                       (SELECT COUNT(*) FROM users u
+                        WHERE u.company_id = c.id AND u.role = 'recruiter') as recruiter_count
                 FROM companies c
                 ORDER BY c.name ASC
             """)
@@ -209,7 +235,7 @@ def create_company():
         flash("Valid company name is required.", "danger")
         return redirect(url_for("admin.list_companies"))
 
-    if website and not (website.startswith("http://") or website.startswith("https://")):
+    if not is_valid_url(website):
         flash("Website must be a valid http:// or https:// URL.", "danger")
         return redirect(url_for("admin.list_companies"))
 
@@ -245,7 +271,7 @@ def edit_company(company_id):
         flash("Valid company name is required.", "danger")
         return redirect(url_for("admin.list_companies"))
 
-    if website and not (website.startswith("http://") or website.startswith("https://")):
+    if not is_valid_url(website):
         flash("Website must be a valid http:// or https:// URL.", "danger")
         return redirect(url_for("admin.list_companies"))
 

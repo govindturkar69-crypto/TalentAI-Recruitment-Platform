@@ -270,13 +270,21 @@ def test_applicant_filtering_success(client, mock_db):
     assert response.status_code == 200
 
     execute_calls = mock_db.execute.call_args_list
-    query = execute_calls[-1][0][0]
-    params = execute_calls[-1][0][1]
+    app_query_found = False
+    for call in execute_calls:
+        query = call[0][0]
+        params = call[0][1]
+        if "FROM applications a" in query and "JOIN users u" in query and "WHERE a.job_id = %s" in query:
+            app_query_found = True
+            assert "LIKE %s" in query
+            assert "a.status = %s" in query
+            assert "ORDER BY a.score DESC" in query
+            assert "%alice%" in params
+            assert "applied" in params
+            assert "alice" not in query
+            break
 
-    assert "LIKE %s" in query
-    assert "a.status = %s" in query
-    assert "%alice%" in params
-    assert "applied" in params
+    assert app_query_found
 
 
 def test_applicant_filtering_invalid_status(client, mock_db):
@@ -301,11 +309,19 @@ def test_applicant_filtering_invalid_status(client, mock_db):
     assert response.status_code == 200
 
     execute_calls = mock_db.execute.call_args_list
-    query = execute_calls[-1][0][0]
+    app_query_found = False
+    for call in execute_calls:
+        query = call[0][0]
+        params = call[0][1] if len(call[0]) > 1 else ()
+        if "FROM applications a" in query and "JOIN users u" in query and "WHERE a.job_id = %s" in query:
+            app_query_found = True
+            assert "a.status = %s" not in query
+            assert "DROP TABLE" not in query
+            assert "ORDER BY a.score DESC" in query
+            assert "DROP TABLE" not in params
+            break
 
-    assert "a.status = %s" not in query
-    assert "DROP TABLE" not in query
-    assert "ORDER BY a.score DESC" in query
+    assert app_query_found
 
 
 def test_applicant_filtering_unauthorized(client, mock_db):

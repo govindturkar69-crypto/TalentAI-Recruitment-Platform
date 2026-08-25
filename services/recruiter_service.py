@@ -1,7 +1,9 @@
 from contextlib import closing
 
 from core import get_db_connection
+from services.audit_service import log_audit_event
 from services.notification_service import create_notification
+from services.workflow import APPLICATION_STATUSES, RECRUITER_TRANSITIONS
 
 
 def post_job_service(user_id, title, skills, description, location, experience):
@@ -65,13 +67,19 @@ def delete_job_service(user_id, job_id):
 
 def bulk_update_status_service(app_ids, new_status, recruiter_id):
     """H4: Verify every application belongs to a job owned by the recruiter."""
+    if new_status not in ["shortlisted", "rejected", "hired"]:
+        return {"success_count": 0, "skipped_count": len(app_ids), "message": "Invalid bulk target status.", "type": "danger"}
+
+    success_count = 0
+    skipped_count = 0
+    notifications_to_send = []
+
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             for app_id in app_ids:
-                # Verify ownership before any update
                 cur.execute(
                     """
-                    SELECT a.id, a.candidate_id, j.job_title
+                    SELECT a.id, a.candidate_id, a.status, j.job_title
                     FROM applications a
                     JOIN jobs j ON a.job_id = j.id
                     WHERE a.id = %s AND j.recruiter_id = %s
@@ -80,29 +88,60 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
                 )
                 info = cur.fetchone()
                 if not info:
-                    # Unauthorized — skip silently to not leak information
+                    skipped_count += 1
                     continue
+
+                current_status = info["status"]
+                if new_status not in RECRUITER_TRANSITIONS.get(current_status, set()):
+                    skipped_count += 1
+                    continue
+
                 cur.execute("UPDATE applications SET status=%s WHERE id=%s", (new_status, app_id))
+                success_count += 1
+
+                log_audit_event(
+                    recruiter_id,
+                    "application_status_changed",
+                    "application",
+                    app_id,
+                    {"previous_status": current_status, "new_status": new_status}
+                )
+
                 if new_status in ("shortlisted", "rejected", "hired"):
                     msgs = {
                         "shortlisted": f"Good news! You've been shortlisted for {info['job_title']}.",
                         "rejected": f"Your application for {info['job_title']} was not selected.",
                         "hired": f"Congratulations! You've been hired for {info['job_title']}!",
                     }
-                    create_notification(
-                        info["candidate_id"], f"Application {new_status.title()}", msgs[new_status], new_status
-                    )
+                    notifications_to_send.append((info["candidate_id"], f"Application {new_status.title()}", msgs[new_status], new_status))
+
             conn.commit()
+
+    # Send notifications after successful commit
+    for candidate_id, title, body, status in notifications_to_send:
+        try:
+            create_notification(candidate_id, title, body, status)
+        except Exception:
+            pass
+
+    return {
+        "success_count": success_count,
+        "skipped_count": skipped_count,
+        "message": f"Updated {success_count} application(s); skipped {skipped_count}.",
+        "type": "success" if success_count > 0 else "warning"
+    }
 
 
 def update_status_service(app_id, new_status, recruiter_id):
     """H4: Verify the application belongs to a job owned by the recruiter."""
+    if new_status not in APPLICATION_STATUSES:
+        return {"success": False, "message": "Invalid status.", "type": "danger"}
+
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
-            # Verify ownership before any update
             cur.execute(
                 """
-                SELECT a.id, a.candidate_id, j.job_title
+                SELECT a.id, a.candidate_id, a.status, j.job_title
                 FROM applications a
                 JOIN jobs j ON a.job_id = j.id
                 WHERE a.id = %s AND j.recruiter_id = %s
@@ -113,16 +152,32 @@ def update_status_service(app_id, new_status, recruiter_id):
             if not info:
                 return {"success": False, "message": "Application not found.", "type": "danger"}
 
+            current_status = info["status"]
+            if new_status not in RECRUITER_TRANSITIONS.get(current_status, set()):
+                return {"success": False, "message": "Invalid status transition.", "type": "danger"}
+
             cur.execute("UPDATE applications SET status=%s WHERE id=%s", (new_status, app_id))
+
+            log_audit_event(
+                recruiter_id,
+                "application_status_changed",
+                "application",
+                app_id,
+                {"previous_status": current_status, "new_status": new_status}
+            )
+
             conn.commit()
 
-    if new_status in ("shortlisted", "rejected", "hired"):
-        msgs = {
-            "shortlisted": f"Good news! You've been shortlisted for {info['job_title']}.",
-            "rejected": f"Your application for {info['job_title']} was not selected.",
-            "hired": f"Congratulations! You've been hired for {info['job_title']}!",
-        }
-        create_notification(info["candidate_id"], f"Application {new_status.title()}", msgs[new_status], new_status)
+    try:
+        if new_status in ("shortlisted", "rejected", "hired"):
+            msgs = {
+                "shortlisted": f"Good news! You've been shortlisted for {info['job_title']}.",
+                "rejected": f"Your application for {info['job_title']} was not selected.",
+                "hired": f"Congratulations! You've been hired for {info['job_title']}!",
+            }
+            create_notification(info["candidate_id"], f"Application {new_status.title()}", msgs[new_status], new_status)
+    except Exception:
+        pass
 
     return {"success": True, "message": f"Status updated to: {new_status}", "type": "success"}
 

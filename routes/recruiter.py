@@ -172,16 +172,16 @@ def view_applicants(job_id):
 @login_required(role="recruiter")
 def bulk_update_status():
     app_ids = request.form.getlist("selected_apps")
-    new_status = request.form.get("bulk_status")
+    new_status = request.form.get("bulk_status", "").strip().lower()
     job_id = request.form.get("job_id")
 
     if not app_ids or not new_status:
         flash("Please select at least one candidate and a status.", "warning")
         return redirect(url_for("recruiter.view_applicants", job_id=job_id))
 
-    bulk_update_status_service(app_ids, new_status, session["user_id"])
+    result = bulk_update_status_service(app_ids, new_status, session["user_id"])
 
-    flash(f"Updated {len(app_ids)} application(s) to '{new_status}'.", "success")
+    flash(result["message"], result.get("type", "success"))
     return redirect(url_for("recruiter.view_applicants", job_id=job_id))
 
 
@@ -251,7 +251,7 @@ def export_applicants(job_id):
 @recruiter_bp.route("/recruiter/application/<int:app_id>/status", methods=["POST"])
 @login_required(role="recruiter")
 def update_status(app_id):
-    new_status = request.form["status"]
+    new_status = request.form.get("status", "").strip().lower()
     result = update_status_service(app_id, new_status, session["user_id"])
     flash(result["message"], result["type"])
     from app import safe_redirect

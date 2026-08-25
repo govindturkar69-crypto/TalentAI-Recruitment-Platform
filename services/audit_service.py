@@ -22,6 +22,8 @@ AUDIT_ALLOWLIST = {
     "new_company_id",
     "previous_name",
     "new_name",
+    "previous_status",
+    "new_status",
 }
 
 

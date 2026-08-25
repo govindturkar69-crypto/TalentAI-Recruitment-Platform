@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Candidate Profile{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('recruiter.view_applicants', job_id=app_data.job_id) }}" class="text-muted text-decoration-none small fw-semibold">
+    <i class="bi bi-arrow-left me-1"></i> Back to Applicants
+  </a>
+</div>
+
+<!-- Profile Hero Header -->
+<div class="profile-header mb-4">
+  <div class="d-flex align-items-center gap-4 flex-wrap">
+    <div class="avatar-circle-lg flex-shrink-0">{{ app_data.name[0]|upper }}</div>
+    <div class="flex-fill">
+      <div class="ats-hero-eyebrow mb-1" style="color:rgba(255,255,255,0.65)">Applicant Profile</div>
+      <h2 class="fw-bold mb-1 text-white" style="letter-spacing:-0.5px">{{ app_data.name }}</h2>
+      <p class="mb-2" style="opacity:0.75;font-size:0.9rem">
+        <i class="bi bi-envelope me-1"></i> {{ app_data.email }}
+        {% if profile and profile.location %}
+          <span class="mx-2">|</span><i class="bi bi-geo-alt me-1"></i> {{ profile.location }}
+        {% endif %}
+      </p>
+      {% if profile %}
+      <div class="d-flex gap-2 flex-wrap mt-2">
+        {% if profile.linkedin_url %}
+          <a href="{{ profile.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
+            <i class="bi bi-linkedin"></i> LinkedIn
+          </a>
+        {% endif %}
+        {% if profile.github_url %}
+          <a href="{{ profile.github_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
+            <i class="bi bi-github"></i> GitHub
+          </a>
+        {% endif %}
+        {% if profile.portfolio_url %}
+          <a href="{{ profile.portfolio_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
+            <i class="bi bi-globe"></i> Portfolio
+          </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="text-end">
+      <div class="text-white mb-1" style="font-size:0.85rem">Match Score</div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="progress" style="width:150px;height:8px;background:rgba(255,255,255,0.2)">
+          <div class="progress-bar {% if app_data.score >= 75 %}bg-success{% elif app_data.score >= 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width:{{ app_data.score }}%"></div>
+        </div>
+        <strong class="text-white">{{ '%.1f'|format(app_data.score) }}%</strong>
+      </div>
+      <div class="mt-2 text-white text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">
+        Status: <span class="badge bg-light text-dark">{{ app_data.status }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <!-- Application Details Card -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">Application Details</h5>
+        <div class="mb-3">
+          <label class="text-muted small fw-semibold">Job Title</label>
+          <div class="fw-semibold">{{ app_data.job_title }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="text-muted small fw-semibold">Applied On</label>
+          <div>{{ app_data.applied_at.strftime('%d %b %Y') if app_data.applied_at else 'Unknown' }}</div>
+        </div>
+        <hr>
+        <div class="mb-3">
+          <label class="text-muted small fw-semibold d-block mb-1">Matched Skills</label>
+          {% if app_data.matched_skills %}
+            <div class="d-flex flex-wrap gap-1">
+            {% for skill in app_data.matched_skills.split(',') %}
+              <span class="saas-skill-chip bg-success-light text-success border-success border-opacity-25">{{ skill }}</span>
+            {% endfor %}
+            </div>
+          {% else %}
+            <span class="text-muted small">None</span>
+          {% endif %}
+        </div>
+        <div>
+          <label class="text-muted small fw-semibold d-block mb-1">Missing Skills</label>
+          {% if app_data.missing_skills %}
+            <div class="d-flex flex-wrap gap-1">
+            {% for skill in app_data.missing_skills.split(',') %}
+              <span class="saas-skill-chip bg-danger-light text-danger border-danger border-opacity-25">{{ skill }}</span>
+            {% endfor %}
+            </div>
+          {% else %}
+            <span class="text-muted small">None</span>
+          {% endif %}
+        </div>
+        <div class="mt-4">
+          <a href="{{ url_for('recruiter.view_candidate_resume', app_id=app_data.application_id) }}" target="_blank" class="saas-btn-secondary w-100 py-2 d-block text-center text-decoration-none">
+            <i class="bi bi-file-earmark-pdf me-1"></i> View Submitted Resume
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Profile Skills -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">Candidate Skills</h5>
+        {% if profile and profile.skills %}
+          <div class="d-flex flex-wrap gap-1">
+          {% for skill in profile.skills.split(',') %}
+            <span class="saas-skill-chip">{{ skill.strip() }}</span>
+          {% endfor %}
+          </div>
+        {% else %}
+          <span class="text-muted small">No profile skills provided.</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">Profile Overview</h5>
+        <div class="mb-3">
+          {% if profile and profile.bio %}
+            <p>{{ profile.bio }}</p>
+          {% else %}
+            <span class="text-muted small">No bio provided.</span>
+          {% endif %}
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-2">
+            <strong class="text-muted small">Phone:</strong>
+            <div>{{ profile.phone if profile and profile.phone else 'N/A' }}</div>
+          </div>
+          <div class="col-md-6 mb-2">
+            <strong class="text-muted small">Experience:</strong>
+            <div>{{ profile.experience_years if profile and profile.experience_years else 'N/A' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs ats-tabs mb-4" id="recruiterTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#experience" type="button">Experience</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#education" type="button">Education</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#projects" type="button">Projects</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#certifications" type="button">Certifications</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#achievements" type="button">Achievements</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="recruiterTabsContent">
+      <div class="tab-pane fade show active" id="experience" role="tabpanel">
+        {% if experience %}
+          {% for exp in experience %}
+            <div class="saas-profile-section mb-3">
+              <div class="saas-profile-section-body">
+                <h5 class="mb-1 fw-bold">{{ exp.title }} at {{ exp.company }}</h5>
+                <small class="text-muted fw-semibold">{{ exp.start_date }} - {{ 'Present' if exp.is_current else exp.end_date }}</small>
+                <p class="mt-2 mb-0">{{ exp.description }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="saas-empty-state">No experience details provided.</div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="education" role="tabpanel">
+        {% if education %}
+          {% for edu in education %}
+            <div class="saas-profile-section mb-3">
+              <div class="saas-profile-section-body">
+                <h5 class="mb-1 fw-bold">{{ edu.institution }}</h5>
+                <p class="mb-1 fw-semibold">{{ edu.degree }} in {{ edu.field_of_study }}</p>
+                <small class="text-muted">{{ edu.start_date }} - {{ edu.end_date or 'Present' }}</small>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="saas-empty-state">No education details provided.</div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="projects" role="tabpanel">
+        {% if projects %}
+          {% for proj in projects %}
+            <div class="saas-profile-section mb-3">
+              <div class="saas-profile-section-body">
+                <h5 class="mb-1 fw-bold">{{ proj.title }}</h5>
+                {% if proj.url %}<a href="{{ proj.url }}" target="_blank" class="small mb-2 d-block">{{ proj.url }}</a>{% endif %}
+                <p class="mb-1">{{ proj.description }}</p>
+                {% if proj.technologies %}<small class="text-muted fw-semibold">Tech: {{ proj.technologies }}</small>{% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="saas-empty-state">No projects provided.</div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="certifications" role="tabpanel">
+        {% if certifications %}
+          {% for cert in certifications %}
+            <div class="saas-profile-section mb-3">
+              <div class="saas-profile-section-body">
+                <h5 class="mb-1 fw-bold">{{ cert.name }}</h5>
+                <p class="mb-1 text-muted">{{ cert.issuer }} ({{ cert.issue_date }})</p>
+                {% if cert.credential_url %}<a href="{{ cert.credential_url }}" target="_blank" class="small fw-semibold">View Credential</a>{% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="saas-empty-state">No certifications provided.</div>
+        {% endif %}
+      </div>
+
+      <div class="tab-pane fade" id="achievements" role="tabpanel">
+        {% if achievements %}
+          {% for ach in achievements %}
+            <div class="saas-profile-section mb-3">
+              <div class="saas-profile-section-body">
+                <h5 class="mb-1 fw-bold">{{ ach.title }}</h5>
+                <small class="text-muted fw-semibold">{{ ach.achieved_date }}</small>
+                <p class="mt-2 mb-0">{{ ach.description }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="saas-empty-state">No achievements provided.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

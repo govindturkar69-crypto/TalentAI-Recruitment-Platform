@@ -125,3 +125,74 @@ def update_status_service(app_id, new_status, recruiter_id):
         create_notification(info["candidate_id"], f"Application {new_status.title()}", msgs[new_status], new_status)
 
     return {"success": True, "message": f"Status updated to: {new_status}", "type": "success"}
+
+
+def get_application_candidate_profile(app_id, recruiter_id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            # 1. Authorization and Application Info
+            cur.execute(
+                """
+                SELECT a.id as application_id, a.score, a.matched_skills, a.missing_skills, a.status, a.applied_at,
+                       j.id as job_id, j.job_title, u.name, u.email, u.id as candidate_id
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                JOIN users u ON a.candidate_id = u.id
+                WHERE a.id = %s AND j.recruiter_id = %s
+            """,
+                (app_id, recruiter_id),
+            )
+            app_data = cur.fetchone()
+            if not app_data:
+                return None, {"error": "Application not found.", "type": "danger"}
+
+            candidate_id = app_data["candidate_id"]
+
+            # 2. Profile Data
+            cur.execute("SELECT * FROM candidate_profiles WHERE user_id = %s", (candidate_id,))
+            profile = cur.fetchone()
+
+            cur.execute("SELECT * FROM candidate_education WHERE user_id = %s ORDER BY start_date DESC", (candidate_id,))
+            education = cur.fetchall()
+
+            cur.execute("SELECT * FROM candidate_experience WHERE user_id = %s ORDER BY start_date DESC", (candidate_id,))
+            experience = cur.fetchall()
+
+            cur.execute("SELECT * FROM candidate_projects WHERE user_id = %s ORDER BY created_at DESC", (candidate_id,))
+            projects = cur.fetchall()
+
+            cur.execute("SELECT * FROM candidate_certifications WHERE user_id = %s ORDER BY issue_date DESC", (candidate_id,))
+            certifications = cur.fetchall()
+
+            cur.execute("SELECT * FROM candidate_achievements WHERE user_id = %s ORDER BY achieved_date DESC", (candidate_id,))
+            achievements = cur.fetchall()
+
+            return {
+                "app_data": app_data,
+                "profile": profile,
+                "education": education,
+                "experience": experience,
+                "projects": projects,
+                "certifications": certifications,
+                "achievements": achievements
+            }, None
+
+
+def get_application_resume(app_id, recruiter_id):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                SELECT r.resume_path 
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                JOIN resumes r ON a.resume_id = r.id
+                WHERE a.id = %s AND j.recruiter_id = %s AND r.user_id = a.candidate_id
+            """,
+                (app_id, recruiter_id),
+            )
+            resume = cur.fetchone()
+            if not resume:
+                return None, {"error": "Resume not found or unauthorized.", "type": "danger"}
+            return resume["resume_path"], None
+

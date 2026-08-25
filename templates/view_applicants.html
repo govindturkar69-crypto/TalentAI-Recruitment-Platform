@@ -30,6 +30,30 @@
 </div>
 
 <!-- Applicants Table -->
+{% if applicants or q or status %}
+<div class="card mb-4 border-0 shadow-sm">
+  <div class="card-body">
+    <form method="GET" action="{{ url_for('recruiter.view_applicants', job_id=job.id) }}" class="row g-3">
+      <div class="col-md-5">
+        <input type="text" name="q" class="form-control" placeholder="Search name or email..." value="{{ q }}">
+      </div>
+      <div class="col-md-4">
+        <select name="status" class="form-select">
+          <option value="">All Statuses</option>
+          <option value="applied" {% if status == 'applied' %}selected{% endif %}>Applied</option>
+          <option value="shortlisted" {% if status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+          <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>Rejected</option>
+          <option value="hired" {% if status == 'hired' %}selected{% endif %}>Hired</option>
+          <option value="withdrawn" {% if status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="saas-btn-primary w-100">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% if applicants %}
 <form method="POST" action="{{ url_for('recruiter.bulk_update_status') }}" id="bulkForm">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -85,7 +109,9 @@
             <div class="d-flex align-items-center gap-3">
               <div class="avatar-circle" style="width: 40px; height: 40px; font-size: 1.1rem;">{{ app.candidate_name[0]|upper }}</div>
               <div>
-                <div class="fw-bold text-dark">{{ app.candidate_name }}</div>
+                <div class="fw-bold text-dark">
+                  <a href="{{ url_for('recruiter.view_candidate_profile', app_id=app.id) }}" class="text-decoration-none text-dark">{{ app.candidate_name }}</a>
+                </div>
                 <small class="text-muted">{{ app.email }}</small>
               </div>
             </div>
@@ -130,14 +156,20 @@
             </span>
           </td>
           <td>
-            <select name="status_{{ app.id }}" class="form-select form-select-sm saas-input border" style="width:auto; border-color: var(--border-color) !important;"
-                    onchange="updateSingleStatus({{ app.id }}, this.value)">
-              <option value="applied"     {% if app.status=='applied' %}selected{% endif %}>Applied</option>
-              <option value="shortlisted" {% if app.status=='shortlisted' %}selected{% endif %}>Shortlist ✓</option>
-              <option value="rejected"    {% if app.status=='rejected' %}selected{% endif %}>Reject ✗</option>
-              <option value="hired"       {% if app.status=='hired' %}selected{% endif %}>Hired 🎉</option>
-              <option value="withdrawn"   {% if app.status=='withdrawn' %}selected{% endif %} disabled>Withdrawn</option>
-            </select>
+            <div class="d-flex flex-column gap-2">
+              <select name="status_{{ app.id }}" class="form-select form-select-sm saas-input border" style="width:auto; border-color: var(--border-color) !important;"
+                      onchange="updateSingleStatus({{ app.id }}, this.value)">
+                <option value="applied"     {% if app.status=='applied' %}selected{% endif %}>Applied</option>
+                <option value="shortlisted" {% if app.status=='shortlisted' %}selected{% endif %}>Shortlist ✓</option>
+                <option value="rejected"    {% if app.status=='rejected' %}selected{% endif %}>Reject ✗</option>
+                <option value="hired"       {% if app.status=='hired' %}selected{% endif %}>Hired 🎉</option>
+                <option value="withdrawn"   {% if app.status=='withdrawn' %}selected{% endif %} disabled>Withdrawn</option>
+              </select>
+              <div class="d-flex gap-2">
+                <a href="{{ url_for('recruiter.view_candidate_profile', app_id=app.id) }}" class="btn btn-sm btn-outline-primary py-0" title="View Profile"><i class="bi bi-person"></i></a>
+                <a href="{{ url_for('recruiter.view_candidate_resume', app_id=app.id) }}" class="btn btn-sm btn-outline-secondary py-0" title="View Resume" target="_blank"><i class="bi bi-file-earmark-pdf"></i></a>
+              </div>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -188,7 +220,8 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="text-center py-5 border rounded-4 bg-card" style="border-style: dashed !important; border-width: 2px !important;">
   <i class="bi bi-inbox text-muted" style="font-size:3rem"></i>
   <h5 class="fw-bold mt-3">No Applications Yet</h5>
-  <p class="text-muted">No candidates have applied for this position.</p>
+  <p class="text-muted">No candidates have applied for this position or match your search.</p>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}

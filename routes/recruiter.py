@@ -1,14 +1,28 @@
+import os
 from contextlib import closing
 from io import BytesIO
 
 import openpyxl
-from flask import Blueprint, flash, redirect, render_template, request, send_file, session, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    send_from_directory,
+    session,
+    url_for,
+)
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from core import get_db_connection, login_required
 from services.recruiter_service import (
     bulk_update_status_service,
     delete_job_service,
+    get_application_candidate_profile,
+    get_application_resume,
     post_job_service,
     toggle_job_active_service,
     update_job_service,
@@ -115,6 +129,9 @@ def delete_job(job_id):
 @recruiter_bp.route("/recruiter/job/<int:job_id>/applicants")
 @login_required(role="recruiter")
 def view_applicants(job_id):
+    q = request.args.get("q", "").strip()
+    status = request.args.get("status", "").strip()
+
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             # H3: Verify the recruiter owns this job
@@ -123,20 +140,32 @@ def view_applicants(job_id):
             if not job:
                 flash("Job not found.", "danger")
                 return redirect(url_for("recruiter.recruiter_dashboard"))
-            cur.execute(
-                """
+
+            query = """
                 SELECT a.*, u.name AS candidate_name, u.email,
                        a.score, a.matched_skills, a.missing_skills, a.status
                 FROM applications a JOIN users u ON a.candidate_id = u.id
-                WHERE a.job_id = %s ORDER BY a.score DESC
-            """,
-                (job_id,),
-            )
+                WHERE a.job_id = %s
+            """
+            params = [job_id]
+
+            if q:
+                query += " AND (u.name LIKE %s OR u.email LIKE %s)"
+                like_q = f"%{q}%"
+                params.extend([like_q, like_q])
+
+            if status and status in ("applied", "shortlisted", "rejected", "hired", "withdrawn"):
+                query += " AND a.status = %s"
+                params.append(status)
+
+            query += " ORDER BY a.score DESC"
+
+            cur.execute(query, tuple(params))
             applicants = cur.fetchall()
 
     for i, ap in enumerate(applicants):
         ap["rank"] = i + 1
-    return render_template("view_applicants.html", job=job, applicants=applicants)
+    return render_template("view_applicants.html", job=job, applicants=applicants, q=q, status=status)
 
 
 @recruiter_bp.route("/recruiter/applications/bulk_update", methods=["POST"])
@@ -228,3 +257,59 @@ def update_status(app_id):
     from app import safe_redirect
 
     return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+
+@recruiter_bp.route("/recruiter/application/<int:app_id>/candidate")
+@login_required(role="recruiter")
+def view_candidate_profile(app_id):
+    profile_data, err = get_application_candidate_profile(app_id, session["user_id"])
+    if err:
+        flash(err["error"], err["type"])
+        return redirect(url_for("recruiter.recruiter_dashboard"))
+    return render_template("recruiter_candidate_profile.html", **profile_data)
+
+
+@recruiter_bp.route("/recruiter/application/<int:app_id>/resume")
+@login_required(role="recruiter")
+def view_candidate_resume(app_id):
+    filename, err = get_application_resume(app_id, session["user_id"])
+    if err:
+        flash(err["error"], err["type"])
+        return redirect(url_for("recruiter.recruiter_dashboard"))
+
+    if not filename:
+        flash("Resume file not found.", "danger")
+        from app import safe_redirect
+
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    if filename != os.path.basename(filename):
+        flash("Invalid resume file path.", "danger")
+        from app import safe_redirect
+
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    if not filename.lower().endswith(".pdf"):
+        flash("Invalid resume file format.", "danger")
+        from app import safe_redirect
+
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    from pathlib import Path
+
+    upload_dir = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
+    candidate_path = (upload_dir / filename).resolve()
+
+    if not candidate_path.is_relative_to(upload_dir):
+        flash("Invalid resume file path.", "danger")
+        from app import safe_redirect
+
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    if not candidate_path.is_file():
+        flash("Resume file not found on server.", "danger")
+        from app import safe_redirect
+
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    return send_from_directory(str(upload_dir), filename, mimetype="application/pdf", as_attachment=False)

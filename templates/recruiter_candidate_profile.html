@@ -23,17 +23,17 @@
       </p>
       {% if profile %}
       <div class="d-flex gap-2 flex-wrap mt-2">
-        {% if profile.linkedin_url %}
+        {% if profile.linkedin_url and (profile.linkedin_url.startswith('http://') or profile.linkedin_url.startswith('https://')) %}
           <a href="{{ profile.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
             <i class="bi bi-linkedin"></i> LinkedIn
           </a>
         {% endif %}
-        {% if profile.github_url %}
+        {% if profile.github_url and (profile.github_url.startswith('http://') or profile.github_url.startswith('https://')) %}
           <a href="{{ profile.github_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
             <i class="bi bi-github"></i> GitHub
           </a>
         {% endif %}
-        {% if profile.portfolio_url %}
+        {% if profile.portfolio_url and (profile.portfolio_url.startswith('http://') or profile.portfolio_url.startswith('https://')) %}
           <a href="{{ profile.portfolio_url }}" target="_blank" rel="noopener noreferrer" class="social-link-btn">
             <i class="bi bi-globe"></i> Portfolio
           </a>
@@ -201,7 +201,7 @@
             <div class="saas-profile-section mb-3">
               <div class="saas-profile-section-body">
                 <h5 class="mb-1 fw-bold">{{ proj.title }}</h5>
-                {% if proj.url %}<a href="{{ proj.url }}" target="_blank" class="small mb-2 d-block">{{ proj.url }}</a>{% endif %}
+                {% if proj.url and (proj.url.startswith('http://') or proj.url.startswith('https://')) %}<a href="{{ proj.url }}" target="_blank" class="small mb-2 d-block">{{ proj.url }}</a>{% endif %}
                 <p class="mb-1">{{ proj.description }}</p>
                 {% if proj.technologies %}<small class="text-muted fw-semibold">Tech: {{ proj.technologies }}</small>{% endif %}
               </div>
@@ -219,7 +219,7 @@
               <div class="saas-profile-section-body">
                 <h5 class="mb-1 fw-bold">{{ cert.name }}</h5>
                 <p class="mb-1 text-muted">{{ cert.issuer }} ({{ cert.issue_date }})</p>
-                {% if cert.credential_url %}<a href="{{ cert.credential_url }}" target="_blank" class="small fw-semibold">View Credential</a>{% endif %}
+                {% if cert.credential_url and (cert.credential_url.startswith('http://') or cert.credential_url.startswith('https://')) %}<a href="{{ cert.credential_url }}" target="_blank" class="small fw-semibold">View Credential</a>{% endif %}
               </div>
             </div>
           {% endfor %}

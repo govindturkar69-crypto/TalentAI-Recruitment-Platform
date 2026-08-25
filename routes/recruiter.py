@@ -266,6 +266,21 @@ def view_candidate_resume(app_id):
         flash(err["error"], err["type"])
         return redirect(url_for("recruiter.recruiter_dashboard"))
 
+    if not filename:
+        flash("Resume file not found.", "danger")
+        from app import safe_redirect
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    if filename != os.path.basename(filename):
+        flash("Invalid resume file path.", "danger")
+        from app import safe_redirect
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
+    if not filename.lower().endswith(".pdf"):
+        flash("Invalid resume file format.", "danger")
+        from app import safe_redirect
+        return safe_redirect(url_for("recruiter.recruiter_dashboard"))
+
     filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
     if not os.path.exists(filepath):
         flash("Resume file not found on server.", "danger")

@@ -108,12 +108,28 @@ def test_view_candidate_resume_path_traversal(client, mock_db, tmp_path, monkeyp
 
     # Test trying to access outside upload directory
     mock_db.fetchone.side_effect = [
-        {"cnt": 0},
         {"resume_path": "../../../etc/passwd"}
     ]
     
     response = client.get("/recruiter/application/1/resume", follow_redirects=True)
-    assert response.status_code in [200, 404]
+    assert b"Invalid resume file path." in response.data
+
+
+def test_view_candidate_resume_non_pdf(client, mock_db, tmp_path, monkeypatch):
+    with client.session_transaction() as sess:
+        sess["user_id"] = 2
+        sess["role"] = "recruiter"
+
+    upload_dir = tmp_path / "uploads"
+    upload_dir.mkdir()
+    monkeypatch.setitem(current_app.config, "UPLOAD_FOLDER", str(upload_dir))
+
+    mock_db.fetchone.side_effect = [
+        {"resume_path": "malicious_script.exe"}
+    ]
+    
+    response = client.get("/recruiter/application/1/resume", follow_redirects=True)
+    assert b"Invalid resume file format." in response.data
 
 def test_applicant_filtering_success(client, mock_db):
     with client.session_transaction() as sess:

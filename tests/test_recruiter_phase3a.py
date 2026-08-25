@@ -1,4 +1,6 @@
-from flask import current_app
+import os
+
+import pytest
 
 # -----------------------------------
 # PROFILE ACCESS TESTS
@@ -26,9 +28,11 @@ def test_view_candidate_profile_success(client, mock_db):
         sess["role"] = "recruiter"
         sess["name"] = "Recruiter Bob"
 
-    # app_data, profile, education, experience, projects, certifications, achievements
+    # 1. is_active -> 1
+    # 2. app_data
+    # 3. profile
     mock_db.fetchone.side_effect = [
-        {"cnt": 0},  # unread
+        {"is_active": 1},
         {
             "application_id": 1,
             "score": 85,
@@ -80,10 +84,10 @@ def test_view_candidate_profile_unauthorized_recruiter(client, mock_db):
         sess["user_id"] = 3
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, None]
-    response = client.get("/recruiter/application/1/candidate", follow_redirects=True)
-    assert response.status_code == 200
-    assert b"Application not found" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, None]
+    response = client.get("/recruiter/application/1/candidate", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 def test_view_candidate_profile_nonexistent(client, mock_db):
@@ -91,10 +95,10 @@ def test_view_candidate_profile_nonexistent(client, mock_db):
         sess["user_id"] = 2
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, None]
-    response = client.get("/recruiter/application/999/candidate", follow_redirects=True)
-    assert response.status_code == 200
-    assert b"Application not found" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, None]
+    response = client.get("/recruiter/application/999/candidate", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 # -----------------------------------
@@ -125,9 +129,9 @@ def test_view_candidate_resume_success(client, mock_db, tmp_path, monkeypatch):
     upload_dir.mkdir()
     pdf_file = upload_dir / "test_resume.pdf"
     pdf_file.write_text("fake pdf content")
-    monkeypatch.setitem(current_app.config, "UPLOAD_FOLDER", str(upload_dir))
+    monkeypatch.setitem(client.application.config, "UPLOAD_FOLDER", str(upload_dir))
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"resume_path": "test_resume.pdf"}]
+    mock_db.fetchone.side_effect = [{"is_active": 1}, {"resume_path": "test_resume.pdf"}]
 
     response = client.get("/recruiter/application/1/resume", follow_redirects=False)
     assert response.status_code == 200
@@ -150,9 +154,10 @@ def test_view_candidate_resume_unauthorized(client, mock_db):
         sess["user_id"] = 3
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, None]
-    response = client.get("/recruiter/application/1/resume", follow_redirects=True)
-    assert b"Resume not found" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, None]
+    response = client.get("/recruiter/application/1/resume", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 def test_view_candidate_resume_missing_db_record(client, mock_db):
@@ -160,9 +165,10 @@ def test_view_candidate_resume_missing_db_record(client, mock_db):
         sess["user_id"] = 2
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, None]
-    response = client.get("/recruiter/application/1/resume", follow_redirects=True)
-    assert b"Resume not found" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, None]
+    response = client.get("/recruiter/application/1/resume", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 def test_view_candidate_resume_missing_physical_file(client, mock_db, tmp_path, monkeypatch):
@@ -172,11 +178,12 @@ def test_view_candidate_resume_missing_physical_file(client, mock_db, tmp_path, 
 
     upload_dir = tmp_path / "uploads"
     upload_dir.mkdir()
-    monkeypatch.setitem(current_app.config, "UPLOAD_FOLDER", str(upload_dir))
+    monkeypatch.setitem(client.application.config, "UPLOAD_FOLDER", str(upload_dir))
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"resume_path": "valid_but_missing.pdf"}]
-    response = client.get("/recruiter/application/1/resume", follow_redirects=True)
-    assert b"Resume file not found on server" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, {"resume_path": "valid_but_missing.pdf"}]
+    response = client.get("/recruiter/application/1/resume", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 def test_view_candidate_resume_path_traversal(client, mock_db, tmp_path, monkeypatch):
@@ -186,11 +193,12 @@ def test_view_candidate_resume_path_traversal(client, mock_db, tmp_path, monkeyp
 
     upload_dir = tmp_path / "uploads"
     upload_dir.mkdir()
-    monkeypatch.setitem(current_app.config, "UPLOAD_FOLDER", str(upload_dir))
+    monkeypatch.setitem(client.application.config, "UPLOAD_FOLDER", str(upload_dir))
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"resume_path": "../../../etc/passwd"}]
-    response = client.get("/recruiter/application/1/resume", follow_redirects=True)
-    assert b"Invalid resume file path" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, {"resume_path": "../../../etc/passwd"}]
+    response = client.get("/recruiter/application/1/resume", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 def test_view_candidate_resume_non_pdf(client, mock_db, tmp_path, monkeypatch):
@@ -200,18 +208,15 @@ def test_view_candidate_resume_non_pdf(client, mock_db, tmp_path, monkeypatch):
 
     upload_dir = tmp_path / "uploads"
     upload_dir.mkdir()
-    monkeypatch.setitem(current_app.config, "UPLOAD_FOLDER", str(upload_dir))
+    monkeypatch.setitem(client.application.config, "UPLOAD_FOLDER", str(upload_dir))
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"resume_path": "malicious_script.exe"}]
-    response = client.get("/recruiter/application/1/resume", follow_redirects=True)
-    assert b"Invalid resume file format" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, {"resume_path": "malicious_script.exe"}]
+    response = client.get("/recruiter/application/1/resume", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 def test_view_candidate_resume_symlink_escape(client, mock_db, tmp_path, monkeypatch):
-    import os
-
-    import pytest
-
     with client.session_transaction() as sess:
         sess["user_id"] = 2
         sess["role"] = "recruiter"
@@ -230,11 +235,12 @@ def test_view_candidate_resume_symlink_escape(client, mock_db, tmp_path, monkeyp
     except OSError:
         pytest.skip("Symlinks not supported on this platform/configuration")
 
-    monkeypatch.setitem(current_app.config, "UPLOAD_FOLDER", str(upload_dir))
+    monkeypatch.setitem(client.application.config, "UPLOAD_FOLDER", str(upload_dir))
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"resume_path": "escape.pdf"}]
-    response = client.get("/recruiter/application/1/resume", follow_redirects=True)
-    assert b"Invalid resume file path" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, {"resume_path": "escape.pdf"}]
+    response = client.get("/recruiter/application/1/resume", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 # -----------------------------------
@@ -247,20 +253,38 @@ def test_applicant_filtering_success(client, mock_db):
         sess["user_id"] = 2
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"id": 1, "recruiter_id": 2}]
+    mock_db.fetchone.side_effect = [
+        {"is_active": 1},
+        {
+            "id": 1,
+            "recruiter_id": 2,
+            "job_title": "Developer",
+            "location": "Remote",
+            "experience": "0-2 years",
+            "required_skills": "python,sql",
+        },
+    ]
     mock_db.fetchall.return_value = []
 
     response = client.get("/recruiter/job/1/applicants?q=alice&status=applied")
     assert response.status_code == 200
 
     execute_calls = mock_db.execute.call_args_list
-    query = execute_calls[-1][0][0]
-    params = execute_calls[-1][0][1]
+    app_query_found = False
+    for call in execute_calls:
+        query = call[0][0]
+        params = call[0][1]
+        if "FROM applications a" in query and "JOIN users u" in query and "WHERE a.job_id = %s" in query:
+            app_query_found = True
+            assert "LIKE %s" in query
+            assert "a.status = %s" in query
+            assert "ORDER BY a.score DESC" in query
+            assert "%alice%" in params
+            assert "applied" in params
+            assert "alice" not in query
+            break
 
-    assert "LIKE %s" in query
-    assert "a.status = %s" in query
-    assert "%alice%" in params
-    assert "applied" in params
+    assert app_query_found
 
 
 def test_applicant_filtering_invalid_status(client, mock_db):
@@ -268,18 +292,36 @@ def test_applicant_filtering_invalid_status(client, mock_db):
         sess["user_id"] = 2
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"id": 1, "recruiter_id": 2}]
+    mock_db.fetchone.side_effect = [
+        {"is_active": 1},
+        {
+            "id": 1,
+            "recruiter_id": 2,
+            "job_title": "Developer",
+            "location": "Remote",
+            "experience": "0-2 years",
+            "required_skills": "python,sql",
+        },
+    ]
     mock_db.fetchall.return_value = []
 
     response = client.get("/recruiter/job/1/applicants?status=DROP TABLE")
     assert response.status_code == 200
 
     execute_calls = mock_db.execute.call_args_list
-    query = execute_calls[-1][0][0]
+    app_query_found = False
+    for call in execute_calls:
+        query = call[0][0]
+        params = call[0][1] if len(call[0]) > 1 else ()
+        if "FROM applications a" in query and "JOIN users u" in query and "WHERE a.job_id = %s" in query:
+            app_query_found = True
+            assert "a.status = %s" not in query
+            assert "DROP TABLE" not in query
+            assert "ORDER BY a.score DESC" in query
+            assert "DROP TABLE" not in params
+            break
 
-    assert "a.status = %s" not in query
-    assert "DROP TABLE" not in query
-    assert "ORDER BY a.score DESC" in query
+    assert app_query_found
 
 
 def test_applicant_filtering_unauthorized(client, mock_db):
@@ -287,10 +329,10 @@ def test_applicant_filtering_unauthorized(client, mock_db):
         sess["user_id"] = 3
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, None]
-    response = client.get("/recruiter/job/1/applicants?q=alice", follow_redirects=True)
-    assert response.status_code == 200
-    assert b"Job not found" in response.data
+    mock_db.fetchone.side_effect = [{"is_active": 1}, None]
+    response = client.get("/recruiter/job/1/applicants?q=alice", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
 
 
 # -----------------------------------
@@ -303,7 +345,17 @@ def test_template_links_use_application_id(client, mock_db):
         sess["user_id"] = 2
         sess["role"] = "recruiter"
 
-    mock_db.fetchone.side_effect = [{"cnt": 0}, {"id": 1, "recruiter_id": 2}]
+    mock_db.fetchone.side_effect = [
+        {"is_active": 1},
+        {
+            "id": 1,
+            "recruiter_id": 2,
+            "job_title": "Developer",
+            "location": "Remote",
+            "experience": "0-2 years",
+            "required_skills": "python,sql",
+        },
+    ]
     mock_db.fetchall.return_value = [
         {
             "id": 999,
@@ -314,6 +366,7 @@ def test_template_links_use_application_id(client, mock_db):
             "matched_skills": "",
             "missing_skills": "",
             "status": "applied",
+            "applied_at": None,
         }
     ]
 

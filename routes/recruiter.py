@@ -313,3 +313,20 @@ def view_candidate_resume(app_id):
         return safe_redirect(url_for("recruiter.recruiter_dashboard"))
 
     return send_from_directory(str(upload_dir), filename, mimetype="application/pdf", as_attachment=False)
+
+
+@recruiter_bp.route("/recruiter/settings")
+@login_required(role="recruiter")
+def recruiter_settings():
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("""
+                SELECT u.name, u.email, u.company_id,
+                       c.name as company_name, c.description, c.website, c.is_active
+                FROM users u
+                LEFT JOIN companies c ON u.company_id = c.id
+                WHERE u.id = %s
+            """, (session["user_id"],))
+            user_data = cur.fetchone()
+
+    return render_template("recruiter_settings.html", user_data=user_data)

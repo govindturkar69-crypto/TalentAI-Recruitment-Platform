@@ -33,8 +33,18 @@ def dashboard():
             total_applications = cur.fetchone()["total"]
 
             # Users list (safe fields only)
-            cur.execute("SELECT id, name, email, role, is_active, created_at FROM users ORDER BY created_at DESC")
+            cur.execute("""
+                SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at, 
+                       u.company_id, c.name as company_name 
+                FROM users u 
+                LEFT JOIN companies c ON u.company_id = c.id 
+                ORDER BY u.created_at DESC
+            """)
             users = cur.fetchall()
+
+            # Fetch active companies for recruiter assignment dropdown
+            cur.execute("SELECT id, name FROM companies WHERE is_active = TRUE ORDER BY name ASC")
+            companies = cur.fetchall()
 
             # Recent registrations (safe fields only)
             cur.execute("SELECT name, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5")
@@ -48,7 +58,7 @@ def dashboard():
         "total_applications": total_applications,
     }
 
-    return render_template("admin_dashboard.html", metrics=metrics, users=users, recent_users=recent_users)
+    return render_template("admin_dashboard.html", metrics=metrics, users=users, recent_users=recent_users, companies=companies)
 
 
 @admin_bp.route("/users/<int:user_id>/role", methods=["POST"])
@@ -128,3 +138,138 @@ def update_status(user_id):
 
     flash(f"User account {'activated' if is_active_val else 'deactivated'} successfully.", "success")
     return redirect(url_for("admin.dashboard"))
+
+
+@admin_bp.route("/users/<int:user_id>/company", methods=["POST"])
+@admin_required
+def assign_company(user_id):
+    company_id_str = request.form.get("company_id")
+    company_id = int(company_id_str) if company_id_str and company_id_str.strip() else None
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, role, company_id FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if not user:
+                flash("User not found.", "danger")
+                return redirect(url_for("admin.dashboard"))
+
+            if user["role"] != "recruiter":
+                flash("Company assignment is only allowed for recruiters.", "danger")
+                return redirect(url_for("admin.dashboard"))
+
+            if company_id is not None:
+                cur.execute("SELECT id, is_active FROM companies WHERE id = %s", (company_id,))
+                company = cur.fetchone()
+                if not company:
+                    flash("Company not found.", "danger")
+                    return redirect(url_for("admin.dashboard"))
+                if not company.get("is_active", True):
+                    flash("Cannot assign inactive company.", "danger")
+                    return redirect(url_for("admin.dashboard"))
+
+            cur.execute("UPDATE users SET company_id = %s WHERE id = %s", (company_id, user_id))
+            conn.commit()
+
+            log_audit_event(
+                actor_user_id=session.get("user_id"),
+                action="assign_recruiter_company",
+                target_type="user",
+                target_id=user_id,
+                details={"previous_company_id": user["company_id"], "new_company_id": company_id},
+            )
+
+    flash("Recruiter company assigned successfully.", "success")
+    return redirect(url_for("admin.dashboard"))
+
+
+@admin_bp.route("/companies")
+@admin_required
+def list_companies():
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("""
+                SELECT c.id, c.name, c.description, c.website, c.is_active, c.created_at, c.updated_at,
+                       (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id AND u.role = 'recruiter') as recruiter_count
+                FROM companies c
+                ORDER BY c.name ASC
+            """)
+            companies = cur.fetchall()
+    return render_template("admin_companies.html", companies=companies)
+
+
+@admin_bp.route("/companies/create", methods=["POST"])
+@admin_required
+def create_company():
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+    website = request.form.get("website", "").strip()
+
+    if not name or len(name) > 255:
+        flash("Valid company name is required.", "danger")
+        return redirect(url_for("admin.list_companies"))
+
+    if website and not (website.startswith("http://") or website.startswith("https://")):
+        flash("Website must be a valid http:// or https:// URL.", "danger")
+        return redirect(url_for("admin.list_companies"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                "INSERT INTO companies (name, description, website, is_active) VALUES (%s, %s, %s, TRUE)",
+                (name, description, website)
+            )
+            company_id = cur.lastrowid
+            conn.commit()
+
+            log_audit_event(
+                actor_user_id=session.get("user_id"),
+                action="create_company",
+                target_type="company",
+                target_id=company_id,
+                details={"name": name},
+            )
+
+    flash("Company created successfully.", "success")
+    return redirect(url_for("admin.list_companies"))
+
+
+@admin_bp.route("/companies/<int:company_id>/edit", methods=["POST"])
+@admin_required
+def edit_company(company_id):
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+    website = request.form.get("website", "").strip()
+
+    if not name or len(name) > 255:
+        flash("Valid company name is required.", "danger")
+        return redirect(url_for("admin.list_companies"))
+
+    if website and not (website.startswith("http://") or website.startswith("https://")):
+        flash("Website must be a valid http:// or https:// URL.", "danger")
+        return redirect(url_for("admin.list_companies"))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, name FROM companies WHERE id = %s", (company_id,))
+            company = cur.fetchone()
+            if not company:
+                flash("Company not found.", "danger")
+                return redirect(url_for("admin.list_companies"))
+
+            cur.execute(
+                "UPDATE companies SET name = %s, description = %s, website = %s WHERE id = %s",
+                (name, description, website, company_id)
+            )
+            conn.commit()
+
+            log_audit_event(
+                actor_user_id=session.get("user_id"),
+                action="update_company",
+                target_type="company",
+                target_id=company_id,
+                details={"previous_name": company["name"], "new_name": name},
+            )
+
+    flash("Company updated successfully.", "success")
+    return redirect(url_for("admin.list_companies"))

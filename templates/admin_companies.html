@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Manage Companies{% endblock %}
+
+{% block content %}
+<div class="saas-page-header">
+  <div class="d-flex justify-content-between align-items-center w-100">
+    <div>
+      <div class="saas-page-header-eyebrow">PLATFORM ADMINISTRATION</div>
+      <h1 class="saas-page-header-title">Companies</h1>
+      <p class="saas-page-header-sub">Manage recruiter companies.</p>
+    </div>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="saas-card h-100">
+      <h5 class="fw-bold mb-3"><i class="bi bi-buildings me-2"></i>Existing Companies</h5>
+      
+      <div class="table-responsive">
+        <table class="table saas-table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Website</th>
+              <th>Status</th>
+              <th>Recruiters</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for company in companies %}
+            <tr>
+              <td class="text-muted small">#{{ company.id }}</td>
+              <td class="fw-semibold">{{ company.name }}</td>
+              <td>
+                {% if company.website %}
+                  <a href="{{ company.website }}" target="_blank" rel="noopener noreferrer" class="text-primary small text-truncate d-inline-block" style="max-width: 150px;">
+                    {{ company.website }}
+                  </a>
+                {% else %}
+                  <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if company.is_active %}
+                  <span class="saas-skill-chip" style="background:var(--success-tint);color:#166534;border-color:rgba(34,197,94,0.25);padding:2px 6px;font-size:0.7rem;">Active</span>
+                {% else %}
+                  <span class="saas-skill-chip" style="background:var(--danger-tint);color:#991b1b;border-color:rgba(239,68,68,0.25);padding:2px 6px;font-size:0.7rem;">Inactive</span>
+                {% endif %}
+              </td>
+              <td><span class="badge bg-secondary">{{ company.recruiter_count }}</span></td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editCompanyModal{{ company.id }}" style="font-size:0.75rem; padding: 2px 8px;">Edit</button>
+              </td>
+            </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editCompanyModal{{ company.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form action="{{ url_for('admin.edit_company', company_id=company.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Edit Company</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" value="{{ company.name }}" required maxlength="255">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3">{{ company.description or '' }}</textarea>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Website</label>
+                        <input type="url" class="form-control" name="website" value="{{ company.website or '' }}" placeholder="https://example.com" maxlength="255">
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="saas-btn-primary">Save Changes</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if not companies %}
+      <div class="text-center text-muted mt-4 mb-4">
+        <i class="bi bi-buildings fs-1"></i>
+        <h5 class="mt-2">No companies found</h5>
+        <p class="small">Create one using the form.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="saas-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2"></i>Add Company</h6>
+      <form action="{{ url_for('admin.create_company') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Company Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" name="name" required maxlength="255">
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Website</label>
+          <input type="url" class="form-control form-control-sm" name="website" placeholder="https://..." maxlength="255">
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Description</label>
+          <textarea class="form-control form-control-sm" name="description" rows="3"></textarea>
+        </div>
+        <button type="submit" class="saas-btn-primary w-100 mt-2">Create Company</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

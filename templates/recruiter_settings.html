@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="saas-page-header">
+  <div class="d-flex justify-content-between align-items-center w-100">
+    <div>
+      <div class="saas-page-header-eyebrow">RECRUITER ACCOUNT</div>
+      <h1 class="saas-page-header-title">Settings</h1>
+      <p class="saas-page-header-sub">View your account and company details.</p>
+    </div>
+    <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="saas-card h-100">
+      <h5 class="fw-bold mb-4"><i class="bi bi-person-badge me-2"></i>Personal Details</h5>
+      
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-bold">Name</label>
+        <div class="form-control bg-light">{{ user_data.name }}</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-bold">Email</label>
+        <div class="form-control bg-light">{{ user_data.email }}</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-bold">Role</label>
+        <div class="form-control bg-light text-capitalize">Recruiter</div>
+      </div>
+      <p class="text-muted small mt-4"><i class="bi bi-info-circle me-1"></i>Contact an administrator to change your personal details.</p>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="saas-card h-100">
+      <h5 class="fw-bold mb-4"><i class="bi bi-building me-2"></i>Company Association</h5>
+      
+      {% if user_data.company_id %}
+        {% if not user_data.is_active %}
+        <div class="alert alert-warning py-2 small" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> Your company is currently marked as inactive.
+        </div>
+        {% endif %}
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Company Name</label>
+          <div class="form-control bg-light">{{ user_data.company_name }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Website</label>
+          <div class="form-control bg-light">
+            {% if user_data.website %}
+              <a href="{{ user_data.website }}" target="_blank" rel="noopener noreferrer">{{ user_data.website }}</a>
+            {% else %}
+              <span class="text-muted">Not specified</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-bold">Description</label>
+          <div class="form-control bg-light" style="min-height: 80px; white-space: pre-wrap;">{{ user_data.description or 'No description provided.' }}</div>
+        </div>
+      {% else %}
+        <div class="alert alert-info py-3" role="alert">
+          <div class="d-flex">
+            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+            <div>
+              <strong>No Company Assigned</strong><br>
+              <span class="small">No company has been assigned to your recruiter account yet. Please contact an administrator to have your account associated with a company.</span>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

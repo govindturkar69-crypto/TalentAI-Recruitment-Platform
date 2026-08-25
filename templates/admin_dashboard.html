@@ -75,7 +75,10 @@
   <div class="col-lg-8">
     <div class="saas-card h-100">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h5 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
+        <div class="d-flex align-items-center gap-3">
+          <h5 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
+          <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-building me-1"></i>Manage Companies</a>
+        </div>
         <!-- Simple JS-based filter -->
         <div class="d-flex gap-2 flex-grow-1 justify-content-lg-end">
           <div class="input-group input-group-sm" style="max-width: 250px;">
@@ -98,6 +101,7 @@
               <th>Email</th>
               <th>Status</th>
               <th>Role</th>
+              <th>Company</th>
               <th>Joined</th>
               <th class="text-end">Actions</th>
             </tr>
@@ -133,6 +137,13 @@
                 {% endif %}
               </td>
               <td>
+                {% if user.role == 'recruiter' %}
+                  <span class="text-muted small">{{ user.company_name or 'Unassigned' }}</span>
+                {% else %}
+                  <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+              <td>
                 <span class="text-muted" style="font-size: 0.8rem;">
                   {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'Unknown' }}
                 </span>
@@ -160,6 +171,18 @@
                       <button type="submit" class="btn btn-sm btn-outline-success" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Activate</button>
                     {% endif %}
                   </form>
+                  {% if user.role == 'recruiter' %}
+                  <form action="{{ url_for('admin.assign_company', user_id=user.id) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <select name="company_id" class="form-select" style="width: 120px; font-size: 0.75rem; padding: 2px 4px;">
+                      <option value="">-- No Company --</option>
+                      {% for company in companies %}
+                      <option value="{{ company.id }}" {% if user.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem; padding: 2px 8px;">Assign</button>
+                  </form>
+                  {% endif %}
                 </div>
               </td>
             </tr>

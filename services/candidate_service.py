@@ -2,7 +2,9 @@ from contextlib import closing
 
 from core import get_db_connection
 from models.resume_parser import extract_skills, extract_text_from_pdf, get_final_score, score_candidate
+from services.audit_service import log_audit_event
 from services.notification_service import create_notification
+from services.workflow import CANDIDATE_TRANSITIONS
 
 
 def get_resolved_candidate_skills(user_id, cur):
@@ -115,10 +117,19 @@ def withdraw_application_service(app_id, user_id):
             if not app_row:
                 return {"success": False, "message": "Application not found.", "type": "danger"}
 
-            if app_row["status"] == "hired":
-                return {"success": False, "message": "You can't withdraw a hired application.", "type": "warning"}
+            current_status = app_row["status"]
+            if "withdrawn" not in CANDIDATE_TRANSITIONS.get(current_status, set()):
+                return {"success": False, "message": "You cannot withdraw an application in this state.", "type": "warning"}
 
             cur.execute("UPDATE applications SET status='withdrawn' WHERE id=%s", (app_id,))
+
+            log_audit_event(
+                user_id,
+                "application_withdrawn",
+                "application",
+                app_id,
+                {"previous_status": current_status, "new_status": "withdrawn"}
+            )
             conn.commit()
 
     return {"success": True, "message": f"Application for {app_row['job_title']} has been withdrawn.", "type": "info"}

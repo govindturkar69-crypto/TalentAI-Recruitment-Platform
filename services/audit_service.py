@@ -18,6 +18,10 @@ AUDIT_ALLOWLIST = {
     "is_active_before",
     "is_active_after",
     "company_name",
+    "previous_company_id",
+    "new_company_id",
+    "previous_name",
+    "new_name",
 }
 
 

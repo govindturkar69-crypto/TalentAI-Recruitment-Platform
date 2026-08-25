@@ -88,9 +88,12 @@ class TestAdminPanel:
             "role": "candidate",
             "is_active": True,
             "created_at": None,
+            "company_id": None,
+            "company_name": None,
         }
         mock_admin_cur.fetchall.side_effect = [
             [test_user],  # users
+            [],  # active companies
             [test_user],  # recent_users
         ]
 

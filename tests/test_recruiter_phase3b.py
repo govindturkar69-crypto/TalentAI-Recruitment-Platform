@@ -11,11 +11,12 @@ def test_recruiter_settings_unauthenticated(client):
     assert "/login" in response.headers["Location"]
 
 
-def test_recruiter_settings_candidate(client):
+def test_recruiter_settings_candidate(client, mock_db):
     _login_as(client, role="candidate")
+    mock_db.fetchone.return_value = {"is_active": 1}
     response = client.get("/recruiter/settings", follow_redirects=False)
     assert response.status_code == 302
-    assert "/dashboard" in response.headers["Location"]
+    assert response.headers["Location"] == "/"
 
 
 def test_recruiter_settings_view_company(client, mock_db):

@@ -18,14 +18,14 @@ def test_admin_companies_page_access(client, monkeypatch, mock_db):
     mock_db.fetchone.return_value = {"email": "cand@company.com", "is_active": True}
     response = client.get("/admin/companies", follow_redirects=False)
     assert response.status_code == 302
-    assert "/dashboard" in response.headers["Location"]
+    assert response.headers["Location"] == "/"
 
     # 3. Recruiter (non-admin)
     _login_as(client, role="recruiter", email="rec@company.com")
     mock_db.fetchone.return_value = {"email": "rec@company.com", "is_active": True}
     response = client.get("/admin/companies", follow_redirects=False)
     assert response.status_code == 302
-    assert "/dashboard" in response.headers["Location"]
+    assert response.headers["Location"] == "/"
 
     # 4. Admin
     _login_as(client, role="candidate", email="admin@company.com")
@@ -54,14 +54,19 @@ def test_admin_create_company(client, monkeypatch, mock_db):
     assert response.status_code == 302
     assert "/admin/companies" in response.headers["Location"]
 
-    execute_calls = mock_db.execute.call_args_list
-    insert_call = execute_calls[0]
-    assert "INSERT INTO companies" in insert_call[0][0]
-    assert insert_call[0][1] == ("New Co", "A new company", "https://newco.com")
+    company_insert_calls = [call for call in mock_db.execute.call_args_list if "INSERT INTO companies" in call[0][0]]
+    assert len(company_insert_calls) == 1
+    query, params = company_insert_calls[0][0]
+    assert params == ("New Co", "A new company", "https://newco.com")
 
-    audit_call = execute_calls[1]
-    assert "INSERT INTO audit_logs" in audit_call[0][0]
-    assert "create_company" in audit_call[0][1]
+    audit_insert_calls = [call for call in mock_db.execute.call_args_list if "INSERT INTO audit_logs" in call[0][0]]
+    assert len(audit_insert_calls) == 1
+    import json
+
+    audit_params = audit_insert_calls[0][0][1]
+    assert "create_company" in audit_params
+    details = json.loads(audit_params[4])
+    assert details == {"company_name": "New Co"}
 
 
 def test_admin_create_company_validation(client, monkeypatch, mock_db):
@@ -123,6 +128,18 @@ def test_admin_edit_company(client, monkeypatch, mock_db):
             assert call[0][1] == ("Updated Co", "Desc", "http://updated.com", 1)
     assert update_found
 
+    audit_insert_calls = [call for call in mock_db.execute.call_args_list if "INSERT INTO audit_logs" in call[0][0]]
+    assert len(audit_insert_calls) == 1
+    import json
+
+    audit_params = audit_insert_calls[0][0][1]
+    assert "update_company" in audit_params
+    details = json.loads(audit_params[4])
+    assert details == {
+        "previous_name": "Old Co",
+        "new_name": "Updated Co",
+    }
+
 
 def test_admin_edit_company_invalid_website(client, monkeypatch, mock_db):
     monkeypatch.setitem(client.application.config, "ADMIN_EMAIL", "admin@company.com")
@@ -164,19 +181,25 @@ def test_admin_assign_company_success(client, monkeypatch, mock_db):
     assert response.status_code == 302
 
     update_found = False
-    audit_found = False
     for call in mock_db.execute.call_args_list:
         sql = call[0][0]
         params = call[0][1] if len(call[0]) > 1 else ()
         if "UPDATE users SET company_id = %s" in sql:
             update_found = True
             assert params == (5, 2)
-        if "INSERT INTO audit_logs" in sql and "assign_recruiter_company" in str(params):
-            audit_found = True
-            assert '"previous_company_id": null' in str(params)
-            assert '"new_company_id": 5' in str(params)
     assert update_found
-    assert audit_found
+
+    audit_insert_calls = [call for call in mock_db.execute.call_args_list if "INSERT INTO audit_logs" in call[0][0]]
+    assert len(audit_insert_calls) == 1
+    import json
+
+    audit_params = audit_insert_calls[0][0][1]
+    assert "assign_recruiter_company" in audit_params
+    details = json.loads(audit_params[4])
+    assert details == {
+        "previous_company_id": None,
+        "new_company_id": 5,
+    }
 
 
 def test_admin_assign_company_null(client, monkeypatch, mock_db):
@@ -298,16 +321,22 @@ def test_admin_reassign_company(client, monkeypatch, mock_db):
     assert response.status_code == 302
 
     update_found = False
-    audit_found = False
     for call in mock_db.execute.call_args_list:
         sql = call[0][0]
         params = call[0][1] if len(call[0]) > 1 else ()
-        if "UPDATE users SET company_id = %s" in sql:
+        if "UPDATE users SET company_id = %s WHERE id = %s" in sql:
             update_found = True
             assert params == (6, 2)
-        if "INSERT INTO audit_logs" in sql and "assign_recruiter_company" in str(params):
-            audit_found = True
-            assert '"previous_company_id": 5' in str(params)
-            assert '"new_company_id": 6' in str(params)
     assert update_found
-    assert audit_found
+
+    audit_insert_calls = [call for call in mock_db.execute.call_args_list if "INSERT INTO audit_logs" in call[0][0]]
+    assert len(audit_insert_calls) == 1
+    import json
+
+    audit_params = audit_insert_calls[0][0][1]
+    assert "assign_recruiter_company" in audit_params
+    details = json.loads(audit_params[4])
+    assert details == {
+        "previous_company_id": 5,
+        "new_company_id": 6,
+    }

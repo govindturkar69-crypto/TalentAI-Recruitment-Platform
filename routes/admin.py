@@ -259,7 +259,7 @@ def create_company():
                 action="create_company",
                 target_type="company",
                 target_id=company_id,
-                details={"name": name},
+                details={"company_name": name},
             )
 
     flash("Company created successfully.", "success")

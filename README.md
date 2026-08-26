@@ -317,8 +317,8 @@ APP_BASE_URL     = https://talentai-recruitment-platform.onrender.com
 **Govind Turkar**
 
 [![GitHub](https://img.shields.io/badge/GitHub-govindturkar69--crypto-181717?style=for-the-badge&logo=github)](https://github.com/govindturkar69-crypto)
-[![Email](https://img.shields.io/badge/Email-govindturkar45@gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:govindturkar45@gmail.com)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/yourprofile)
+[![Email](https://img.shields.io/badge/Email-govindturkar69@gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:govindturkar69@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/govind-turkar-1487a0430/)
 
 </div>
 

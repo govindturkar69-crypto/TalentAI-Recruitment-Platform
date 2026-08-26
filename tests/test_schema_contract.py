@@ -136,3 +136,26 @@ def test_schema_contract_saved_jobs():
 
     cur.close()
     conn.close()
+
+
+def test_schema_contract_applications_status():
+    """Verify canonical schema applications.status matches migration 008 definition."""
+    conn = get_test_db_connection()
+    cur = conn.cursor()
+    cur.execute("SHOW COLUMNS FROM applications LIKE 'status'")
+    col_def = cur.fetchone()
+
+    assert col_def is not None
+    assert col_def["Null"] == "NO"
+    assert col_def["Default"] == "applied"
+
+    type_str = col_def["Type"].lower()
+    assert "enum" in type_str
+    assert "applied" in type_str
+    assert "shortlisted" in type_str
+    assert "rejected" in type_str
+    assert "hired" in type_str
+    assert "withdrawn" in type_str
+
+    cur.close()
+    conn.close()

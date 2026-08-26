@@ -80,7 +80,13 @@ CREATE TABLE IF NOT EXISTS applications (
     score        FLOAT DEFAULT 0,
     matched_skills TEXT,
     missing_skills TEXT,
-    status       ENUM('applied','shortlisted','rejected','hired','withdrawn') DEFAULT 'applied',
+    status ENUM(
+        'applied',
+        'shortlisted',
+        'rejected',
+        'hired',
+        'withdrawn'
+    ) NOT NULL DEFAULT 'applied',
     applied_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (candidate_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (job_id)       REFERENCES jobs(id)  ON DELETE CASCADE,

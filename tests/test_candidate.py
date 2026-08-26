@@ -39,5 +39,8 @@ def test_withdraw_hired_application(client, mock_db):
     with client.session_transaction() as sess:
         flashes = sess.get("_flashes", [])
         assert any(
-            b"can&#39;t withdraw" in str(msg).encode() or b"can't withdraw" in str(msg).encode() for cat, msg in flashes
+            b"can&#39;t withdraw" in str(msg).encode()
+            or b"can't withdraw" in str(msg).encode()
+            or b"cannot withdraw" in str(msg).encode()
+            for cat, msg in flashes
         )

@@ -33,9 +33,14 @@ from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture(autouse=True)
-def mock_db():
+def mock_db(request):
+    if "test_phase4a" in request.module.__name__:
+        yield None
+        return
+
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
+    mock_cursor.rowcount = 1
     mock_conn.close = MagicMock()
     mock_cursor.close = MagicMock()
     mock_conn.cursor.return_value = mock_cursor

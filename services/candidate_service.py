@@ -119,18 +119,28 @@ def withdraw_application_service(app_id, user_id):
 
             current_status = app_row["status"]
             if "withdrawn" not in CANDIDATE_TRANSITIONS.get(current_status, set()):
-                return {"success": False, "message": "You cannot withdraw an application in this state.", "type": "warning"}
+                return {
+                    "success": False,
+                    "message": "You cannot withdraw an application in this state.",
+                    "type": "warning",
+                }
 
-            cur.execute("UPDATE applications SET status='withdrawn' WHERE id=%s", (app_id,))
-
-            log_audit_event(
-                user_id,
-                "application_withdrawn",
-                "application",
-                app_id,
-                {"previous_status": current_status, "new_status": "withdrawn"}
+            cur.execute(
+                "UPDATE applications SET status='withdrawn' WHERE id=%s AND status=%s",
+                (app_id, current_status),
             )
+            if cur.rowcount == 0:
+                return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
+
             conn.commit()
+
+    log_audit_event(
+        user_id,
+        "application_withdrawn",
+        "application",
+        app_id,
+        {"previous_status": current_status, "new_status": "withdrawn"},
+    )
 
     return {"success": True, "message": f"Application for {app_row['job_title']} has been withdrawn.", "type": "info"}
 

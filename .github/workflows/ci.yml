@@ -90,6 +90,7 @@ jobs:
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/003_reconcile_foundation.sql
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/004_job_lifecycle.sql
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/007_add_saved_jobs.sql
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/008_add_withdrawn_status.sql
 
         # Verify backfill
         mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT is_active, company_id FROM users WHERE id = 1;"
@@ -123,6 +124,7 @@ jobs:
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/003_reconcile_foundation.sql
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/005_reconcile_candidate_profile.sql
         mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/006_reconcile_job_lifecycle.sql
+        mysql -h 127.0.0.1 -u root -proot test_db < database/migrations/008_add_withdrawn_status.sql
 
         # Verify backfill
         mysql -h 127.0.0.1 -u root -proot test_db -e "SELECT is_active FROM jobs WHERE id = 1;" | grep -q "1"

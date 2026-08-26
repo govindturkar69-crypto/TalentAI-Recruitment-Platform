@@ -68,11 +68,17 @@ def delete_job_service(user_id, job_id):
 def bulk_update_status_service(app_ids, new_status, recruiter_id):
     """H4: Verify every application belongs to a job owned by the recruiter."""
     if new_status not in ["shortlisted", "rejected", "hired"]:
-        return {"success_count": 0, "skipped_count": len(app_ids), "message": "Invalid bulk target status.", "type": "danger"}
+        return {
+            "success_count": 0,
+            "skipped_count": len(app_ids),
+            "message": "Invalid bulk target status.",
+            "type": "danger",
+        }
 
     success_count = 0
     skipped_count = 0
     notifications_to_send = []
+    audit_events_to_send = []
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -96,16 +102,16 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
                     skipped_count += 1
                     continue
 
-                cur.execute("UPDATE applications SET status=%s WHERE id=%s", (new_status, app_id))
+                cur.execute(
+                    "UPDATE applications SET status=%s WHERE id=%s AND status=%s", (new_status, app_id, current_status)
+                )
+                if cur.rowcount == 0:
+                    skipped_count += 1
+                    continue
+
                 success_count += 1
 
-                log_audit_event(
-                    recruiter_id,
-                    "application_status_changed",
-                    "application",
-                    app_id,
-                    {"previous_status": current_status, "new_status": new_status}
-                )
+                audit_events_to_send.append((app_id, current_status, new_status))
 
                 if new_status in ("shortlisted", "rejected", "hired"):
                     msgs = {
@@ -113,9 +119,19 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
                         "rejected": f"Your application for {info['job_title']} was not selected.",
                         "hired": f"Congratulations! You've been hired for {info['job_title']}!",
                     }
-                    notifications_to_send.append((info["candidate_id"], f"Application {new_status.title()}", msgs[new_status], new_status))
+                    title = f"Application {new_status.title()}"
+                    notifications_to_send.append((info["candidate_id"], title, msgs[new_status], new_status))
 
             conn.commit()
+
+    for aud_app_id, prev_status, n_status in audit_events_to_send:
+        log_audit_event(
+            recruiter_id,
+            "application_status_changed",
+            "application",
+            aud_app_id,
+            {"previous_status": prev_status, "new_status": n_status},
+        )
 
     # Send notifications after successful commit
     for candidate_id, title, body, status in notifications_to_send:
@@ -128,7 +144,7 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
         "success_count": success_count,
         "skipped_count": skipped_count,
         "message": f"Updated {success_count} application(s); skipped {skipped_count}.",
-        "type": "success" if success_count > 0 else "warning"
+        "type": "success" if success_count > 0 else "warning",
     }
 
 
@@ -156,17 +172,21 @@ def update_status_service(app_id, new_status, recruiter_id):
             if new_status not in RECRUITER_TRANSITIONS.get(current_status, set()):
                 return {"success": False, "message": "Invalid status transition.", "type": "danger"}
 
-            cur.execute("UPDATE applications SET status=%s WHERE id=%s", (new_status, app_id))
-
-            log_audit_event(
-                recruiter_id,
-                "application_status_changed",
-                "application",
-                app_id,
-                {"previous_status": current_status, "new_status": new_status}
+            cur.execute(
+                "UPDATE applications SET status=%s WHERE id=%s AND status=%s", (new_status, app_id, current_status)
             )
+            if cur.rowcount == 0:
+                return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
 
             conn.commit()
+
+    log_audit_event(
+        recruiter_id,
+        "application_status_changed",
+        "application",
+        app_id,
+        {"previous_status": current_status, "new_status": new_status},
+    )
 
     try:
         if new_status in ("shortlisted", "rejected", "hired"):

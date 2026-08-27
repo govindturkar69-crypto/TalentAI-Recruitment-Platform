@@ -24,6 +24,15 @@ AUDIT_ALLOWLIST = {
     "new_name",
     "previous_status",
     "new_status",
+    "application_id",
+    "interview_status",
+    "previous_interview_status",
+    "new_interview_status",
+    "scheduled_at",
+    "previous_scheduled_at",
+    "new_scheduled_at",
+    "duration_minutes",
+    "mode",
 }
 
 

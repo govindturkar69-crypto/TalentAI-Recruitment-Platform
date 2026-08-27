@@ -89,6 +89,7 @@ def test_schema_contract_tables_exist():
         "candidate_certifications",
         "candidate_achievements",
         "saved_jobs",
+        "interviews",
     }
     assert required_tables.issubset(tables)
     cur.close()
@@ -156,6 +157,72 @@ def test_schema_contract_applications_status():
     assert "rejected" in type_str
     assert "hired" in type_str
     assert "withdrawn" in type_str
+
+    cur.close()
+    conn.close()
+
+
+def test_schema_contract_interviews():
+    """Verify canonical schema contains required interviews table objects."""
+    conn = get_test_db_connection()
+    cur = conn.cursor()
+    cur.execute("SHOW COLUMNS FROM interviews")
+    rows = cur.fetchall()
+    columns = {row["Field"]: row for row in rows}
+
+    assert "id" in columns
+    assert "application_id" in columns
+    assert "scheduled_at" in columns
+    assert "duration_minutes" in columns
+    assert "mode" in columns
+    assert "status" in columns
+    assert "created_at" in columns
+    assert "updated_at" in columns
+
+    # Verify attributes
+    assert columns["id"]["Key"] == "PRI"
+    assert "auto_increment" in columns["id"]["Extra"].lower()
+
+    assert columns["application_id"]["Null"] == "NO"
+    assert columns["scheduled_at"]["Null"] == "NO"
+
+    # Check duration_minutes
+    assert columns["duration_minutes"]["Null"] == "NO"
+    assert "unsigned" in columns["duration_minutes"]["Type"].lower()
+    assert columns["duration_minutes"]["Default"] == "30"
+
+    # Check enums
+    mode_type = columns["mode"]["Type"].lower()
+    assert "enum" in mode_type
+    assert "online" in mode_type
+    assert "in_person" in mode_type
+    assert "phone" in mode_type
+    assert columns["mode"]["Null"] == "NO"
+
+    status_type = columns["status"]["Type"].lower()
+    assert "enum" in status_type
+    assert "scheduled" in status_type
+    assert "completed" in status_type
+    assert "cancelled" in status_type
+    assert columns["status"]["Null"] == "NO"
+    assert columns["status"]["Default"] == "scheduled"
+
+    # Check timestamps
+    assert columns["created_at"]["Null"] == "NO"
+    assert columns["created_at"]["Default"] is not None
+    assert columns["updated_at"]["Null"] == "NO"
+    assert "on update" in columns["updated_at"]["Extra"].lower() or columns["updated_at"]["Default"] is not None
+
+    cur.execute("SHOW CREATE TABLE interviews")
+    create_table = cur.fetchone()["Create Table"]
+    normalized_create = " ".join(create_table.split())
+
+    # Check foreign keys
+    assert "FOREIGN KEY (`application_id`) REFERENCES `applications` (`id`) ON DELETE CASCADE" in normalized_create
+
+    # Check indexes
+    assert "idx_interviews_application_scheduled" in normalized_create
+    assert "idx_interviews_status_scheduled" in normalized_create
 
     cur.close()
     conn.close()

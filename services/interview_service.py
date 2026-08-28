@@ -14,6 +14,7 @@ INTERVIEW_TRANSITIONS = {
     "cancelled": set(),
 }
 
+
 def parse_local_datetime(dt_str):
     if not dt_str:
         return None
@@ -24,6 +25,7 @@ def parse_local_datetime(dt_str):
         return dt
     except ValueError:
         return None
+
 
 def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
     try:
@@ -75,6 +77,7 @@ def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
 
     return True, (duration, mode, clean_location, clean_notes)
 
+
 def _authorize_recruiter_application(cur, application_id, recruiter_id, for_update=False):
     query = """
         SELECT a.id, a.candidate_id, a.status, j.id as job_id, j.job_title
@@ -113,9 +116,7 @@ def schedule_interview_service(
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
-            app_info = _authorize_recruiter_application(
-                cur, application_id, recruiter_id, for_update=True
-            )
+            app_info = _authorize_recruiter_application(cur, application_id, recruiter_id, for_update=True)
             if not app_info:
                 return {"success": False, "message": "Application not found or access denied.", "type": "danger"}
 
@@ -140,7 +141,7 @@ def schedule_interview_service(
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, 'scheduled')
                 """,
-                (application_id, dt, clean_duration, clean_mode, clean_location, clean_notes)
+                (application_id, dt, clean_duration, clean_mode, clean_location, clean_notes),
             )
             new_id = cur.lastrowid
             candidate_id = app_info["candidate_id"]
@@ -158,7 +159,7 @@ def schedule_interview_service(
             "scheduled_at": str(dt),
             "duration_minutes": clean_duration,
             "mode": clean_mode,
-        }
+        },
     )
 
     try:
@@ -166,12 +167,13 @@ def schedule_interview_service(
             candidate_id,
             "Interview Scheduled",
             f"An interview for {job_title} has been scheduled on {dt.strftime('%Y-%m-%d %H:%M')}.",
-            "system"
+            "system",
         )
     except Exception:
         pass
 
     return {"success": True, "message": "Interview scheduled successfully.", "type": "success"}
+
 
 def get_recruiter_interviews_for_application(application_id, recruiter_id):
     with closing(get_db_connection()) as conn:
@@ -181,11 +183,11 @@ def get_recruiter_interviews_for_application(application_id, recruiter_id):
                 return {"success": False, "message": "Access denied.", "type": "danger", "data": None}
 
             cur.execute(
-                "SELECT * FROM interviews WHERE application_id = %s ORDER BY scheduled_at ASC",
-                (application_id,)
+                "SELECT * FROM interviews WHERE application_id = %s ORDER BY scheduled_at ASC", (application_id,)
             )
             interviews = cur.fetchall()
             return {"success": True, "message": "", "type": "success", "data": interviews}
+
 
 def get_candidate_interviews(candidate_id):
     with closing(get_db_connection()) as conn:
@@ -199,9 +201,10 @@ def get_candidate_interviews(candidate_id):
                 WHERE a.candidate_id = %s
                 ORDER BY i.scheduled_at ASC
                 """,
-                (candidate_id,)
+                (candidate_id,),
             )
             return cur.fetchall()
+
 
 def update_interview_service(
     interview_id,
@@ -239,7 +242,7 @@ def update_interview_service(
                 WHERE i.id = %s AND j.recruiter_id = %s
                 FOR UPDATE
                 """,
-                (interview_id, recruiter_id)
+                (interview_id, recruiter_id),
             )
             interview = cur.fetchone()
 
@@ -269,7 +272,7 @@ def update_interview_service(
                 SET scheduled_at = %s, duration_minutes = %s, mode = %s, location_or_link = %s, notes = %s
                 WHERE id = %s AND status = 'scheduled'
                 """,
-                (dt, clean_duration, clean_mode, clean_location, clean_notes, interview_id)
+                (dt, clean_duration, clean_mode, clean_location, clean_notes, interview_id),
             )
 
             if cur.rowcount == 0:
@@ -289,7 +292,7 @@ def update_interview_service(
             "duration_minutes": clean_duration,
             "mode": clean_mode,
             "interview_status": "scheduled",
-        }
+        },
     )
 
     try:
@@ -297,12 +300,13 @@ def update_interview_service(
             candidate_id,
             "Interview Rescheduled",
             f"Your interview for {job_title} has been rescheduled to {dt.strftime('%Y-%m-%d %H:%M')}.",
-            "system"
+            "system",
         )
     except Exception:
         pass
 
     return {"success": True, "message": "Interview updated successfully.", "type": "success"}
+
 
 def cancel_interview_service(interview_id, recruiter_id):
     app_id = None
@@ -319,7 +323,7 @@ def cancel_interview_service(interview_id, recruiter_id):
                 JOIN jobs j ON a.job_id = j.id
                 WHERE i.id = %s AND j.recruiter_id = %s
                 """,
-                (interview_id, recruiter_id)
+                (interview_id, recruiter_id),
             )
             interview = cur.fetchone()
 
@@ -334,8 +338,7 @@ def cancel_interview_service(interview_id, recruiter_id):
             job_title = interview["job_title"]
 
             cur.execute(
-                "UPDATE interviews SET status = 'cancelled' WHERE id = %s AND status = 'scheduled'",
-                (interview_id,)
+                "UPDATE interviews SET status = 'cancelled' WHERE id = %s AND status = 'scheduled'", (interview_id,)
             )
 
             if cur.rowcount == 0:
@@ -352,20 +355,18 @@ def cancel_interview_service(interview_id, recruiter_id):
             "application_id": app_id,
             "previous_interview_status": "scheduled",
             "new_interview_status": "cancelled",
-        }
+        },
     )
 
     try:
         create_notification(
-            candidate_id,
-            "Interview Cancelled",
-            f"Your interview for {job_title} has been cancelled.",
-            "system"
+            candidate_id, "Interview Cancelled", f"Your interview for {job_title} has been cancelled.", "system"
         )
     except Exception:
         pass
 
     return {"success": True, "message": "Interview cancelled successfully.", "type": "info"}
+
 
 def complete_interview_service(interview_id, recruiter_id):
     app_id = None
@@ -380,7 +381,7 @@ def complete_interview_service(interview_id, recruiter_id):
                 JOIN jobs j ON a.job_id = j.id
                 WHERE i.id = %s AND j.recruiter_id = %s
                 """,
-                (interview_id, recruiter_id)
+                (interview_id, recruiter_id),
             )
             interview = cur.fetchone()
 
@@ -403,8 +404,7 @@ def complete_interview_service(interview_id, recruiter_id):
             app_id = interview["application_id"]
 
             cur.execute(
-                "UPDATE interviews SET status = 'completed' WHERE id = %s AND status = 'scheduled'",
-                (interview_id,)
+                "UPDATE interviews SET status = 'completed' WHERE id = %s AND status = 'scheduled'", (interview_id,)
             )
 
             if cur.rowcount == 0:
@@ -421,7 +421,7 @@ def complete_interview_service(interview_id, recruiter_id):
             "application_id": app_id,
             "previous_interview_status": "scheduled",
             "new_interview_status": "completed",
-        }
+        },
     )
 
     return {"success": True, "message": "Interview marked as completed.", "type": "success"}

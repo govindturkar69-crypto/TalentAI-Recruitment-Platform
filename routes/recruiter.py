@@ -18,13 +18,6 @@ from flask import (
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from core import get_db_connection, login_required
-from services.interview_service import (
-    cancel_interview_service,
-    complete_interview_service,
-    get_recruiter_interviews_for_application,
-    schedule_interview_service,
-    update_interview_service,
-)
 from services.recruiter_service import (
     bulk_update_status_service,
     delete_job_service,
@@ -340,72 +333,3 @@ def recruiter_settings():
             user_data = cur.fetchone()
 
     return render_template("recruiter_settings.html", user_data=user_data)
-
-
-@recruiter_bp.route("/recruiter/application/<int:app_id>/interviews")
-@login_required(role="recruiter")
-def view_application_interviews(app_id):
-    result = get_recruiter_interviews_for_application(app_id, session["user_id"])
-    if not result["success"]:
-        flash(result["message"], result["type"])
-        return redirect(url_for("recruiter.recruiter_dashboard"))
-
-    return render_template(
-        "recruiter_interviews.html",
-        interviews=result["data"],
-        app_info=result["app_info"]
-    )
-
-
-@recruiter_bp.route("/recruiter/application/<int:app_id>/interviews/schedule", methods=["POST"])
-@login_required(role="recruiter")
-def schedule_interview(app_id):
-    scheduled_at = request.form.get("scheduled_at")
-    duration_minutes = request.form.get("duration_minutes")
-    mode = request.form.get("mode")
-    location_or_link = request.form.get("location_or_link")
-    notes = request.form.get("notes")
-
-    result = schedule_interview_service(
-        app_id, session["user_id"], scheduled_at, duration_minutes, mode, location_or_link, notes
-    )
-    flash(result["message"], result["type"])
-    return redirect(url_for("recruiter.view_application_interviews", app_id=app_id))
-
-
-@recruiter_bp.route("/recruiter/interview/<int:interview_id>/update", methods=["POST"])
-@login_required(role="recruiter")
-def update_interview(interview_id):
-    scheduled_at = request.form.get("scheduled_at")
-    duration_minutes = request.form.get("duration_minutes")
-    mode = request.form.get("mode")
-    location_or_link = request.form.get("location_or_link")
-    notes = request.form.get("notes")
-
-    result = update_interview_service(
-        interview_id, session["user_id"], scheduled_at, duration_minutes, mode, location_or_link, notes
-    )
-    flash(result["message"], result["type"])
-
-    from app import safe_redirect
-    return safe_redirect(url_for("recruiter.recruiter_dashboard"))
-
-
-@recruiter_bp.route("/recruiter/interview/<int:interview_id>/cancel", methods=["POST"])
-@login_required(role="recruiter")
-def cancel_interview(interview_id):
-    result = cancel_interview_service(interview_id, session["user_id"])
-    flash(result["message"], result["type"])
-
-    from app import safe_redirect
-    return safe_redirect(url_for("recruiter.recruiter_dashboard"))
-
-
-@recruiter_bp.route("/recruiter/interview/<int:interview_id>/complete", methods=["POST"])
-@login_required(role="recruiter")
-def complete_interview(interview_id):
-    result = complete_interview_service(interview_id, session["user_id"])
-    flash(result["message"], result["type"])
-
-    from app import safe_redirect
-    return safe_redirect(url_for("recruiter.recruiter_dashboard"))

@@ -24,6 +24,7 @@ def test_client():
         with app.app_context():
             yield client
 
+
 def setup_data():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -44,21 +45,24 @@ def setup_data():
             # Recruiter A (Co 1)
             cur.execute(
                 "INSERT INTO users (name, email, password, role, company_id) "
-                "VALUES ('Recruiter A', 'reca_test4b@example.com', 'hash', 'recruiter', %s)", (company1,)
+                "VALUES ('Recruiter A', 'reca_test4b@example.com', 'hash', 'recruiter', %s)",
+                (company1,),
             )
             reca_id = cur.lastrowid
 
             # Recruiter B (Co 1) - Same company
             cur.execute(
                 "INSERT INTO users (name, email, password, role, company_id) "
-                "VALUES ('Recruiter B', 'recb_test4b@example.com', 'hash', 'recruiter', %s)", (company1,)
+                "VALUES ('Recruiter B', 'recb_test4b@example.com', 'hash', 'recruiter', %s)",
+                (company1,),
             )
             recb_id = cur.lastrowid
 
             # Recruiter C (Co 2)
             cur.execute(
                 "INSERT INTO users (name, email, password, role, company_id) "
-                "VALUES ('Recruiter C', 'recc_test4b@example.com', 'hash', 'recruiter', %s)", (company2,)
+                "VALUES ('Recruiter C', 'recc_test4b@example.com', 'hash', 'recruiter', %s)",
+                (company2,),
             )
             recc_id = cur.lastrowid
 
@@ -90,6 +94,7 @@ def setup_data():
             conn.commit()
             return reca_id, recb_id, recc_id, cand1_id, cand2_id, job_a_id, resume1_id
 
+
 def create_application(candidate_id, job_id, resume_id, status="applied"):
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -100,9 +105,11 @@ def create_application(candidate_id, job_id, resume_id, status="applied"):
             conn.commit()
             return cur.lastrowid
 
+
 # ---------------------------------------------------------
 # AUTHORIZATION
 # ---------------------------------------------------------
+
 
 def test_authorization_schedule():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
@@ -121,6 +128,7 @@ def test_authorization_schedule():
     res = schedule_interview_service(app_id, recc, future_time, 30, "online", "https://zoom.us/test", None)
     assert res["success"] is False
 
+
 def test_authorization_read():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
     app_id = create_application(cand1, ja, res1, "shortlisted")
@@ -136,6 +144,7 @@ def test_authorization_read():
     assert res["success"] is False
     assert res["data"] is None
 
+
 def test_authorization_candidate_isolation():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
     app_id = create_application(cand1, ja, res1, "shortlisted")
@@ -149,9 +158,11 @@ def test_authorization_candidate_isolation():
     interviews_c2 = get_candidate_interviews(cand2)
     assert len(interviews_c2) == 0
 
+
 # ---------------------------------------------------------
 # SCHEDULING & STATUS
 # ---------------------------------------------------------
+
 
 def test_scheduling_application_status():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
@@ -177,9 +188,11 @@ def test_scheduling_application_status():
     assert res["success"] is False
     assert "future" in res["message"].lower()
 
+
 # ---------------------------------------------------------
 # VALIDATION
 # ---------------------------------------------------------
+
 
 def test_validation():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
@@ -217,14 +230,15 @@ def test_validation():
     res = schedule_interview_service(app_id, reca, "2030-01-02T10:00", 30, "in_person", "A" * 501, None)
     assert res["success"] is False
 
-
     # phone with location_or_link rejected
     res = schedule_interview_service(app_id, reca, "2030-01-02T10:00", 30, "phone", "555-1234", None)
     assert res["success"] is False
 
+
 # ---------------------------------------------------------
 # UPDATE, CANCEL, COMPLETE
 # ---------------------------------------------------------
+
 
 def test_update_interview():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
@@ -252,6 +266,7 @@ def test_update_interview():
     res = update_interview_service(iv_id, reca, "2030-01-03T10:00", 60, "phone", None, None)
     assert res["success"] is False
 
+
 def test_cancel_interview():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
     app_id = create_application(cand1, ja, res1, "shortlisted")
@@ -269,6 +284,7 @@ def test_cancel_interview():
     # second cancellation blocked
     res = cancel_interview_service(iv_id, reca)
     assert res["success"] is False
+
 
 def test_complete_interview():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
@@ -303,6 +319,7 @@ def test_complete_interview():
     cancel_interview_service(iv2_id, reca)
     res = complete_interview_service(iv2_id, reca)
     assert res["success"] is False
+
 
 @patch("services.interview_service.log_audit_event")
 def test_audit_safety(mock_audit):

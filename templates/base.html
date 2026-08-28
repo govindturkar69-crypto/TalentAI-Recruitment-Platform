@@ -41,6 +41,7 @@
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.upload_resume' %}nav-active{% endif %}" href="{{ url_for('candidate.upload_resume') }}"><i class="bi bi-file-earmark-person"></i> Resume</a></li>
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_jobs' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_jobs') }}"><i class="bi bi-search"></i> Jobs</a></li>
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_applications' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_applications') }}"><i class="bi bi-briefcase"></i> Applications</a></li>
+              <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_interviews' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_interviews') }}"><i class="bi bi-calendar-event"></i> Interviews</a></li>
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.resume_suggestions' %}nav-active{% endif %}" href="{{ url_for('candidate.resume_suggestions') }}"><i class="bi bi-magic"></i> AI Suggestions</a></li>
             {% else %}
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'recruiter.recruiter_dashboard' %}active text-white fw-semibold{% endif %}" href="{{ url_for('recruiter.recruiter_dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>

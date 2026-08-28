@@ -6,6 +6,7 @@ import pytest
 
 from app import app
 from core import get_db_connection
+from services.candidate_service import withdraw_application_service
 from services.interview_service import (
     cancel_interview_service,
     complete_interview_service,
@@ -14,6 +15,7 @@ from services.interview_service import (
     schedule_interview_service,
     update_interview_service,
 )
+from services.recruiter_service import update_status_service
 
 
 @pytest.fixture
@@ -336,3 +338,32 @@ def test_audit_safety(mock_audit):
     assert "location_or_link" not in details
     assert "meeting_url" not in details
     assert "my secret notes" not in json.dumps(details)
+
+
+def test_auto_cancel_on_terminal_status():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "phone", None, None)
+    schedule_interview_service(app_id, reca, "2030-01-02T10:00", 30, "online", "https://zoom.us/test", None)
+
+    res = update_status_service(app_id, "rejected", reca)
+    assert res["success"] is True
+
+    ivs = get_recruiter_interviews_for_application(app_id, reca)["data"]
+    assert len(ivs) == 2
+    assert all(iv["status"] == "cancelled" for iv in ivs)
+
+
+def test_auto_cancel_on_withdraw():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "phone", None, None)
+
+    res = withdraw_application_service(app_id, cand1)
+    assert res["success"] is True
+
+    ivs = get_recruiter_interviews_for_application(app_id, reca)["data"]
+    assert len(ivs) == 1
+    assert all(iv["status"] == "cancelled" for iv in ivs)

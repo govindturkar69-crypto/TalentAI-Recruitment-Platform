@@ -80,9 +80,10 @@ def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
 
 def _authorize_recruiter_application(cur, application_id, recruiter_id, for_update=False):
     query = """
-        SELECT a.id, a.candidate_id, a.status, j.id as job_id, j.job_title
+        SELECT a.id, a.candidate_id, a.status, j.id as job_id, j.job_title, u.name as candidate_name
         FROM applications a
         JOIN jobs j ON a.job_id = j.id
+        JOIN users u ON a.candidate_id = u.id
         WHERE a.id = %s AND j.recruiter_id = %s
     """
     if for_update:
@@ -180,13 +181,20 @@ def get_recruiter_interviews_for_application(application_id, recruiter_id):
         with closing(conn.cursor()) as cur:
             app_info = _authorize_recruiter_application(cur, application_id, recruiter_id)
             if not app_info:
-                return {"success": False, "message": "Access denied.", "type": "danger", "data": None}
+                return {"success": False, "message": "Access denied.", "type": "danger", "data": None, "app_info": None}
 
             cur.execute(
-                "SELECT * FROM interviews WHERE application_id = %s ORDER BY scheduled_at ASC", (application_id,)
+                """
+                SELECT *,
+                       (status = 'scheduled' AND scheduled_at <= NOW()) as can_complete
+                FROM interviews 
+                WHERE application_id = %s 
+                ORDER BY scheduled_at ASC
+                """,
+                (application_id,)
             )
             interviews = cur.fetchall()
-            return {"success": True, "message": "", "type": "success", "data": interviews}
+            return {"success": True, "message": "", "type": "success", "data": interviews, "app_info": app_info}
 
 
 def get_candidate_interviews(candidate_id):
@@ -194,12 +202,15 @@ def get_candidate_interviews(candidate_id):
         with closing(conn.cursor()) as cur:
             cur.execute(
                 """
-                SELECT i.*, j.job_title, a.status as application_status
+                SELECT i.id, i.application_id, i.scheduled_at, i.duration_minutes, 
+                       i.mode, i.location_or_link, i.status, i.created_at, i.updated_at,
+                       j.job_title, a.status as application_status,
+                       (i.status = 'scheduled' AND i.scheduled_at > NOW()) as is_upcoming
                 FROM interviews i
                 JOIN applications a ON i.application_id = a.id
                 JOIN jobs j ON a.job_id = j.id
                 WHERE a.candidate_id = %s
-                ORDER BY i.scheduled_at ASC
+                ORDER BY is_upcoming DESC, i.scheduled_at ASC
                 """,
                 (candidate_id,),
             )
@@ -425,3 +436,27 @@ def complete_interview_service(interview_id, recruiter_id):
     )
 
     return {"success": True, "message": "Interview marked as completed.", "type": "success"}
+
+
+def cancel_future_scheduled_interviews_for_application(cur, application_id):
+    cur.execute(
+        """
+        SELECT id, scheduled_at 
+        FROM interviews 
+        WHERE application_id = %s AND status = 'scheduled' AND scheduled_at > NOW()
+        FOR UPDATE
+        """,
+        (application_id,)
+    )
+    rows = cur.fetchall()
+
+    affected_rows = []
+    for row in rows:
+        cur.execute(
+            "UPDATE interviews SET status = 'cancelled' WHERE id = %s AND status = 'scheduled'",
+            (row["id"],)
+        )
+        if cur.rowcount > 0:
+            affected_rows.append(row)
+
+    return affected_rows

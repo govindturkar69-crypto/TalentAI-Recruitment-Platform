@@ -88,7 +88,15 @@ def _authorize_recruiter_application(cur, application_id, recruiter_id, for_upda
     return cur.fetchone()
 
 
-def schedule_interview_service(application_id, recruiter_id, scheduled_at_str, duration_minutes, mode, location_or_link, notes):
+def schedule_interview_service(
+    application_id,
+    recruiter_id,
+    scheduled_at_str,
+    duration_minutes,
+    mode,
+    location_or_link,
+    notes,
+):
     dt = parse_local_datetime(scheduled_at_str)
     if not dt:
         return {"success": False, "message": "Invalid scheduled time.", "type": "danger"}
@@ -105,12 +113,18 @@ def schedule_interview_service(application_id, recruiter_id, scheduled_at_str, d
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
-            app_info = _authorize_recruiter_application(cur, application_id, recruiter_id)
+            app_info = _authorize_recruiter_application(
+                cur, application_id, recruiter_id, for_update=True
+            )
             if not app_info:
                 return {"success": False, "message": "Application not found or access denied.", "type": "danger"}
 
             if app_info["status"] != "shortlisted":
-                return {"success": False, "message": "Application must be shortlisted to schedule an interview.", "type": "danger"}
+                return {
+                    "success": False,
+                    "message": "Application must be shortlisted to schedule an interview.",
+                    "type": "danger",
+                }
 
             cur.execute("SELECT NOW() as db_now")
             db_now = cur.fetchone()["db_now"]
@@ -120,7 +134,10 @@ def schedule_interview_service(application_id, recruiter_id, scheduled_at_str, d
 
             cur.execute(
                 """
-                INSERT INTO interviews (application_id, scheduled_at, duration_minutes, mode, location_or_link, notes, status)
+                INSERT INTO interviews (
+                    application_id, scheduled_at, duration_minutes,
+                    mode, location_or_link, notes, status
+                )
                 VALUES (%s, %s, %s, %s, %s, %s, 'scheduled')
                 """,
                 (application_id, dt, clean_duration, clean_mode, clean_location, clean_notes)
@@ -186,7 +203,15 @@ def get_candidate_interviews(candidate_id):
             )
             return cur.fetchall()
 
-def update_interview_service(interview_id, recruiter_id, scheduled_at_str, duration_minutes, mode, location_or_link, notes):
+def update_interview_service(
+    interview_id,
+    recruiter_id,
+    scheduled_at_str,
+    duration_minutes,
+    mode,
+    location_or_link,
+    notes,
+):
     dt = parse_local_datetime(scheduled_at_str)
     if not dt:
         return {"success": False, "message": "Invalid scheduled time.", "type": "danger"}
@@ -206,7 +231,8 @@ def update_interview_service(interview_id, recruiter_id, scheduled_at_str, durat
         with closing(conn.cursor()) as cur:
             cur.execute(
                 """
-                SELECT i.id, i.application_id, i.status, i.scheduled_at, a.candidate_id, a.status as app_status, j.job_title
+                SELECT i.id, i.application_id, i.status, i.scheduled_at,
+                       a.candidate_id, a.status as app_status, j.job_title
                 FROM interviews i
                 JOIN applications a ON i.application_id = a.id
                 JOIN jobs j ON a.job_id = j.id
@@ -239,7 +265,7 @@ def update_interview_service(interview_id, recruiter_id, scheduled_at_str, durat
 
             cur.execute(
                 """
-                UPDATE interviews 
+                UPDATE interviews
                 SET scheduled_at = %s, duration_minutes = %s, mode = %s, location_or_link = %s, notes = %s
                 WHERE id = %s AND status = 'scheduled'
                 """,
@@ -368,7 +394,11 @@ def complete_interview_service(interview_id, recruiter_id):
             db_now = cur.fetchone()["db_now"]
 
             if interview["scheduled_at"] > db_now:
-                return {"success": False, "message": "Cannot complete an interview before it happens.", "type": "danger"}
+                return {
+                    "success": False,
+                    "message": "Cannot complete an interview before it happens.",
+                    "type": "danger",
+                }
 
             app_id = interview["application_id"]
 

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Application Interviews{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('recruiter.view_applicants', job_id=app_info.job_id) }}" class="text-muted text-decoration-none small fw-semibold">
+    <i class="bi bi-arrow-left me-1"></i> Back to Applicants
+  </a>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold mb-1">Interviews for {{ app_info.candidate_name }}</h4>
+            <p class="text-muted mb-0">Job: <strong>{{ app_info.job_title }}</strong> | Status: <span class="badge bg-secondary">{{ app_info.app_status.title() }}</span></p>
+        </div>
+        <div>
+            {% if app_info.app_status == 'shortlisted' %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleInterviewModal">
+                    <i class="bi bi-calendar-plus me-1"></i> Schedule Interview
+                </button>
+            {% else %}
+                <span class="text-muted small">Cannot schedule interviews unless application is shortlisted.</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        {% if interviews %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Duration (mins)</th>
+                            <th>Mode</th>
+                            <th>Location / Link</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for iv in interviews %}
+                        <tr>
+                            <td>
+                                <div>{{ iv.scheduled_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+                            </td>
+                            <td>{{ iv.duration_minutes }}</td>
+                            <td>
+                                <span class="badge bg-info text-dark">{{ iv.mode.title() }}</span>
+                            </td>
+                            <td>
+                                {% if iv.mode in ('online', 'video') %}
+                                    {% if iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://') %}
+                                        <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer">Meeting Link</a>
+                                    {% else %}
+                                        {{ iv.location_or_link }}
+                                    {% endif %}
+                                {% else %}
+                                    {{ iv.location_or_link }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if iv.status == 'scheduled' %}
+                                    <span class="badge bg-primary">Scheduled</span>
+                                {% elif iv.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif iv.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ iv.status.title() }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    {% if iv.status == 'scheduled' %}
+                                        {% if app_info.app_status == 'shortlisted' %}
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editInterviewModal{{ iv.id }}" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if iv.can_complete %}
+                                        <form action="{{ url_for('recruiter.complete_interview', interview_id=iv.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-success" title="Mark Complete" onclick="return confirm('Mark this interview as completed?');">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
+                                        <form action="{{ url_for('recruiter.cancel_interview', interview_id=iv.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-danger" title="Cancel" onclick="return confirm('Are you sure you want to cancel this interview?');">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Edit Modal -->
+                                {% if iv.status == 'scheduled' and app_info.app_status == 'shortlisted' %}
+                                <div class="modal fade text-start" id="editInterviewModal{{ iv.id }}" tabindex="-1" aria-labelledby="editInterviewModalLabel{{ iv.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <form action="{{ url_for('recruiter.update_interview', interview_id=iv.id) }}" method="POST">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="editInterviewModalLabel{{ iv.id }}">Edit Interview</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Scheduled At</label>
+                                                        <input type="datetime-local" name="scheduled_at" class="form-control" value="{{ iv.scheduled_at.strftime('%Y-%m-%dT%H:%M') }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Duration (minutes)</label>
+                                                        <input type="number" name="duration_minutes" class="form-control" value="{{ iv.duration_minutes }}" min="15" step="15" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Mode</label>
+                                                        <select name="mode" class="form-select" required>
+                                                            <option value="in-person" {% if iv.mode == 'in-person' %}selected{% endif %}>In-Person</option>
+                                                            <option value="online" {% if iv.mode == 'online' %}selected{% endif %}>Online</option>
+                                                            <option value="phone" {% if iv.mode == 'phone' %}selected{% endif %}>Phone</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Location / Link</label>
+                                                        <input type="text" name="location_or_link" class="form-control" value="{{ iv.location_or_link }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Notes (Optional)</label>
+                                                        <textarea name="notes" class="form-control" rows="3">{{ iv.notes or '' }}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-x text-muted" style="font-size:3rem"></i>
+                <p class="mt-3 text-muted">No interviews scheduled yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if app_info.app_status == 'shortlisted' %}
+<!-- Schedule Modal -->
+<div class="modal fade" id="scheduleInterviewModal" tabindex="-1" aria-labelledby="scheduleInterviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form action="{{ url_for('recruiter.schedule_interview', app_id=app_info.id) }}" method="POST">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="scheduleInterviewModalLabel">Schedule Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Scheduled At</label>
+                        <input type="datetime-local" name="scheduled_at" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Duration (minutes)</label>
+                        <input type="number" name="duration_minutes" class="form-control" value="60" min="15" step="15" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mode</label>
+                        <select name="mode" class="form-select" required>
+                            <option value="in-person">In-Person</option>
+                            <option value="online" selected>Online</option>
+                            <option value="phone">Phone</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Location / Link</label>
+                        <input type="text" name="location_or_link" class="form-control" placeholder="https://zoom.us/j/... or Office Address" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Any special instructions for the candidate..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Schedule Interview</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}My Interviews{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">My Interviews</h2>
+    <p class="text-muted">Track your upcoming and past job interviews</p>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        {% if interviews %}
+            <ul class="nav nav-tabs ats-tabs mb-4" id="interviewsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#upcoming" type="button">
+                        Upcoming 
+                        {% set upcoming_count = interviews|selectattr('is_upcoming', 'equalto', True)|list|length %}
+                        {% if upcoming_count > 0 %}
+                            <span class="badge bg-primary ms-1">{{ upcoming_count }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#past" type="button">Past</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="interviewsTabsContent">
+                <!-- Upcoming Interviews -->
+                <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
+                    {% set upcoming_ivs = interviews|selectattr('is_upcoming', 'equalto', True)|list %}
+                    {% if upcoming_ivs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Job Title</th>
+                                        <th>Company</th>
+                                        <th>Date & Time</th>
+                                        <th>Mode</th>
+                                        <th>Location / Link</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for iv in upcoming_ivs %}
+                                    <tr>
+                                        <td><strong>{{ iv.job_title }}</strong></td>
+                                        <td>{{ iv.company_name }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ iv.scheduled_at.strftime('%d %b %Y') }}</div>
+                                            <small class="text-muted">{{ iv.scheduled_at.strftime('%I:%M %p') }} ({{ iv.duration_minutes }} mins)</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark">{{ iv.mode.title() }}</span>
+                                        </td>
+                                        <td>
+                                            {% if iv.mode in ('online', 'video') %}
+                                                {% if iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://') %}
+                                                    <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">Join Meeting</a>
+                                                {% else %}
+                                                    {{ iv.location_or_link }}
+                                                {% endif %}
+                                            {% else %}
+                                                {{ iv.location_or_link }}
+                                            {% endif %}
+                                            
+                                            {% if iv.notes %}
+                                                <div class="mt-1 small text-muted"><strong>Note:</strong> {{ iv.notes }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">Scheduled</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <p class="text-muted mb-0">You have no upcoming interviews.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Past Interviews -->
+                <div class="tab-pane fade" id="past" role="tabpanel">
+                    {% set past_ivs = interviews|selectattr('is_upcoming', 'equalto', False)|list %}
+                    {% if past_ivs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Job Title</th>
+                                        <th>Company</th>
+                                        <th>Date & Time</th>
+                                        <th>Mode</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for iv in past_ivs %}
+                                    <tr>
+                                        <td><strong>{{ iv.job_title }}</strong></td>
+                                        <td>{{ iv.company_name }}</td>
+                                        <td>
+                                            <div>{{ iv.scheduled_at.strftime('%d %b %Y') }}</div>
+                                            <small class="text-muted">{{ iv.scheduled_at.strftime('%I:%M %p') }} ({{ iv.duration_minutes }} mins)</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">{{ iv.mode.title() }}</span>
+                                        </td>
+                                        <td>
+                                            {% if iv.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif iv.status == 'cancelled' %}
+                                                <span class="badge bg-danger">Cancelled</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ iv.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <p class="text-muted mb-0">You have no past interviews.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5 border rounded-3">
+                <i class="bi bi-calendar-x" style="font-size:3rem; color: #ccc;"></i>
+                <h5 class="mt-3">No Interviews Found</h5>
+                <p class="text-muted mb-0">You haven't been scheduled for any interviews yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

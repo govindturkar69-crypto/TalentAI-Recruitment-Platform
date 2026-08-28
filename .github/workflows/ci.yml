@@ -59,7 +59,8 @@ jobs:
       run: |
         pytest -v tests/ \
           --ignore=tests/test_schema_contract.py \
-          --ignore=tests/test_phase4a.py
+          --ignore=tests/test_phase4a.py \
+          --ignore=tests/test_phase4b.py
 
     - name: Run Schema Integration Test (Fresh Schema)
       env:
@@ -80,9 +81,21 @@ jobs:
         MYSQL_USER: root
         MYSQL_PASSWORD: root
         MYSQL_DB: test_db
-        MYSQL_SSL: "False"
       run: |
         pytest -v tests/test_phase4a.py
+
+    - name: Run Phase 4B DB Integration Tests
+      env:
+        FLASK_SECRET_KEY: dummy-ci-secret
+        TESTING: "True"
+        MYSQL_HOST: 127.0.0.1
+        MYSQL_PORT: "3306"
+        MYSQL_USER: root
+        MYSQL_PASSWORD: root
+        MYSQL_DB: test_db
+        MYSQL_SSL: "False"
+      run: |
+        pytest -v tests/test_phase4b.py
 
     - name: Run Schema Integration Test (Migration Path & Backfill)
       env:

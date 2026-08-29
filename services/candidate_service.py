@@ -5,7 +5,6 @@ from models.resume_parser import extract_skills, extract_text_from_pdf, get_fina
 from services.audit_service import log_audit_event
 from services.notification_service import create_notification
 from services.workflow import CANDIDATE_TRANSITIONS
-from services.interview_service import cancel_future_scheduled_interviews_for_application
 
 
 def get_resolved_candidate_skills(user_id, cur):
@@ -133,12 +132,6 @@ def withdraw_application_service(app_id, user_id):
             if cur.rowcount == 0:
                 return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
 
-            try:
-                cancelled_interviews = cancel_future_scheduled_interviews_for_application(cur, app_id)
-            except Exception:
-                conn.rollback()
-                raise
-                
             conn.commit()
 
     log_audit_event(
@@ -148,19 +141,6 @@ def withdraw_application_service(app_id, user_id):
         app_id,
         {"previous_status": current_status, "new_status": "withdrawn"},
     )
-    
-    for interview in cancelled_interviews:
-        log_audit_event(
-            user_id,
-            "interview_cancelled",
-            "interview",
-            interview["id"],
-            {
-                "application_id": app_id,
-                "previous_interview_status": "scheduled",
-                "new_interview_status": "cancelled",
-            }
-        )
 
     return {"success": True, "message": f"Application for {app_row['job_title']} has been withdrawn.", "type": "info"}
 

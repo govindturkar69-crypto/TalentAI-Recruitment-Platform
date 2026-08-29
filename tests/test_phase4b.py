@@ -336,3 +336,143 @@ def test_audit_safety(mock_audit):
     assert "location_or_link" not in details
     assert "meeting_url" not in details
     assert "my secret notes" not in json.dumps(details)
+
+
+# ---------------------------------------------------------
+# AUTO-CANCEL INTEGRATION
+# ---------------------------------------------------------
+
+def test_auto_cancel_on_rejected_or_hired():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "phone", None, None)
+    
+    # Also create a past interview that shouldn't be touched
+    iv_id_future = get_recruiter_interviews_for_application(app_id, reca)["data"][0]["id"]
+
+    from services.recruiter_service import update_status_service
+    res = update_status_service(app_id, "rejected", reca)
+    assert res["success"] is True
+
+    ivs = get_recruiter_interviews_for_application(app_id, reca)["data"]
+    for iv in ivs:
+        if iv["id"] == iv_id_future:
+            assert iv["status"] == "cancelled"
+
+
+def test_auto_cancel_on_bulk_update():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id1 = create_application(cand1, ja, res1, "shortlisted")
+    app_id2 = create_application(cand2, ja, res1, "shortlisted")
+    
+    schedule_interview_service(app_id1, reca, "2030-01-01T10:00", 30, "phone", None, None)
+    schedule_interview_service(app_id2, reca, "2030-01-01T10:00", 30, "phone", None, None)
+
+    from services.recruiter_service import bulk_update_status_service
+    res = bulk_update_status_service([app_id1, app_id2], "hired", ja, reca)
+    assert res["success"] is True
+
+    for app_id in [app_id1, app_id2]:
+        ivs = get_recruiter_interviews_for_application(app_id, reca)["data"]
+        assert ivs[0]["status"] == "cancelled"
+
+
+def test_auto_cancel_on_candidate_withdraw():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "phone", None, None)
+
+    from services.candidate_service import withdraw_application_service
+    res = withdraw_application_service(cand1, app_id)
+    assert res["success"] is True
+
+    ivs = get_recruiter_interviews_for_application(app_id, reca)["data"]
+    assert ivs[0]["status"] == "cancelled"
+
+
+def test_auto_cancel_atomicity():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    
+    # Mock cancel_future_scheduled_interviews_for_application to raise Exception
+    from services.recruiter_service import update_status_service
+    with patch('services.recruiter_service.cancel_future_scheduled_interviews_for_application', side_effect=Exception("DB Error")):
+        res = update_status_service(app_id, "rejected", reca)
+        assert res["success"] is False
+
+    # Check status rolled back
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM applications WHERE id = %s", (app_id,))
+            status = cur.fetchone()["status"]
+            assert status == "shortlisted"
+
+
+# ---------------------------------------------------------
+# UI CONTRACTS AND ROUTES
+# ---------------------------------------------------------
+
+def test_candidate_interview_route_authorization(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "phone", None, None)
+
+    with test_client.session_transaction() as sess:
+        sess["user_id"] = cand1
+        sess["role"] = "candidate"
+    
+    rv = test_client.get('/candidate/interviews')
+    assert rv.status_code == 200
+    assert b"Phone interview" in rv.data
+
+    with test_client.session_transaction() as sess:
+        sess["user_id"] = cand2
+        sess["role"] = "candidate"
+    
+    rv = test_client.get('/candidate/interviews')
+    assert rv.status_code == 200
+    assert b"Phone interview" not in rv.data
+
+
+def test_interview_ui_workflow(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    with test_client.session_transaction() as sess:
+        sess["user_id"] = reca
+        sess["role"] = "recruiter"
+
+    rv = test_client.get(f'/recruiter/applications/{app_id}/interviews')
+    assert rv.status_code == 200
+    assert b"Schedule New Interview" in rv.data
+
+    rv = test_client.post(f'/recruiter/applications/{app_id}/interviews/schedule', data={
+        "scheduled_at": "2030-01-01T10:00",
+        "duration_minutes": "30",
+        "mode": "phone"
+    }, follow_redirects=True)
+    assert b"Interview scheduled successfully" in rv.data
+
+    iv_id = get_recruiter_interviews_for_application(app_id, reca)["data"][0]["id"]
+    rv = test_client.post(f'/recruiter/interviews/{iv_id}/cancel', follow_redirects=True)
+    assert b"Interview cancelled" in rv.data
+
+
+def test_interview_mode_ui_contract(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "online", "https://zoom.us/abc", None)
+    schedule_interview_service(app_id, reca, "2030-01-02T10:00", 30, "in_person", "Office 123", None)
+    schedule_interview_service(app_id, reca, "2030-01-03T10:00", 30, "phone", None, None)
+
+    with test_client.session_transaction() as sess:
+        sess["user_id"] = cand1
+        sess["role"] = "candidate"
+    
+    rv = test_client.get('/candidate/interviews')
+    assert rv.status_code == 200
+    data = rv.data.decode('utf-8')
+    assert 'href="https://zoom.us/abc" target="_blank"' in data
+    assert 'Office 123' in data
+    assert 'Phone interview' in data
+    assert 'notes' not in data.lower()

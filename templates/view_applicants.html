@@ -157,17 +157,41 @@
           </td>
           <td>
             <div class="d-flex flex-column gap-2">
-              <select name="status_{{ app.id }}" class="form-select form-select-sm saas-input border" style="width:auto; border-color: var(--border-color) !important;"
-                      onchange="updateSingleStatus({{ app.id }}, this.value)">
-                <option value="applied"     {% if app.status=='applied' %}selected{% endif %}>Applied</option>
-                <option value="shortlisted" {% if app.status=='shortlisted' %}selected{% endif %}>Shortlist ✓</option>
-                <option value="rejected"    {% if app.status=='rejected' %}selected{% endif %}>Reject ✗</option>
-                <option value="hired"       {% if app.status=='hired' %}selected{% endif %}>Hired 🎉</option>
-                <option value="withdrawn"   {% if app.status=='withdrawn' %}selected{% endif %} disabled>Withdrawn</option>
-              </select>
+              {% if app.status == 'applied' %}
+                <div class="d-flex gap-1 flex-wrap">
+                  <button class="btn btn-sm btn-outline-success py-0"
+                          onclick="submitSingleStatus({{ app.id }}, 'shortlisted')">
+                    Shortlist ✓
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger py-0"
+                          onclick="submitSingleStatus({{ app.id }}, 'rejected')">
+                    Reject ✗
+                  </button>
+                </div>
+              {% elif app.status == 'shortlisted' %}
+                <div class="d-flex gap-1 flex-wrap">
+                  <button class="btn btn-sm btn-outline-warning py-0"
+                          onclick="submitSingleStatus({{ app.id }}, 'hired')">
+                    Hire 🎉
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger py-0"
+                          onclick="submitSingleStatus({{ app.id }}, 'rejected')">
+                    Reject ✗
+                  </button>
+                </div>
+              {% else %}
+                <span class="badge rounded-pill
+                  {% if app.status == 'rejected' %}bg-danger text-white
+                  {% elif app.status == 'hired' %}bg-warning text-dark
+                  {% elif app.status == 'withdrawn' %}bg-secondary text-white
+                  {% else %}bg-primary text-white{% endif %}">
+                  {{ app.status | title }}
+                </span>
+              {% endif %}
               <div class="d-flex gap-2">
                 <a href="{{ url_for('recruiter.view_candidate_profile', app_id=app.id) }}" class="btn btn-sm btn-outline-primary py-0" title="View Profile"><i class="bi bi-person"></i></a>
                 <a href="{{ url_for('recruiter.view_candidate_resume', app_id=app.id) }}" class="btn btn-sm btn-outline-secondary py-0" title="View Resume" target="_blank"><i class="bi bi-file-earmark-pdf"></i></a>
+                <a href="{{ url_for('recruiter.application_interviews', app_id=app.id) }}" class="btn btn-sm btn-outline-info py-0" title="Manage Interviews"><i class="bi bi-calendar3"></i></a>
               </div>
             </div>
           </td>
@@ -190,6 +214,14 @@ function updateSingleStatus(appId, statusValue) {
     location.reload();
     return;
   }
+  const form = document.getElementById('singleStatusForm');
+  form.action = "{{ url_for('recruiter.update_status', app_id=0) }}".replace('/0/', `/${appId}/`);
+  document.getElementById('singleStatusValue').value = statusValue;
+  form.submit();
+}
+
+function submitSingleStatus(appId, statusValue) {
+  if (!confirm(`Set status to "${statusValue}"?`)) return;
   const form = document.getElementById('singleStatusForm');
   form.action = "{{ url_for('recruiter.update_status', app_id=0) }}".replace('/0/', `/${appId}/`);
   document.getElementById('singleStatusValue').value = statusValue;

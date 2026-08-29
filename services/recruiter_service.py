@@ -2,6 +2,7 @@ from contextlib import closing
 
 from core import get_db_connection
 from services.audit_service import log_audit_event
+from services.interview_service import cancel_future_scheduled_interviews_for_application
 from services.notification_service import create_notification
 from services.workflow import APPLICATION_STATUSES, RECRUITER_TRANSITIONS
 
@@ -66,7 +67,12 @@ def delete_job_service(user_id, job_id):
 
 
 def bulk_update_status_service(app_ids, new_status, recruiter_id):
-    """H4: Verify every application belongs to a job owned by the recruiter."""
+    """H4: Verify every application belongs to a job owned by the recruiter.
+
+    For shortlisted->rejected and shortlisted->hired transitions, auto-cancel
+    future scheduled interviews inside the SAME transaction before commit.
+    Audit and notifications only AFTER commit.
+    """
     if new_status not in ["shortlisted", "rejected", "hired"]:
         return {
             "success_count": 0,
@@ -109,6 +115,11 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
                     skipped_count += 1
                     continue
 
+                # Auto-cancel future scheduled interviews for rejected/hired transitions
+                # (not for shortlisted — do not auto-cancel for shortlisted)
+                if new_status in ("rejected", "hired"):
+                    cancel_future_scheduled_interviews_for_application(cur, app_id)
+
                 success_count += 1
 
                 audit_events_to_send.append((app_id, current_status, new_status))
@@ -122,8 +133,10 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
                     title = f"Application {new_status.title()}"
                     notifications_to_send.append((info["candidate_id"], title, msgs[new_status], new_status))
 
+            # Primary DB commit first — application status updates AND interview cancellations
             conn.commit()
 
+    # Audit and notifications only AFTER commit
     for aud_app_id, prev_status, n_status in audit_events_to_send:
         log_audit_event(
             recruiter_id,
@@ -149,7 +162,12 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
 
 
 def update_status_service(app_id, new_status, recruiter_id):
-    """H4: Verify the application belongs to a job owned by the recruiter."""
+    """H4: Verify the application belongs to a job owned by the recruiter.
+
+    For shortlisted->rejected and shortlisted->hired transitions, auto-cancel
+    future scheduled interviews inside the SAME transaction before commit.
+    Audit and notifications only AFTER commit.
+    """
     if new_status not in APPLICATION_STATUSES:
         return {"success": False, "message": "Invalid status.", "type": "danger"}
 
@@ -178,8 +196,15 @@ def update_status_service(app_id, new_status, recruiter_id):
             if cur.rowcount == 0:
                 return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
 
+            # Auto-cancel future scheduled interviews for rejected/hired transitions
+            # (not for shortlisted — do not auto-cancel for shortlisted)
+            if new_status in ("rejected", "hired"):
+                cancel_future_scheduled_interviews_for_application(cur, app_id)
+
+            # Primary DB commit first
             conn.commit()
 
+    # Audit and notifications only AFTER commit
     log_audit_event(
         recruiter_id,
         "application_status_changed",

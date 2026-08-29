@@ -56,6 +56,7 @@
                 </td>
                 <td class="text-end">
                   <a href="{{ url_for('candidate.candidate_job_details', job_id=app.job_id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                  <a href="{{ url_for('candidate.candidate_interviews') }}" class="btn btn-sm btn-outline-info ms-1">View Interviews</a>
                   {% if app.status in ['applied', 'shortlisted'] %}
                   <form action="{{ url_for('candidate.withdraw_application', app_id=app.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to withdraw this application?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

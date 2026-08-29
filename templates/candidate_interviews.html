@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}My Interviews{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">My Interviews</h2>
+
+    {% set upcoming_interviews = interviews | selectattr('is_upcoming') | list %}
+    {% set past_interviews = interviews | rejectattr('is_upcoming') | list %}
+
+    <h4 class="mb-3">Upcoming Interviews</h4>
+    {% if not upcoming_interviews %}
+        <div class="alert alert-info">You have no upcoming interviews.</div>
+    {% else %}
+        <div class="list-group mb-4">
+            {% for iv in upcoming_interviews %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-1">{{ iv.job_title }} - {{ iv.mode.replace('_', ' ').title() }} Interview</h5>
+                    <span class="badge bg-primary">Scheduled</span>
+                </div>
+                <p class="mb-1">
+                    <strong>Scheduled At:</strong> {{ iv.scheduled_at }} <br>
+                    <strong>Duration:</strong> {{ iv.duration_minutes }} minutes <br>
+                    <strong>Application Status:</strong> {{ iv.application_status.title() }} <br>
+                    <strong>Location/Link:</strong>
+                    {% if iv.mode == 'online' %}
+                        {% if iv.location_or_link and (iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://')) %}
+                            <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer">Join Meeting</a>
+                        {% else %}
+                            {{ iv.location_or_link }}
+                        {% endif %}
+                    {% elif iv.mode == 'in_person' %}
+                        {{ iv.location_or_link }}
+                    {% elif iv.mode == 'phone' %}
+                        Phone interview
+                    {% endif %}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h4 class="mb-3 mt-4">History</h4>
+    {% if not past_interviews %}
+        <div class="alert alert-info">No past interviews found.</div>
+    {% else %}
+        <div class="list-group">
+            {% for iv in past_interviews %}
+            <div class="list-group-item text-muted">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-1">{{ iv.job_title }} - {{ iv.mode.replace('_', ' ').title() }} Interview</h6>
+                    <span class="badge {% if iv.status == 'completed' %}bg-success{% elif iv.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ iv.status.title() }}
+                    </span>
+                </div>
+                <small class="d-block">
+                    <strong>Scheduled At:</strong> {{ iv.scheduled_at }} <br>
+                    <strong>Duration:</strong> {{ iv.duration_minutes }} minutes <br>
+                    <strong>Location/Link:</strong>
+                    {% if iv.mode == 'online' %}
+                        {% if iv.location_or_link and (iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://')) %}
+                            <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer">Meeting Link</a>
+                        {% else %}
+                            {{ iv.location_or_link }}
+                        {% endif %}
+                    {% elif iv.mode == 'in_person' %}
+                        {{ iv.location_or_link }}
+                    {% elif iv.mode == 'phone' %}
+                        Phone interview
+                    {% endif %}
+                </small>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

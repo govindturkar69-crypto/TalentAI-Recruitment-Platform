@@ -157,17 +157,21 @@
           </td>
           <td>
             <div class="d-flex flex-column gap-2">
-              <select name="status_{{ app.id }}" class="form-select form-select-sm saas-input border" style="width:auto; border-color: var(--border-color) !important;"
-                      onchange="updateSingleStatus({{ app.id }}, this.value)">
-                <option value="applied"     {% if app.status=='applied' %}selected{% endif %}>Applied</option>
-                <option value="shortlisted" {% if app.status=='shortlisted' %}selected{% endif %}>Shortlist ✓</option>
-                <option value="rejected"    {% if app.status=='rejected' %}selected{% endif %}>Reject ✗</option>
-                <option value="hired"       {% if app.status=='hired' %}selected{% endif %}>Hired 🎉</option>
-                <option value="withdrawn"   {% if app.status=='withdrawn' %}selected{% endif %} disabled>Withdrawn</option>
-              </select>
+              <div class="d-flex gap-1 flex-wrap">
+                {% if app.status == 'applied' %}
+                  <button type="button" class="btn btn-sm btn-success" onclick="updateSingleStatus({{ app.id }}, 'shortlisted')">Shortlist</button>
+                  <button type="button" class="btn btn-sm btn-danger" onclick="updateSingleStatus({{ app.id }}, 'rejected')">Reject</button>
+                {% elif app.status == 'shortlisted' %}
+                  <button type="button" class="btn btn-sm btn-warning" onclick="updateSingleStatus({{ app.id }}, 'hired')">Hire</button>
+                  <button type="button" class="btn btn-sm btn-danger" onclick="updateSingleStatus({{ app.id }}, 'rejected')">Reject</button>
+                {% else %}
+                  <span class="text-muted small">No transitions available</span>
+                {% endif %}
+              </div>
               <div class="d-flex gap-2">
                 <a href="{{ url_for('recruiter.view_candidate_profile', app_id=app.id) }}" class="btn btn-sm btn-outline-primary py-0" title="View Profile"><i class="bi bi-person"></i></a>
                 <a href="{{ url_for('recruiter.view_candidate_resume', app_id=app.id) }}" class="btn btn-sm btn-outline-secondary py-0" title="View Resume" target="_blank"><i class="bi bi-file-earmark-pdf"></i></a>
+                <a href="{{ url_for('recruiter.view_application_interviews', app_id=app.id) }}" class="btn btn-sm btn-outline-info py-0" title="Manage Interviews"><i class="bi bi-calendar-event"></i> Interviews</a>
               </div>
             </div>
           </td>

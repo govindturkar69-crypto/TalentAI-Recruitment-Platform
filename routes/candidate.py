@@ -14,7 +14,6 @@ from services.candidate_service import (
     process_resume_upload,
     withdraw_application_service,
 )
-from services.interview_service import get_candidate_interviews
 
 candidate_bp = Blueprint("candidate", __name__)
 
@@ -960,10 +959,3 @@ def candidate_applications():
             applications = cur.fetchall()
 
     return render_template("candidate_applications.html", applications=applications)
-
-
-@candidate_bp.route("/candidate/interviews")
-@login_required(role="candidate")
-def candidate_interviews():
-    interviews = get_candidate_interviews(session["user_id"])
-    return render_template("candidate_interviews.html", interviews=interviews)

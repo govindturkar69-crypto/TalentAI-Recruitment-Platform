@@ -3,6 +3,7 @@ from contextlib import closing
 from core import get_db_connection
 from models.resume_parser import extract_skills, extract_text_from_pdf, get_final_score, score_candidate
 from services.audit_service import log_audit_event
+from services.interview_service import cancel_future_scheduled_interviews_for_application
 from services.notification_service import create_notification
 from services.workflow import CANDIDATE_TRANSITIONS
 
@@ -105,6 +106,11 @@ def apply_for_job_service(user_id, user_name, job_id):
 
 
 def withdraw_application_service(app_id, user_id):
+    """
+    Withdraw an application.
+    Auto-cancels future scheduled interviews in the SAME transaction before commit.
+    Audit only after commit.
+    """
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
@@ -132,8 +138,13 @@ def withdraw_application_service(app_id, user_id):
             if cur.rowcount == 0:
                 return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
 
+            # Auto-cancel future scheduled interviews in the same transaction
+            cancel_future_scheduled_interviews_for_application(cur, app_id)
+
+            # Primary DB commit
             conn.commit()
 
+    # Audit only after commit
     log_audit_event(
         user_id,
         "application_withdrawn",

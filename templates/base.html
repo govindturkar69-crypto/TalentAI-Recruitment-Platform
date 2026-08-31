@@ -42,7 +42,6 @@
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_jobs' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_jobs') }}"><i class="bi bi-search"></i> Jobs</a></li>
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_applications' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_applications') }}"><i class="bi bi-briefcase"></i> Applications</a></li>
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.resume_suggestions' %}nav-active{% endif %}" href="{{ url_for('candidate.resume_suggestions') }}"><i class="bi bi-magic"></i> AI Suggestions</a></li>
-              <li class="nav-item"><a class="nav-link {% if request.endpoint == 'candidate.candidate_interviews' %}nav-active{% endif %}" href="{{ url_for('candidate.candidate_interviews') }}"><i class="bi bi-calendar3"></i> Interviews</a></li>
             {% else %}
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'recruiter.recruiter_dashboard' %}active text-white fw-semibold{% endif %}" href="{{ url_for('recruiter.recruiter_dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
               <li class="nav-item"><a class="nav-link {% if request.endpoint == 'recruiter.post_job' %}active text-white fw-semibold{% endif %}" href="{{ url_for('recruiter.post_job') }}"><i class="bi bi-plus-circle"></i> Post Job</a></li>

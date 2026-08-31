@@ -63,7 +63,6 @@ def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
         clean_location = loc
 
     elif mode == "phone":
-        # phone permits blank location_or_link
         if location_or_link and location_or_link.strip():
             return False, "Phone mode cannot have a location or link. Phone number should be from candidate profile."
         clean_location = None
@@ -80,58 +79,16 @@ def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
 
 
 def _authorize_recruiter_application(cur, application_id, recruiter_id, for_update=False):
-    """Authorize via application -> job -> jobs.recruiter_id (NEVER company_id)."""
     query = """
-        SELECT a.id AS application_id, a.candidate_id, a.status AS application_status,
-               j.id AS job_id, j.job_title, u.name AS candidate_name
+        SELECT a.id, a.candidate_id, a.status, j.id as job_id, j.job_title
         FROM applications a
         JOIN jobs j ON a.job_id = j.id
-        JOIN users u ON u.id = a.candidate_id
         WHERE a.id = %s AND j.recruiter_id = %s
     """
     if for_update:
         query += " FOR UPDATE"
     cur.execute(query, (application_id, recruiter_id))
     return cur.fetchone()
-
-
-def cancel_future_scheduled_interviews_for_application(cur, application_id):
-    """
-    Auto-cancel future scheduled interviews for an application.
-
-    IMPORTANT contract:
-    - Accepts a caller-provided cursor only. No connection, no commit.
-    - No audit events, no notifications, no DELETE.
-    - Selects eligible future scheduled rows FOR UPDATE (guarded).
-    - Issues a parameterized UPDATE to set status = 'cancelled'.
-    - Returns the list of rows that were actually cancelled.
-    """
-    # Lock eligible rows: future scheduled interviews for this application
-    cur.execute(
-        """
-        SELECT id, scheduled_at
-        FROM interviews
-        WHERE application_id = %s
-          AND status = 'scheduled'
-          AND scheduled_at > NOW()
-        FOR UPDATE
-        """,
-        (application_id,),
-    )
-    eligible = cur.fetchall()
-    if not eligible:
-        return []
-
-    actually_cancelled = []
-    for row in eligible:
-        cur.execute(
-            "UPDATE interviews SET status = 'cancelled' WHERE id = %s AND status = 'scheduled'",
-            (row["id"],),
-        )
-        if cur.rowcount == 1:
-            actually_cancelled.append(row)
-
-    return actually_cancelled
 
 
 def schedule_interview_service(
@@ -163,7 +120,7 @@ def schedule_interview_service(
             if not app_info:
                 return {"success": False, "message": "Application not found or access denied.", "type": "danger"}
 
-            if app_info["application_status"] != "shortlisted":
+            if app_info["status"] != "shortlisted":
                 return {
                     "success": False,
                     "message": "Application must be shortlisted to schedule an interview.",
@@ -226,75 +183,23 @@ def get_recruiter_interviews_for_application(application_id, recruiter_id):
                 return {"success": False, "message": "Access denied.", "type": "danger", "data": None}
 
             cur.execute(
-                """
-                SELECT
-                    i.id,
-                    i.application_id,
-                    i.scheduled_at,
-                    i.duration_minutes,
-                    i.mode,
-                    i.location_or_link,
-                    i.notes,
-                    i.status,
-                    i.created_at,
-                    i.updated_at,
-                    (i.status = 'scheduled' AND i.scheduled_at <= NOW()) AS can_complete
-                FROM interviews i
-                WHERE i.application_id = %s
-                ORDER BY i.scheduled_at ASC
-                """,
-                (application_id,),
+                "SELECT * FROM interviews WHERE application_id = %s ORDER BY scheduled_at ASC", (application_id,)
             )
             interviews = cur.fetchall()
-
-            # Expose application metadata for the template
-            return {
-                "success": True,
-                "message": "",
-                "type": "success",
-                "data": interviews,
-                "app_info": {
-                    "application_id": app_info["application_id"],
-                    "candidate_id": app_info["candidate_id"],
-                    "application_status": app_info["application_status"],
-                    "job_id": app_info["job_id"],
-                    "job_title": app_info["job_title"],
-                    "candidate_name": app_info["candidate_name"],
-                },
-            }
+            return {"success": True, "message": "", "type": "success", "data": interviews}
 
 
 def get_candidate_interviews(candidate_id):
-    """
-    Return interviews visible to the candidate.
-    Explicitly selects safe columns — NEVER selects notes.
-    Adds DB-derived is_upcoming flag.
-    """
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
                 """
-                SELECT
-                    i.id,
-                    i.application_id,
-                    i.scheduled_at,
-                    i.duration_minutes,
-                    i.mode,
-                    i.location_or_link,
-                    i.status,
-                    i.created_at,
-                    i.updated_at,
-                    j.job_title,
-                    a.status AS application_status,
-                    (i.status = 'scheduled' AND i.scheduled_at > NOW()) AS is_upcoming
+                SELECT i.*, j.job_title, a.status as application_status
                 FROM interviews i
                 JOIN applications a ON i.application_id = a.id
                 JOIN jobs j ON a.job_id = j.id
                 WHERE a.candidate_id = %s
-                ORDER BY
-                    (i.status = 'scheduled' AND i.scheduled_at > NOW()) DESC,
-                    CASE WHEN i.status = 'scheduled' AND i.scheduled_at > NOW() THEN i.scheduled_at END ASC,
-                    i.scheduled_at DESC
+                ORDER BY i.scheduled_at ASC
                 """,
                 (candidate_id,),
             )
@@ -400,7 +305,7 @@ def update_interview_service(
     except Exception:
         pass
 
-    return {"success": True, "message": "Interview updated successfully.", "type": "success", "application_id": app_id}
+    return {"success": True, "message": "Interview updated successfully.", "type": "success"}
 
 
 def cancel_interview_service(interview_id, recruiter_id):
@@ -460,7 +365,7 @@ def cancel_interview_service(interview_id, recruiter_id):
     except Exception:
         pass
 
-    return {"success": True, "message": "Interview cancelled successfully.", "type": "info", "application_id": app_id}
+    return {"success": True, "message": "Interview cancelled successfully.", "type": "info"}
 
 
 def complete_interview_service(interview_id, recruiter_id):
@@ -519,4 +424,4 @@ def complete_interview_service(interview_id, recruiter_id):
         },
     )
 
-    return {"success": True, "message": "Interview marked as completed.", "type": "success", "application_id": app_id}
+    return {"success": True, "message": "Interview marked as completed.", "type": "success"}

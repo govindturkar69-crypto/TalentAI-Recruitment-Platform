@@ -2,7 +2,6 @@ from contextlib import closing
 
 from core import get_db_connection
 from services.audit_service import log_audit_event
-from services.interview_service import cancel_future_scheduled_interviews_for_application
 from services.notification_service import create_notification
 from services.workflow import APPLICATION_STATUSES, RECRUITER_TRANSITIONS
 
@@ -67,12 +66,7 @@ def delete_job_service(user_id, job_id):
 
 
 def bulk_update_status_service(app_ids, new_status, recruiter_id):
-    """H4: Verify every application belongs to a job owned by the recruiter.
-
-    For shortlisted->rejected and shortlisted->hired transitions, auto-cancel
-    future scheduled interviews inside the SAME transaction before commit.
-    Audit and notifications only AFTER commit.
-    """
+    """H4: Verify every application belongs to a job owned by the recruiter."""
     if new_status not in ["shortlisted", "rejected", "hired"]:
         return {
             "success_count": 0,
@@ -85,7 +79,6 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
     skipped_count = 0
     notifications_to_send = []
     audit_events_to_send = []
-    interview_cancels_to_send = []
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -116,18 +109,9 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
                     skipped_count += 1
                     continue
 
-                # Auto-cancel future scheduled interviews for rejected/hired transitions
-                # (not for shortlisted — do not auto-cancel for shortlisted)
-                cancelled_interviews = []
-                if new_status in ("rejected", "hired"):
-                    cancelled_interviews = cancel_future_scheduled_interviews_for_application(cur, app_id)
-
                 success_count += 1
 
                 audit_events_to_send.append((app_id, current_status, new_status))
-
-                for ci in cancelled_interviews:
-                    interview_cancels_to_send.append((ci["id"], app_id))
 
                 if new_status in ("shortlisted", "rejected", "hired"):
                     msgs = {
@@ -136,15 +120,10 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
                         "hired": f"Congratulations! You've been hired for {info['job_title']}!",
                     }
                     title = f"Application {new_status.title()}"
-                    body = msgs[new_status]
-                    if cancelled_interviews and new_status in ("rejected", "hired"):
-                        body += " Any future scheduled interviews have also been cancelled."
-                    notifications_to_send.append((info["candidate_id"], title, body, new_status))
+                    notifications_to_send.append((info["candidate_id"], title, msgs[new_status], new_status))
 
-            # Primary DB commit first — application status updates AND interview cancellations
             conn.commit()
 
-    # Audit and notifications only AFTER commit
     for aud_app_id, prev_status, n_status in audit_events_to_send:
         log_audit_event(
             recruiter_id,
@@ -152,19 +131,6 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
             "application",
             aud_app_id,
             {"previous_status": prev_status, "new_status": n_status},
-        )
-
-    for inv_id, c_app_id in interview_cancels_to_send:
-        log_audit_event(
-            recruiter_id,
-            "interview_cancelled",
-            "interview",
-            inv_id,
-            {
-                "application_id": c_app_id,
-                "previous_interview_status": "scheduled",
-                "new_interview_status": "cancelled",
-            },
         )
 
     # Send notifications after successful commit
@@ -183,12 +149,7 @@ def bulk_update_status_service(app_ids, new_status, recruiter_id):
 
 
 def update_status_service(app_id, new_status, recruiter_id):
-    """H4: Verify the application belongs to a job owned by the recruiter.
-
-    For shortlisted->rejected and shortlisted->hired transitions, auto-cancel
-    future scheduled interviews inside the SAME transaction before commit.
-    Audit and notifications only AFTER commit.
-    """
+    """H4: Verify the application belongs to a job owned by the recruiter."""
     if new_status not in APPLICATION_STATUSES:
         return {"success": False, "message": "Invalid status.", "type": "danger"}
 
@@ -217,16 +178,8 @@ def update_status_service(app_id, new_status, recruiter_id):
             if cur.rowcount == 0:
                 return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
 
-            # Auto-cancel future scheduled interviews for rejected/hired transitions
-            # (not for shortlisted — do not auto-cancel for shortlisted)
-            cancelled_interviews = []
-            if new_status in ("rejected", "hired"):
-                cancelled_interviews = cancel_future_scheduled_interviews_for_application(cur, app_id)
-
-            # Primary DB commit first
             conn.commit()
 
-    # Audit and notifications only AFTER commit
     log_audit_event(
         recruiter_id,
         "application_status_changed",
@@ -234,18 +187,6 @@ def update_status_service(app_id, new_status, recruiter_id):
         app_id,
         {"previous_status": current_status, "new_status": new_status},
     )
-    for ci in cancelled_interviews:
-        log_audit_event(
-            recruiter_id,
-            "interview_cancelled",
-            "interview",
-            ci["id"],
-            {
-                "application_id": app_id,
-                "previous_interview_status": "scheduled",
-                "new_interview_status": "cancelled",
-            },
-        )
 
     try:
         if new_status in ("shortlisted", "rejected", "hired"):
@@ -254,10 +195,7 @@ def update_status_service(app_id, new_status, recruiter_id):
                 "rejected": f"Your application for {info['job_title']} was not selected.",
                 "hired": f"Congratulations! You've been hired for {info['job_title']}!",
             }
-            body = msgs[new_status]
-            if cancelled_interviews and new_status in ("rejected", "hired"):
-                body += " Any future scheduled interviews have also been cancelled."
-            create_notification(info["candidate_id"], f"Application {new_status.title()}", body, new_status)
+            create_notification(info["candidate_id"], f"Application {new_status.title()}", msgs[new_status], new_status)
     except Exception:
         pass
 

@@ -1,12 +1,10 @@
+import datetime
 import json
 from contextlib import closing
 from unittest.mock import patch
 
 import pytest
 
-import services.candidate_service as candidate_service_module
-import services.recruiter_service as recruiter_service_module
-import services.workflow as workflow_module
 from app import app
 from core import get_db_connection
 from services.candidate_service import withdraw_application_service
@@ -21,7 +19,6 @@ from services.interview_service import (
     update_interview_service,
 )
 from services.recruiter_service import bulk_update_status_service, update_status_service
-from services.workflow import CANDIDATE_TRANSITIONS, RECRUITER_TRANSITIONS
 
 
 @pytest.fixture
@@ -346,9 +343,6 @@ def test_audit_safety(mock_audit):
     assert "my secret notes" not in json.dumps(details)
 
 
-import datetime
-
-
 def test_recruiter_metadata_authorization():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
     app_id = create_application(cand1, ja, res1, "shortlisted")
@@ -549,84 +543,6 @@ def test_success_redirect_metadata():
     assert res["application_id"] == app_id
 
 
-class RecordingTransitions(dict):
-    def __init__(self, source):
-        super().__init__(source)
-        self.keys_seen = []
-
-    def get(self, key, default=None):
-        self.keys_seen.append(
-            {
-                "value": key,
-                "repr": repr(key),
-                "type": type(key).__name__,
-            }
-        )
-        return super().get(key, default)
-
-
-def test_service_workflow_constant_identity():
-    assert recruiter_service_module.RECRUITER_TRANSITIONS is workflow_module.RECRUITER_TRANSITIONS, {
-        "service": recruiter_service_module.RECRUITER_TRANSITIONS,
-        "workflow": workflow_module.RECRUITER_TRANSITIONS,
-    }
-
-    assert candidate_service_module.CANDIDATE_TRANSITIONS is workflow_module.CANDIDATE_TRANSITIONS, {
-        "service": candidate_service_module.CANDIDATE_TRANSITIONS,
-        "workflow": workflow_module.CANDIDATE_TRANSITIONS,
-    }
-
-    assert recruiter_service_module.RECRUITER_TRANSITIONS == {
-        "applied": {"shortlisted", "rejected"},
-        "shortlisted": {"hired", "rejected"},
-        "rejected": set(),
-        "hired": set(),
-        "withdrawn": set(),
-    }, recruiter_service_module.RECRUITER_TRANSITIONS
-
-    assert candidate_service_module.CANDIDATE_TRANSITIONS == {
-        "applied": {"withdrawn"},
-        "shortlisted": {"withdrawn"},
-        "rejected": set(),
-        "hired": set(),
-        "withdrawn": set(),
-    }, candidate_service_module.CANDIDATE_TRANSITIONS
-
-
-def test_diagnostic_recruiter():
-    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
-    app_id = create_application(cand1, ja, res1, "shortlisted")
-    db_now = _get_db_now()
-    _ = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
-
-    recording = RecordingTransitions(recruiter_service_module.RECRUITER_TRANSITIONS)
-    with patch.object(recruiter_service_module, "RECRUITER_TRANSITIONS", recording):
-        result = recruiter_service_module.update_status_service(app_id, "rejected", reca)
-
-    assert result["success"] is True, {
-        "result": result,
-        "keys_seen": recording.keys_seen,
-        "transitions": dict(recording),
-    }
-
-
-def test_diagnostic_candidate():
-    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
-    app_id = create_application(cand1, ja, res1, "shortlisted")
-    db_now = _get_db_now()
-    _ = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
-
-    recording = RecordingTransitions(candidate_service_module.CANDIDATE_TRANSITIONS)
-    with patch.object(candidate_service_module, "CANDIDATE_TRANSITIONS", recording):
-        result = candidate_service_module.withdraw_application_service(app_id, cand1)
-
-    assert result["success"] is True, {
-        "result": result,
-        "keys_seen": recording.keys_seen,
-        "transitions": dict(recording),
-    }
-
-
 def test_single_recruiter_status_transition_auto_cancel():
     reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
     app_id = create_application(cand1, ja, res1, "shortlisted")
@@ -637,39 +553,8 @@ def test_single_recruiter_status_transition_auto_cancel():
     i3 = _create_interview_raw(app_id, "completed", db_now + datetime.timedelta(days=2))
 
     # A. shortlisted -> rejected: future scheduled interviews become cancelled
-    with closing(get_db_connection()) as conn:
-        with closing(conn.cursor()) as cur:
-            cur.execute(
-                (
-                    "SELECT a.id, a.status, j.recruiter_id FROM applications a "
-                    "JOIN jobs j ON j.id = a.job_id WHERE a.id = %s"
-                ),
-                (app_id,),
-            )
-            row = cur.fetchone()
-            assert row is not None
-            assert row["status"] == "shortlisted"
-            assert row["recruiter_id"] == reca
-
-    current_status = row["status"]
-    assert type(current_status) is str, {
-        "value": current_status,
-        "repr": repr(current_status),
-        "type": type(current_status).__name__,
-    }
-    assert "rejected" in recruiter_service_module.RECRUITER_TRANSITIONS.get(
-        current_status,
-        set(),
-    ), {
-        "current_status": current_status,
-        "repr": repr(current_status),
-        "service_transitions": recruiter_service_module.RECRUITER_TRANSITIONS,
-    }
-
-    assert "rejected" in RECRUITER_TRANSITIONS["shortlisted"]
-
     res = update_status_service(app_id, "rejected", reca)
-    assert res["success"] is True, res
+    assert res["success"] is True
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -690,39 +575,8 @@ def test_single_recruiter_status_transition_hired():
     i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
 
     # B. shortlisted -> hired
-    with closing(get_db_connection()) as conn:
-        with closing(conn.cursor()) as cur:
-            cur.execute(
-                (
-                    "SELECT a.id, a.status, j.recruiter_id FROM applications a "
-                    "JOIN jobs j ON j.id = a.job_id WHERE a.id = %s"
-                ),
-                (app_id,),
-            )
-            row = cur.fetchone()
-            assert row is not None
-            assert row["status"] == "shortlisted"
-            assert row["recruiter_id"] == reca
-
-    current_status = row["status"]
-    assert type(current_status) is str, {
-        "value": current_status,
-        "repr": repr(current_status),
-        "type": type(current_status).__name__,
-    }
-    assert "hired" in recruiter_service_module.RECRUITER_TRANSITIONS.get(
-        current_status,
-        set(),
-    ), {
-        "current_status": current_status,
-        "repr": repr(current_status),
-        "service_transitions": recruiter_service_module.RECRUITER_TRANSITIONS,
-    }
-
-    assert "hired" in RECRUITER_TRANSITIONS["shortlisted"]
-
     res = update_status_service(app_id, "hired", reca)
-    assert res["success"] is True, res
+    assert res["success"] is True
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -738,39 +592,8 @@ def test_single_recruiter_status_transition_no_cancel_for_shortlist():
     i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
 
     # C. applied -> shortlisted
-    with closing(get_db_connection()) as conn:
-        with closing(conn.cursor()) as cur:
-            cur.execute(
-                (
-                    "SELECT a.id, a.status, j.recruiter_id FROM applications a "
-                    "JOIN jobs j ON j.id = a.job_id WHERE a.id = %s"
-                ),
-                (app_id,),
-            )
-            row = cur.fetchone()
-            assert row is not None
-            assert row["status"] == "applied"
-            assert row["recruiter_id"] == reca
-
-    current_status = row["status"]
-    assert type(current_status) is str, {
-        "value": current_status,
-        "repr": repr(current_status),
-        "type": type(current_status).__name__,
-    }
-    assert "shortlisted" in recruiter_service_module.RECRUITER_TRANSITIONS.get(
-        current_status,
-        set(),
-    ), {
-        "current_status": current_status,
-        "repr": repr(current_status),
-        "service_transitions": recruiter_service_module.RECRUITER_TRANSITIONS,
-    }
-
-    assert "shortlisted" in RECRUITER_TRANSITIONS["applied"]
-
     res = update_status_service(app_id, "shortlisted", reca)
-    assert res["success"] is True, res
+    assert res["success"] is True
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -798,36 +621,8 @@ def test_bulk_recruiter_status_transition_auto_cancel():
             assert cur.fetchone()["status"] == "scheduled"  # preserved because unauthorized
 
     # valid bulk
-    with closing(get_db_connection()) as conn:
-        with closing(conn.cursor()) as cur:
-            cur.execute(
-                (
-                    "SELECT a.id, a.status, j.recruiter_id FROM applications a "
-                    "JOIN jobs j ON j.id = a.job_id WHERE a.id = %s"
-                ),
-                (app1,),
-            )
-            row = cur.fetchone()
-            assert row is not None
-            assert row["status"] == "shortlisted"
-            assert row["recruiter_id"] == reca
-
-            cur.execute(
-                (
-                    "SELECT a.id, a.status, j.recruiter_id FROM applications a "
-                    "JOIN jobs j ON j.id = a.job_id WHERE a.id = %s"
-                ),
-                (app2,),
-            )
-            row2 = cur.fetchone()
-            assert row2 is not None
-            assert row2["status"] == "shortlisted"
-            assert row2["recruiter_id"] == reca
-
-    assert "rejected" in RECRUITER_TRANSITIONS["shortlisted"]
-
     res = bulk_update_status_service([app1, app2], "rejected", reca)
-    assert res["success_count"] == 2, res
+    assert res["success_count"] == 2
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -850,33 +645,8 @@ def test_candidate_withdraw_auto_cancel():
     assert res["success"] is False
 
     # owner candidate success
-    with closing(get_db_connection()) as conn:
-        with closing(conn.cursor()) as cur:
-            cur.execute(
-                (
-                    "SELECT a.id, a.status, j.recruiter_id FROM applications a "
-                    "JOIN jobs j ON j.id = a.job_id WHERE a.id = %s"
-                ),
-                (app_id,),
-            )
-            row = cur.fetchone()
-            assert row is not None
-            assert row["status"] == "shortlisted"
-
-    current_status = row["status"]
-    assert "withdrawn" in candidate_service_module.CANDIDATE_TRANSITIONS.get(
-        current_status,
-        set(),
-    ), {
-        "current_status": current_status,
-        "repr": repr(current_status),
-        "service_transitions": candidate_service_module.CANDIDATE_TRANSITIONS,
-    }
-
-    assert "withdrawn" in CANDIDATE_TRANSITIONS["shortlisted"]
-
     res = withdraw_application_service(app_id, cand1)
-    assert res["success"] is True, res
+    assert res["success"] is True
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:

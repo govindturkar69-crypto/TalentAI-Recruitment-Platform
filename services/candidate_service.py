@@ -139,7 +139,7 @@ def withdraw_application_service(app_id, user_id):
                 return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
 
             # Auto-cancel future scheduled interviews in the same transaction
-            cancelled_interviews = cancel_future_scheduled_interviews_for_application(cur, app_id)
+            cancel_future_scheduled_interviews_for_application(cur, app_id)
 
             # Primary DB commit
             conn.commit()
@@ -152,18 +152,6 @@ def withdraw_application_service(app_id, user_id):
         app_id,
         {"previous_status": current_status, "new_status": "withdrawn"},
     )
-    for ci in cancelled_interviews:
-        log_audit_event(
-            user_id,
-            "interview_cancelled",
-            "interview",
-            ci["id"],
-            {
-                "application_id": app_id,
-                "previous_interview_status": "scheduled",
-                "new_interview_status": "cancelled",
-            },
-        )
 
     return {"success": True, "message": f"Application for {app_row['job_title']} has been withdrawn.", "type": "info"}
 

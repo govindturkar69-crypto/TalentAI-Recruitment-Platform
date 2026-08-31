@@ -45,13 +45,15 @@ def dashboard():
             total_applications = cur.fetchone()["total"]
 
             # Users list (safe fields only)
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at,
                        u.company_id, c.name as company_name
                 FROM users u
                 LEFT JOIN companies c ON u.company_id = c.id
                 ORDER BY u.created_at DESC
-            """)
+            """
+            )
             users = cur.fetchall()
 
             # Fetch active companies for recruiter assignment dropdown
@@ -215,13 +217,15 @@ def assign_company(user_id):
 def list_companies():
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT c.id, c.name, c.description, c.website, c.is_active, c.created_at, c.updated_at,
                        (SELECT COUNT(*) FROM users u
                         WHERE u.company_id = c.id AND u.role = 'recruiter') as recruiter_count
                 FROM companies c
                 ORDER BY c.name ASC
-            """)
+            """
+            )
             companies = cur.fetchall()
     return render_template("admin_companies.html", companies=companies)
 

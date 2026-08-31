@@ -386,7 +386,6 @@ def schedule_interview(app_id):
 @recruiter_bp.route("/recruiter/interview/<int:interview_id>/update", methods=["POST"])
 @login_required(role="recruiter")
 def update_interview(interview_id):
-    app_id = request.form.get("app_id", type=int)
     scheduled_at = request.form.get("scheduled_at", "").strip()
     duration_minutes = request.form.get("duration_minutes", "").strip()
     mode = request.form.get("mode", "").strip()
@@ -403,28 +402,26 @@ def update_interview(interview_id):
         notes,
     )
     flash(result["message"], result["type"])
-    if app_id:
-        return redirect(url_for("recruiter.application_interviews", app_id=app_id))
+    if result.get("success") and result.get("application_id"):
+        return redirect(url_for("recruiter.application_interviews", app_id=result["application_id"]))
     return redirect(url_for("recruiter.recruiter_dashboard"))
 
 
 @recruiter_bp.route("/recruiter/interview/<int:interview_id>/cancel", methods=["POST"])
 @login_required(role="recruiter")
 def cancel_interview(interview_id):
-    app_id = request.form.get("app_id", type=int)
     result = cancel_interview_service(interview_id, session["user_id"])
     flash(result["message"], result["type"])
-    if app_id:
-        return redirect(url_for("recruiter.application_interviews", app_id=app_id))
+    if result.get("success") and result.get("application_id"):
+        return redirect(url_for("recruiter.application_interviews", app_id=result["application_id"]))
     return redirect(url_for("recruiter.recruiter_dashboard"))
 
 
 @recruiter_bp.route("/recruiter/interview/<int:interview_id>/complete", methods=["POST"])
 @login_required(role="recruiter")
 def complete_interview(interview_id):
-    app_id = request.form.get("app_id", type=int)
     result = complete_interview_service(interview_id, session["user_id"])
     flash(result["message"], result["type"])
-    if app_id:
-        return redirect(url_for("recruiter.application_interviews", app_id=app_id))
+    if result.get("success") and result.get("application_id"):
+        return redirect(url_for("recruiter.application_interviews", app_id=result["application_id"]))
     return redirect(url_for("recruiter.recruiter_dashboard"))

@@ -53,7 +53,12 @@
       </div>
 
       <!-- Safe location/link display — no notes, no recruiter information -->
-      {% if iv.location_or_link %}
+      {% if iv.mode == 'phone' %}
+        <div class="mt-2">
+          <i class="bi bi-telephone text-muted me-1"></i>
+          <span>Phone interview</span>
+        </div>
+      {% elif iv.location_or_link %}
         {% if iv.mode == 'online' and (iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://')) %}
           <div class="mt-2">
             <i class="bi bi-camera-video text-muted me-1"></i>

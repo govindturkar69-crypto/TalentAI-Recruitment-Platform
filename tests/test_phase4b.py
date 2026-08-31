@@ -336,3 +336,211 @@ def test_audit_safety(mock_audit):
     assert "location_or_link" not in details
     assert "meeting_url" not in details
     assert "my secret notes" not in json.dumps(details)
+
+
+import datetime
+
+from services.interview_service import _authorize_recruiter_application
+
+
+def test_recruiter_metadata_authorization():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            # A. recruiter metadata
+            app_info = _authorize_recruiter_application(cur, app_id, reca)
+            assert app_info is not None
+            assert "application_id" in app_info
+            assert "candidate_id" in app_info
+            assert app_info["candidate_name"] == "Candidate 1"
+            assert "application_status" in app_info
+            assert "job_id" in app_info
+            assert app_info["job_title"] == "Job A"
+
+            # B. same-company recruiter denied
+            app_info_b = _authorize_recruiter_application(cur, app_id, recb)
+            assert app_info_b is None
+
+
+def _get_db_now():
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT NOW() as db_now")
+            return cur.fetchone()["db_now"]
+
+
+def _create_interview_raw(application_id, status, scheduled_at):
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                INSERT INTO interviews (application_id, scheduled_at, duration_minutes,
+                                        mode, location_or_link, status, notes)
+                VALUES (%s, %s, 30, 'phone', NULL, %s, 'secret note')
+                """,
+                (application_id, scheduled_at, status),
+            )
+            conn.commit()
+            return cur.lastrowid
+
+
+def test_candidate_safe_query_and_is_upcoming():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+    future1 = db_now + datetime.timedelta(days=1)
+    future2 = db_now + datetime.timedelta(days=2)
+    past1 = db_now - datetime.timedelta(days=1)
+    past2 = db_now - datetime.timedelta(days=2)
+
+    _create_interview_raw(app_id, "completed", past2)  # history 1
+    _create_interview_raw(app_id, "scheduled", past1)  # history 2
+    _create_interview_raw(app_id, "scheduled", future1)  # upcoming 1
+    _create_interview_raw(app_id, "cancelled", future2)  # history 3
+
+    interviews = get_candidate_interviews(cand1)
+    # C. candidate safe query
+    assert len(interviews) == 4
+    for iv in interviews:
+        assert "notes" not in iv
+        assert "updated_at" in iv
+        assert "application_status" in iv
+        assert iv["application_id"] == app_id
+
+    # D & E. is_upcoming and ordering
+    # Expected order: upcoming (future1), then history (future2, past1, past2)
+    assert interviews[0]["is_upcoming"] == 1
+    assert interviews[0]["scheduled_at"] == future1
+
+    assert interviews[1]["is_upcoming"] == 0
+    assert interviews[1]["scheduled_at"] == future2
+    assert interviews[1]["status"] == "cancelled"
+
+    assert interviews[2]["is_upcoming"] == 0
+    assert interviews[2]["scheduled_at"] == past1
+    assert interviews[2]["status"] == "scheduled"
+
+    assert interviews[3]["is_upcoming"] == 0
+    assert interviews[3]["scheduled_at"] == past2
+    assert interviews[3]["status"] == "completed"
+
+
+def test_can_complete():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+    _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))
+    _create_interview_raw(app_id, "cancelled", db_now - datetime.timedelta(days=2))
+
+    res = get_recruiter_interviews_for_application(app_id, reca)
+    ivs = res["data"]  # Ordered by scheduled_at ASC natively
+
+    assert ivs[0]["status"] == "cancelled"
+    assert ivs[0]["can_complete"] == 0
+
+    assert ivs[1]["status"] == "scheduled"  # past
+    assert ivs[1]["can_complete"] == 1
+
+    assert ivs[2]["status"] == "scheduled"  # future
+    assert ivs[2]["can_complete"] == 0
+
+
+from services.interview_service import cancel_future_scheduled_interviews_for_application
+
+
+def test_auto_cancel_helper_logic():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))  # Should cancel
+    i2 = _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))  # Past, preserve
+    i3 = _create_interview_raw(app_id, "completed", db_now + datetime.timedelta(days=2))  # Preserve
+    i4 = _create_interview_raw(app_id, "cancelled", db_now + datetime.timedelta(days=3))  # Preserve
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            changed = cancel_future_scheduled_interviews_for_application(cur, app_id)
+            conn.commit()
+
+    assert len(changed) == 1
+    assert changed[0]["id"] == i1
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, status FROM interviews ORDER BY id")
+            rows = cur.fetchall()
+            status_map = {r["id"]: r["status"] for r in rows}
+            assert status_map[i1] == "cancelled"
+            assert status_map[i2] == "scheduled"
+            assert status_map[i3] == "completed"
+            assert status_map[i4] == "cancelled"
+            assert len(rows) == 4  # no DELETE
+
+
+def test_auto_cancel_helper_transaction_ownership():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cancel_future_scheduled_interviews_for_application(cur, app_id)
+            conn.rollback()  # Prove helper did not commit
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id = %s", (i1,))
+            status = cur.fetchone()["status"]
+            assert status == "scheduled"  # Rolled back!
+
+
+def test_success_redirect_metadata():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    t1 = db_now + datetime.timedelta(days=1)
+    t2 = db_now - datetime.timedelta(days=1)
+
+    res = schedule_interview_service(app_id, reca, t1.strftime("%Y-%m-%dT%H:%M"), 30, "phone", None, None)
+    ivs = get_recruiter_interviews_for_application(app_id, reca)["data"]
+    iv_id = ivs[0]["id"]
+
+    # unauthorized update leak
+    res = update_interview_service(iv_id, recb, t1.strftime("%Y-%m-%dT%H:%M"), 30, "phone", None, None)
+    assert res["success"] is False
+    assert "application_id" not in res
+
+    # success update leak
+    res = update_interview_service(iv_id, reca, t1.strftime("%Y-%m-%dT%H:%M"), 60, "phone", None, None)
+    assert res["success"] is True
+    assert res["application_id"] == app_id
+
+    # unauthorized cancel leak
+    res = cancel_interview_service(iv_id, recb)
+    assert res["success"] is False
+    assert "application_id" not in res
+
+    # success cancel leak
+    res = cancel_interview_service(iv_id, reca)
+    assert res["success"] is True
+    assert res["application_id"] == app_id
+
+    # complete tests
+    i2 = _create_interview_raw(app_id, "scheduled", t2)
+    # unauthorized complete leak
+    res = complete_interview_service(i2, recb)
+    assert res["success"] is False
+    assert "application_id" not in res
+
+    # success complete leak
+    res = complete_interview_service(i2, reca)
+    assert res["success"] is True
+    assert res["application_id"] == app_id

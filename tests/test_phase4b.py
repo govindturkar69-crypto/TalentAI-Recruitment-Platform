@@ -544,3 +544,226 @@ def test_success_redirect_metadata():
     res = complete_interview_service(i2, reca)
     assert res["success"] is True
     assert res["application_id"] == app_id
+
+
+from services.candidate_service import withdraw_application_service
+from services.recruiter_service import bulk_update_status_service, update_status_service
+
+
+def test_single_recruiter_status_transition_auto_cancel():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+    i2 = _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))
+    i3 = _create_interview_raw(app_id, "completed", db_now + datetime.timedelta(days=2))
+
+    # A. shortlisted -> rejected: future scheduled interviews become cancelled
+    res = update_status_service(app_id, "rejected", reca)
+    assert res["success"] is True
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, status FROM interviews ORDER BY id")
+            rows = cur.fetchall()
+            smap = {r["id"]: r["status"] for r in rows}
+            assert smap[i1] == "cancelled"
+            assert smap[i2] == "scheduled"  # past preserved
+            assert smap[i3] == "completed"  # completed preserved
+            assert len(rows) == 3  # no DELETE
+
+
+def test_single_recruiter_status_transition_hired():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+
+    # B. shortlisted -> hired
+    res = update_status_service(app_id, "hired", reca)
+    assert res["success"] is True
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (i1,))
+            assert cur.fetchone()["status"] == "cancelled"
+
+
+def test_single_recruiter_status_transition_no_cancel_for_shortlist():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "applied")
+    db_now = _get_db_now()
+
+    i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+
+    # C. applied -> shortlisted
+    res = update_status_service(app_id, "shortlisted", reca)
+    assert res["success"] is True
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (i1,))
+            assert cur.fetchone()["status"] == "scheduled"  # preserved
+
+
+def test_bulk_recruiter_status_transition_auto_cancel():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app1 = create_application(cand1, ja, res1, "shortlisted")
+    app2 = create_application(cand2, ja, res1, "shortlisted")  # same job
+
+    db_now = _get_db_now()
+    i1 = _create_interview_raw(app1, "scheduled", db_now + datetime.timedelta(days=1))
+    i2 = _create_interview_raw(app2, "scheduled", db_now + datetime.timedelta(days=1))
+
+    # unauthorized bulk
+    res = bulk_update_status_service([app1], "rejected", recb)
+    assert res["success_count"] == 0
+    assert res["skipped_count"] == 1
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (i1,))
+            assert cur.fetchone()["status"] == "scheduled"  # preserved because unauthorized
+
+    # valid bulk
+    res = bulk_update_status_service([app1, app2], "rejected", reca)
+    assert res["success_count"] == 2
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, status FROM interviews")
+            smap = {r["id"]: r["status"] for r in cur.fetchall()}
+            assert smap[i1] == "cancelled"
+            assert smap[i2] == "cancelled"
+
+
+def test_candidate_withdraw_auto_cancel():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+    i2 = _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))
+
+    # other candidate blocked
+    res = withdraw_application_service(app_id, cand2)
+    assert res["success"] is False
+
+    # owner candidate success
+    res = withdraw_application_service(app_id, cand1)
+    assert res["success"] is True
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, status FROM interviews")
+            smap = {r["id"]: r["status"] for r in cur.fetchall()}
+            assert smap[i1] == "cancelled"
+            assert smap[i2] == "scheduled"  # past
+
+    # hired -> withdrawn blocked
+    app2 = create_application(cand1, ja, res1, "hired")
+    res = withdraw_application_service(app2, cand1)
+    assert res["success"] is False
+
+
+@patch("services.recruiter_service.cancel_future_scheduled_interviews_for_application")
+@patch("services.recruiter_service.log_audit_event")
+def test_atomicity_auto_cancel_rollback(mock_audit, mock_cancel):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    i1 = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+
+    mock_cancel.side_effect = Exception("DB failure")
+
+    # Call service
+    with pytest.raises(Exception, match=r'.*'):
+        update_status_service(app_id, "rejected", reca)
+
+    # Verify rollback
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM applications WHERE id=%s", (app_id,))
+            assert cur.fetchone()["status"] == "shortlisted"
+
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (i1,))
+            assert cur.fetchone()["status"] == "scheduled"
+
+    # Verify no audit emitted
+    mock_audit.assert_not_called()
+
+
+@patch("services.recruiter_service.log_audit_event")
+def test_audit_safety_auto_cancel(mock_audit):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+    _ = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+
+    update_status_service(app_id, "rejected", reca)
+
+    # Expect 2 audit events: application_status_changed and interview_cancelled
+    assert mock_audit.call_count == 2
+
+    # Application event
+    app_call = mock_audit.call_args_list[0]
+    assert app_call.args[1] == "application_status_changed"
+
+    # Interview event
+    iv_call = mock_audit.call_args_list[1]
+    assert iv_call.args[1] == "interview_cancelled"
+    details = iv_call.args[4]
+
+    assert details["application_id"] == app_id
+    assert details["previous_interview_status"] == "scheduled"
+    assert details["new_interview_status"] == "cancelled"
+
+    details_str = json.dumps(details)
+    assert "notes" not in details_str
+    assert "location_or_link" not in details_str
+    assert "email" not in details_str
+    assert "phone" not in details_str
+
+
+@patch("services.candidate_service.log_audit_event")
+def test_audit_safety_auto_cancel_candidate(mock_audit):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+    _ = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+
+    withdraw_application_service(app_id, cand1)
+
+    # Expect 2 events
+    assert mock_audit.call_count == 2
+    assert mock_audit.call_args_list[1].args[1] == "interview_cancelled"
+
+
+@patch("services.recruiter_service.create_notification")
+def test_notification_auto_cancel(mock_notify):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    # No interview -> normal notification
+    update_status_service(app_id, "rejected", reca)
+    mock_notify.assert_called_once()
+    body = mock_notify.call_args.args[2]
+    assert "future scheduled interviews have also been cancelled" not in body
+
+    # Reset
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("UPDATE applications SET status='shortlisted' WHERE id=%s", (app_id,))
+            conn.commit()
+    mock_notify.reset_mock()
+
+    # With interview -> suffix added
+    _ = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+    update_status_service(app_id, "rejected", reca)
+    mock_notify.assert_called_once()
+    body = mock_notify.call_args.args[2]
+    assert "future scheduled interviews have also been cancelled" in body

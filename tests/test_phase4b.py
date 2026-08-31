@@ -680,7 +680,7 @@ def test_atomicity_auto_cancel_rollback(mock_audit, mock_cancel):
     mock_cancel.side_effect = Exception("DB failure")
 
     # Call service
-    with pytest.raises(Exception, match=r'.*'):
+    with pytest.raises(Exception, match=r".*"):
         update_status_service(app_id, "rejected", reca)
 
     # Verify rollback

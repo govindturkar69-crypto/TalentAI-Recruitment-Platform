@@ -63,7 +63,6 @@ def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
         clean_location = loc
 
     elif mode == "phone":
-        # phone permits blank location_or_link
         if location_or_link and location_or_link.strip():
             return False, "Phone mode cannot have a location or link. Phone number should be from candidate profile."
         clean_location = None
@@ -80,7 +79,6 @@ def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
 
 
 def _authorize_recruiter_application(cur, application_id, recruiter_id, for_update=False):
-    """Authorize via application -> job -> jobs.recruiter_id (NEVER company_id)."""
     query = """
         SELECT a.id, a.candidate_id, a.status, j.id as job_id, j.job_title
         FROM applications a
@@ -91,45 +89,6 @@ def _authorize_recruiter_application(cur, application_id, recruiter_id, for_upda
         query += " FOR UPDATE"
     cur.execute(query, (application_id, recruiter_id))
     return cur.fetchone()
-
-
-def cancel_future_scheduled_interviews_for_application(cur, application_id):
-    """
-    Auto-cancel future scheduled interviews for an application.
-
-    IMPORTANT contract:
-    - Accepts a caller-provided cursor only. No connection, no commit.
-    - No audit events, no notifications, no DELETE.
-    - Selects eligible future scheduled rows FOR UPDATE (guarded).
-    - Issues a parameterized UPDATE to set status = 'cancelled'.
-    - Returns the list of rows that were actually cancelled.
-    """
-    # Lock eligible rows: future scheduled interviews for this application
-    cur.execute(
-        """
-        SELECT id, scheduled_at
-        FROM interviews
-        WHERE application_id = %s
-          AND status = 'scheduled'
-          AND scheduled_at > NOW()
-        FOR UPDATE
-        """,
-        (application_id,),
-    )
-    eligible = cur.fetchall()
-    if not eligible:
-        return []
-
-    eligible_ids = [row["id"] for row in eligible]
-    # Guarded parameterized UPDATE — only touches rows still in 'scheduled'
-    fmt = ", ".join(["%s"] * len(eligible_ids))
-    cur.execute(
-        f"UPDATE interviews SET status = 'cancelled' WHERE id IN ({fmt}) AND status = 'scheduled'",
-        tuple(eligible_ids),
-    )
-    # Return only the rows that were actually changed
-    actually_cancelled = eligible[: cur.rowcount]
-    return actually_cancelled
 
 
 def schedule_interview_service(
@@ -224,65 +183,18 @@ def get_recruiter_interviews_for_application(application_id, recruiter_id):
                 return {"success": False, "message": "Access denied.", "type": "danger", "data": None}
 
             cur.execute(
-                """
-                SELECT
-                    i.id,
-                    i.application_id,
-                    i.scheduled_at,
-                    i.duration_minutes,
-                    i.mode,
-                    i.location_or_link,
-                    i.notes,
-                    i.status,
-                    i.created_at,
-                    i.updated_at,
-                    (i.status = 'scheduled' AND i.scheduled_at <= NOW()) AS can_complete
-                FROM interviews i
-                WHERE i.application_id = %s
-                ORDER BY i.scheduled_at ASC
-                """,
-                (application_id,),
+                "SELECT * FROM interviews WHERE application_id = %s ORDER BY scheduled_at ASC", (application_id,)
             )
             interviews = cur.fetchall()
-
-            # Expose application metadata for the template
-            return {
-                "success": True,
-                "message": "",
-                "type": "success",
-                "data": interviews,
-                "app_info": {
-                    "application_id": app_info["id"],
-                    "candidate_id": app_info["candidate_id"],
-                    "application_status": app_info["status"],
-                    "job_id": app_info["job_id"],
-                    "job_title": app_info["job_title"],
-                },
-            }
+            return {"success": True, "message": "", "type": "success", "data": interviews}
 
 
 def get_candidate_interviews(candidate_id):
-    """
-    Return interviews visible to the candidate.
-    Explicitly selects safe columns — NEVER selects notes.
-    Adds DB-derived is_upcoming flag.
-    """
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
             cur.execute(
                 """
-                SELECT
-                    i.id,
-                    i.application_id,
-                    i.scheduled_at,
-                    i.duration_minutes,
-                    i.mode,
-                    i.location_or_link,
-                    i.status,
-                    i.created_at,
-                    j.job_title,
-                    a.status AS application_status,
-                    (i.scheduled_at > NOW()) AS is_upcoming
+                SELECT i.*, j.job_title, a.status as application_status
                 FROM interviews i
                 JOIN applications a ON i.application_id = a.id
                 JOIN jobs j ON a.job_id = j.id

@@ -797,3 +797,227 @@ def test_schema_and_migration_unchanged():
         migration_files = os.listdir(migrations_dir)
         migration_010_files = [f for f in migration_files if "010" in f]
         assert len(migration_010_files) == 0, "Migration 010 must not exist"
+
+
+# ---------------------------------------------------------
+# NEW TESTS FOR STEP 4 V2
+# ---------------------------------------------------------
+
+
+def test_route_owner_get_interviews(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    _recruiter_session(test_client, reca)
+    resp = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    assert resp.status_code == 200
+
+    _recruiter_session(test_client, recb)
+    resp = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    assert resp.status_code == 302  # Redirects
+
+    _recruiter_session(test_client, recc)
+    resp = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    assert resp.status_code == 302
+
+
+def test_route_non_owner_mutations(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    iv_id = create_interview(app_id, "2030-06-01T10:00", "scheduled")
+
+    _recruiter_session(test_client, recb)
+    test_client.post(
+        f"/recruiter/application/{app_id}/interviews/schedule",
+        data={"scheduled_at": "2030-07-01T10:00", "duration_minutes": "30", "mode": "phone"},
+    )
+    # Cannot mutate
+    assert get_interview(iv_id)["status"] == "scheduled"
+
+    test_client.post(
+        f"/recruiter/interview/{iv_id}/update",
+        data={"scheduled_at": "2030-08-01T10:00", "duration_minutes": "30", "mode": "phone"},
+    )
+    assert get_interview(iv_id)["status"] == "scheduled"
+
+    test_client.post(f"/recruiter/interview/{iv_id}/cancel")
+    assert get_interview(iv_id)["status"] == "scheduled"
+
+    # manual past
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("UPDATE interviews SET scheduled_at='2000-01-01 10:00:00' WHERE id=%s", (iv_id,))
+            conn.commit()
+
+    test_client.post(f"/recruiter/interview/{iv_id}/complete")
+    assert get_interview(iv_id)["status"] == "scheduled"
+
+
+def test_tampered_app_id_route(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    iv_id = create_interview(app_id, "2030-06-01T10:00", "scheduled")
+
+    _recruiter_session(test_client, reca)
+    resp = test_client.post(f"/recruiter/interview/{iv_id}/cancel", data={"app_id": 9999})
+    assert resp.status_code == 302
+    assert f"/recruiter/application/{app_id}/interviews" in resp.headers["Location"]
+
+
+def test_service_returned_application_id():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "phone", None, None)
+    iv_id = get_recruiter_interviews_for_application(app_id, reca)["data"][0]["id"]
+
+    res = update_interview_service(iv_id, reca, "2030-02-01T10:00", 30, "phone", None, None)
+    assert res["application_id"] == app_id
+
+    res = cancel_interview_service(iv_id, reca)
+    assert res["application_id"] == app_id
+
+    iv_id_2 = create_interview(app_id, "2000-01-01T10:00", "scheduled")
+    res = complete_interview_service(iv_id_2, reca)
+    assert res["application_id"] == app_id
+
+
+def test_app_info_candidate_name():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    res = get_recruiter_interviews_for_application(app_id, reca)
+    assert "Candidate 1" in res["app_info"]["candidate_name"]
+
+
+def test_is_upcoming_logic():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    iv_future = create_interview(app_id, "2030-06-01T10:00", "scheduled")
+    create_interview(app_id, "2030-07-01T10:00", "cancelled")
+    create_interview(app_id, "2030-08-01T10:00", "completed")
+    create_interview(app_id, "2000-01-01T10:00", "scheduled")
+
+    interviews = get_candidate_interviews(cand1)
+    for iv in interviews:
+        if iv["id"] == iv_future:
+            assert iv["is_upcoming"] == 1
+        else:
+            assert iv["is_upcoming"] == 0
+
+
+def test_interviews_ordering():
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    # history
+    create_interview(app_id, "2000-01-01T10:00", "completed")
+    create_interview(app_id, "2001-01-01T10:00", "scheduled")
+    # upcoming
+    create_interview(app_id, "2030-06-01T10:00", "scheduled")
+    create_interview(app_id, "2030-05-01T10:00", "scheduled")
+
+    interviews = get_candidate_interviews(cand1)
+    assert interviews[0]["scheduled_at"].year == 2030
+    assert interviews[0]["scheduled_at"].month == 5
+    assert interviews[1]["scheduled_at"].year == 2030
+    assert interviews[1]["scheduled_at"].month == 6
+    assert interviews[2]["scheduled_at"].year == 2001
+    assert interviews[3]["scheduled_at"].year == 2000
+
+
+@patch("services.recruiter_service.log_audit_event")
+@patch("services.recruiter_service.create_notification")
+def test_recruiter_audit_notifications(mock_notif, mock_audit):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    create_interview(app_id, "2030-06-01T10:00", "scheduled")
+
+    from services.recruiter_service import update_status_service
+
+    update_status_service(app_id, "rejected", reca)
+
+    audit_calls = mock_audit.call_args_list
+    assert len(audit_calls) >= 2
+    found_cancel = False
+    for call in audit_calls:
+        if call[0][1] == "interview_cancelled":
+            found_cancel = True
+            details = call[0][4]
+            assert "notes" not in details
+            assert "location_or_link" not in details
+            assert details["application_id"] == app_id
+    assert found_cancel
+
+    notif_call = mock_notif.call_args[0]
+    assert "Any future scheduled interviews have also been cancelled." in notif_call[2]
+
+
+@patch("services.recruiter_service.log_audit_event")
+@patch("services.recruiter_service.create_notification")
+def test_bulk_audit_notifications(mock_notif, mock_audit):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    create_interview(app_id, "2030-06-01T10:00", "scheduled")
+
+    from services.recruiter_service import bulk_update_status_service
+
+    bulk_update_status_service([str(app_id)], "hired", reca)
+
+    found_cancel = False
+    for call in mock_audit.call_args_list:
+        if call[0][1] == "interview_cancelled":
+            found_cancel = True
+    assert found_cancel
+
+    notif_call = mock_notif.call_args[0]
+    assert "Any future scheduled interviews have also been cancelled." in notif_call[2]
+
+
+@patch("services.candidate_service.log_audit_event")
+def test_candidate_withdraw_audits(mock_audit):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    create_interview(app_id, "2030-06-01T10:00", "scheduled")
+
+    from services.candidate_service import withdraw_application_service
+
+    withdraw_application_service(app_id, cand1)
+
+    found_cancel = False
+    for call in mock_audit.call_args_list:
+        if call[0][1] == "interview_cancelled":
+            found_cancel = True
+            assert call[0][0] == cand1
+    assert found_cancel
+
+
+def test_phone_labels(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "phone", None, None)
+
+    _recruiter_session(test_client, reca)
+    resp = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    assert b"Phone interview" in resp.data
+
+    _candidate_session(test_client, cand1)
+    resp = test_client.get("/candidate/interviews")
+    assert b"Phone interview" in resp.data
+
+
+def test_xss_in_js_data(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    xss_payload = '"; alert(1); // <script>eval()</script>'
+    schedule_interview_service(app_id, reca, "2030-01-01T10:00", 30, "in_person", xss_payload, xss_payload)
+
+    _recruiter_session(test_client, reca)
+    resp = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    html = resp.data.decode()
+    assert 'onclick="openEditModal(this)' in html
+    # Ensure raw quote does not break out of data attribute
+    assert (
+        'data-notes="&quot;; alert(1);' in html
+        or "&#34;" in html
+        or "&#x27;" in html
+        or '"' not in html[html.find('data-notes="') + 12 : html.find('data-notes="') + 13]
+    )
+    # In jinja | e or autoescape converts " to &#34; or similar

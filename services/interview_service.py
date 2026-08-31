@@ -82,9 +82,11 @@ def validate_interview_fields(duration_minutes, mode, location_or_link, notes):
 def _authorize_recruiter_application(cur, application_id, recruiter_id, for_update=False):
     """Authorize via application -> job -> jobs.recruiter_id (NEVER company_id)."""
     query = """
-        SELECT a.id, a.candidate_id, a.status, j.id as job_id, j.job_title
+        SELECT a.id AS application_id, a.candidate_id, a.status AS application_status,
+               j.id AS job_id, j.job_title, u.name AS candidate_name
         FROM applications a
         JOIN jobs j ON a.job_id = j.id
+        JOIN users u ON u.id = a.candidate_id
         WHERE a.id = %s AND j.recruiter_id = %s
     """
     if for_update:
@@ -120,15 +122,15 @@ def cancel_future_scheduled_interviews_for_application(cur, application_id):
     if not eligible:
         return []
 
-    eligible_ids = [row["id"] for row in eligible]
-    # Guarded parameterized UPDATE — only touches rows still in 'scheduled'
-    fmt = ", ".join(["%s"] * len(eligible_ids))
-    cur.execute(
-        f"UPDATE interviews SET status = 'cancelled' WHERE id IN ({fmt}) AND status = 'scheduled'",
-        tuple(eligible_ids),
-    )
-    # Return only the rows that were actually changed
-    actually_cancelled = eligible[: cur.rowcount]
+    actually_cancelled = []
+    for row in eligible:
+        cur.execute(
+            "UPDATE interviews SET status = 'cancelled' WHERE id = %s AND status = 'scheduled'",
+            (row["id"],),
+        )
+        if cur.rowcount == 1:
+            actually_cancelled.append(row)
+
     return actually_cancelled
 
 
@@ -161,7 +163,7 @@ def schedule_interview_service(
             if not app_info:
                 return {"success": False, "message": "Application not found or access denied.", "type": "danger"}
 
-            if app_info["status"] != "shortlisted":
+            if app_info["application_status"] != "shortlisted":
                 return {
                     "success": False,
                     "message": "Application must be shortlisted to schedule an interview.",
@@ -252,11 +254,12 @@ def get_recruiter_interviews_for_application(application_id, recruiter_id):
                 "type": "success",
                 "data": interviews,
                 "app_info": {
-                    "application_id": app_info["id"],
+                    "application_id": app_info["application_id"],
                     "candidate_id": app_info["candidate_id"],
-                    "application_status": app_info["status"],
+                    "application_status": app_info["application_status"],
                     "job_id": app_info["job_id"],
                     "job_title": app_info["job_title"],
+                    "candidate_name": app_info["candidate_name"],
                 },
             }
 
@@ -280,14 +283,18 @@ def get_candidate_interviews(candidate_id):
                     i.location_or_link,
                     i.status,
                     i.created_at,
+                    i.updated_at,
                     j.job_title,
                     a.status AS application_status,
-                    (i.scheduled_at > NOW()) AS is_upcoming
+                    (i.status = 'scheduled' AND i.scheduled_at > NOW()) AS is_upcoming
                 FROM interviews i
                 JOIN applications a ON i.application_id = a.id
                 JOIN jobs j ON a.job_id = j.id
                 WHERE a.candidate_id = %s
-                ORDER BY i.scheduled_at ASC
+                ORDER BY
+                    (i.status = 'scheduled' AND i.scheduled_at > NOW()) DESC,
+                    CASE WHEN i.status = 'scheduled' AND i.scheduled_at > NOW() THEN i.scheduled_at END ASC,
+                    i.scheduled_at DESC
                 """,
                 (candidate_id,),
             )
@@ -393,7 +400,7 @@ def update_interview_service(
     except Exception:
         pass
 
-    return {"success": True, "message": "Interview updated successfully.", "type": "success"}
+    return {"success": True, "message": "Interview updated successfully.", "type": "success", "application_id": app_id}
 
 
 def cancel_interview_service(interview_id, recruiter_id):
@@ -453,7 +460,7 @@ def cancel_interview_service(interview_id, recruiter_id):
     except Exception:
         pass
 
-    return {"success": True, "message": "Interview cancelled successfully.", "type": "info"}
+    return {"success": True, "message": "Interview cancelled successfully.", "type": "info", "application_id": app_id}
 
 
 def complete_interview_service(interview_id, recruiter_id):
@@ -512,4 +519,4 @@ def complete_interview_service(interview_id, recruiter_id):
         },
     )
 
-    return {"success": True, "message": "Interview marked as completed.", "type": "success"}
+    return {"success": True, "message": "Interview marked as completed.", "type": "success", "application_id": app_id}

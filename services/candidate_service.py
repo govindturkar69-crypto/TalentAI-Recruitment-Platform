@@ -3,6 +3,7 @@ from contextlib import closing
 from core import get_db_connection
 from models.resume_parser import extract_skills, extract_text_from_pdf, get_final_score, score_candidate
 from services.audit_service import log_audit_event
+from services.interview_service import cancel_future_scheduled_interviews_for_application
 from services.notification_service import create_notification
 from services.workflow import CANDIDATE_TRANSITIONS
 
@@ -132,6 +133,8 @@ def withdraw_application_service(app_id, user_id):
             if cur.rowcount == 0:
                 return {"success": False, "message": "Application state changed concurrently.", "type": "danger"}
 
+            cancelled_interviews = cancel_future_scheduled_interviews_for_application(cur, app_id)
+
             conn.commit()
 
     log_audit_event(
@@ -141,6 +144,19 @@ def withdraw_application_service(app_id, user_id):
         app_id,
         {"previous_status": current_status, "new_status": "withdrawn"},
     )
+
+    for iv in cancelled_interviews:
+        log_audit_event(
+            user_id,
+            "interview_cancelled",
+            "interview",
+            iv["id"],
+            {
+                "application_id": app_id,
+                "previous_interview_status": "scheduled",
+                "new_interview_status": "cancelled",
+            },
+        )
 
     return {"success": True, "message": f"Application for {app_row['job_title']} has been withdrawn.", "type": "info"}
 

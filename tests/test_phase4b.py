@@ -760,3 +760,316 @@ def test_notification_auto_cancel(mock_notify):
     mock_notify.assert_called_once()
     body = mock_notify.call_args.args[2]
     assert "future scheduled interviews have also been cancelled" in body
+
+
+# ---------------------------------------------------------
+# ROUTES & ROUTE AUTHORIZATION
+# ---------------------------------------------------------
+
+
+def _set_session(client, user_id, role, name="Test"):
+    with client.session_transaction() as sess:
+        sess["user_id"] = user_id
+        sess["role"] = role
+        sess["name"] = name
+
+
+def test_route_manage_interviews_get(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    # A. owner recruiter GET succeeds
+    _set_session(test_client, reca, "recruiter")
+    with patch("routes.recruiter.render_template", return_value="INTERVIEW PAGE") as mock_render:
+        response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+        assert response.status_code == 200
+        assert b"INTERVIEW PAGE" in response.data
+        mock_render.assert_called_once()
+        args, kwargs = mock_render.call_args
+        assert "app_info" in kwargs
+        assert "interviews" in kwargs
+        assert kwargs["app_info"]["application_id"] == app_id
+
+    # B. same-company different recruiter GET denied
+    _set_session(test_client, recb, "recruiter")
+    with patch("routes.recruiter.render_template", return_value="INTERVIEW PAGE") as mock_render:
+        response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+        assert response.status_code == 302
+        assert "/recruiter/dashboard" in response.headers["Location"]
+        mock_render.assert_not_called()
+
+    # C. different recruiter denied
+    _set_session(test_client, recc, "recruiter")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
+
+    # D. nonexistent application denied
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get("/recruiter/application/999999/interviews")
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]
+
+    # E. candidate role cannot access recruiter interview GET
+    _set_session(test_client, cand1, "candidate")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    assert response.status_code == 302
+    assert "/login" in response.headers["Location"] or "/candidate" in response.headers["Location"]
+
+
+def test_route_schedule_post(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    future_time = (_get_db_now() + datetime.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
+
+    # owner recruiter: POST schedule succeeds
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.post(
+        f"/recruiter/application/{app_id}/interviews/schedule",
+        data={
+            "scheduled_at": future_time,
+            "duration_minutes": "30",
+            "mode": "phone",
+            "location_or_link": "",
+            "notes": "Route test",
+        },
+    )
+    assert response.status_code == 302
+    assert f"/recruiter/application/{app_id}/interviews" in response.headers["Location"]
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, status FROM interviews WHERE application_id=%s", (app_id,))
+            ivs = cur.fetchall()
+            assert len(ivs) == 1
+            assert ivs[0]["status"] == "scheduled"
+
+    # same-company recruiter denied
+    _set_session(test_client, recb, "recruiter")
+    response = test_client.post(
+        f"/recruiter/application/{app_id}/interviews/schedule",
+        data={"scheduled_at": future_time, "duration_minutes": "30", "mode": "phone"},
+    )
+    assert response.status_code == 302  # Redirected back but failed
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT count(*) as c FROM interviews WHERE application_id=%s", (app_id,))
+            assert cur.fetchone()["c"] == 1  # unchanged
+
+    # different recruiter denied
+    _set_session(test_client, recc, "recruiter")
+    response = test_client.post(
+        f"/recruiter/application/{app_id}/interviews/schedule",
+        data={"scheduled_at": future_time, "duration_minutes": "30", "mode": "phone"},
+    )
+
+    # non-shortlisted app rejected
+    app2_id = create_application(cand1, ja, res1, "applied")
+    _set_session(test_client, reca, "recruiter")
+    test_client.post(
+        f"/recruiter/application/{app2_id}/interviews/schedule",
+        data={"scheduled_at": future_time, "duration_minutes": "30", "mode": "phone"},
+    )
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT count(*) as c FROM interviews WHERE application_id=%s", (app2_id,))
+            assert cur.fetchone()["c"] == 0
+
+    # invalid mode rejected
+    test_client.post(
+        f"/recruiter/application/{app_id}/interviews/schedule",
+        data={"scheduled_at": future_time, "duration_minutes": "30", "mode": "invalid"},
+    )
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT count(*) as c FROM interviews WHERE application_id=%s", (app_id,))
+            assert cur.fetchone()["c"] == 1
+
+
+def test_route_update_post(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    future_time = (_get_db_now() + datetime.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
+
+    iv_id = _create_interview_raw(app_id, "scheduled", _get_db_now() + datetime.timedelta(days=1))
+
+    # POST owner update with tampered app_id
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.post(
+        f"/recruiter/interview/{iv_id}/update",
+        data={
+            "app_id": "99999999",  # Tampered
+            "scheduled_at": future_time,
+            "duration_minutes": "60",
+            "mode": "phone",
+            "location_or_link": "",
+            "notes": "Updated notes",
+        },
+    )
+    assert response.status_code == 302
+    # Redirects to REAL application_id
+    assert f"/recruiter/application/{app_id}/interviews" in response.headers["Location"]
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT duration_minutes FROM interviews WHERE id=%s", (iv_id,))
+            assert cur.fetchone()["duration_minutes"] == 60
+
+    # same-company recruiter update fails
+    _set_session(test_client, recb, "recruiter")
+    response = test_client.post(
+        f"/recruiter/interview/{iv_id}/update",
+        data={"app_id": "99999999", "scheduled_at": future_time, "duration_minutes": "45", "mode": "phone"},
+    )
+    assert response.status_code == 302
+    assert "/recruiter/dashboard" in response.headers["Location"]  # Generic redirect
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT duration_minutes FROM interviews WHERE id=%s", (iv_id,))
+            assert cur.fetchone()["duration_minutes"] == 60  # unchanged
+
+
+def test_route_cancel_post(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    iv_id = _create_interview_raw(app_id, "scheduled", _get_db_now() + datetime.timedelta(days=1))
+
+    # same-company recruiter cannot cancel
+    _set_session(test_client, recb, "recruiter")
+    test_client.post(f"/recruiter/interview/{iv_id}/cancel")
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (iv_id,))
+            assert cur.fetchone()["status"] == "scheduled"
+
+    # different recruiter cannot cancel
+    _set_session(test_client, recc, "recruiter")
+    test_client.post(f"/recruiter/interview/{iv_id}/cancel")
+
+    # owner recruiter cancel success with tampered app_id
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.post(f"/recruiter/interview/{iv_id}/cancel", data={"app_id": "99999999"})
+    assert response.status_code == 302
+    assert f"/recruiter/application/{app_id}/interviews" in response.headers["Location"]
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (iv_id,))
+            assert cur.fetchone()["status"] == "cancelled"
+
+
+def test_route_complete_post(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    # past scheduled interview
+    iv_id = _create_interview_raw(app_id, "scheduled", _get_db_now() - datetime.timedelta(days=1))
+
+    # Unauthorized recruiters cannot complete
+    _set_session(test_client, recb, "recruiter")
+    test_client.post(f"/recruiter/interview/{iv_id}/complete")
+
+    # Owner recruiter complete success with tampered app_id
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.post(f"/recruiter/interview/{iv_id}/complete", data={"app_id": "99999999"})
+    assert response.status_code == 302
+    assert f"/recruiter/application/{app_id}/interviews" in response.headers["Location"]
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (iv_id,))
+            assert cur.fetchone()["status"] == "completed"
+
+    # Future scheduled interview cannot be completed
+    iv_future = _create_interview_raw(app_id, "scheduled", _get_db_now() + datetime.timedelta(days=1))
+    response = test_client.post(f"/recruiter/interview/{iv_future}/complete")
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT status FROM interviews WHERE id=%s", (iv_future,))
+            assert cur.fetchone()["status"] == "scheduled"
+
+
+def test_route_candidate_interviews(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app1 = create_application(cand1, ja, res1, "shortlisted")
+    app2 = create_application(cand2, ja, res1, "shortlisted")
+
+    _create_interview_raw(app1, "scheduled", _get_db_now() + datetime.timedelta(days=1))
+    _create_interview_raw(app2, "scheduled", _get_db_now() + datetime.timedelta(days=1))
+
+    # GET candidate1
+    _set_session(test_client, cand1, "candidate")
+    with patch("routes.candidate.render_template", return_value="CANDIDATE INTERVIEW PAGE") as mock_render:
+        response = test_client.get("/candidate/interviews")
+        assert response.status_code == 200
+        assert b"CANDIDATE INTERVIEW PAGE" in response.data
+
+        args, kwargs = mock_render.call_args
+        interviews = kwargs["interviews"]
+        assert len(interviews) == 1
+        assert "notes" not in interviews[0]
+        assert interviews[0]["application_id"] == app1
+
+    # recruiter role cannot access candidate route
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get("/candidate/interviews")
+    assert response.status_code == 302
+
+    # anonymous cannot access
+    test_client.cookie_jar.clear()
+    with test_client.session_transaction() as sess:
+        sess.clear()
+    response = test_client.get("/candidate/interviews")
+    assert response.status_code == 302
+
+    # POST candidate/interviews 405
+    _set_session(test_client, cand1, "candidate")
+    response = test_client.post("/candidate/interviews")
+    assert response.status_code == 405
+
+
+def test_no_form_id_trust(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+
+    # Update
+    iv1 = _create_interview_raw(app_id, "scheduled", _get_db_now() + datetime.timedelta(days=1))
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.post(
+        f"/recruiter/interview/{iv1}/update", data={"app_id": "99999999", "duration_minutes": "45"}
+    )
+    assert response.status_code == 302
+    assert f"/recruiter/application/{app_id}/interviews" in response.headers["Location"]
+
+    # Cancel
+    response = test_client.post(f"/recruiter/interview/{iv1}/cancel", data={"app_id": "99999999"})
+    assert response.status_code == 302
+    assert f"/recruiter/application/{app_id}/interviews" in response.headers["Location"]
+
+    # Complete
+    iv2 = _create_interview_raw(app_id, "scheduled", _get_db_now() - datetime.timedelta(days=1))
+    response = test_client.post(f"/recruiter/interview/{iv2}/complete", data={"app_id": "99999999"})
+    assert response.status_code == 302
+    assert f"/recruiter/application/{app_id}/interviews" in response.headers["Location"]
+
+
+def test_route_method_security(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    iv_id = _create_interview_raw(app_id, "scheduled", _get_db_now() + datetime.timedelta(days=1))
+
+    _set_session(test_client, reca, "recruiter")
+
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews/schedule")
+    assert response.status_code == 405
+
+    response = test_client.get(f"/recruiter/interview/{iv_id}/update")
+    assert response.status_code == 405
+
+    response = test_client.get(f"/recruiter/interview/{iv_id}/cancel")
+    assert response.status_code == 405
+
+    response = test_client.get(f"/recruiter/interview/{iv_id}/complete")
+    assert response.status_code == 405

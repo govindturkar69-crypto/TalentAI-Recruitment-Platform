@@ -34,7 +34,8 @@ from unittest.mock import MagicMock, patch
 
 @pytest.fixture(autouse=True)
 def mock_db(request):
-    if "test_phase4a" in request.module.__name__:
+    module_name = request.module.__name__
+    if "test_phase4a" in module_name or "test_phase4b" in module_name:
         yield None
         return
 

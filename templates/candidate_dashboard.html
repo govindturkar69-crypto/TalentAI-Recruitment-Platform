@@ -213,7 +213,7 @@
         </td>
         <td><small class="text-muted">{{ app.applied_at.strftime('%d %b %Y') if app.applied_at else '—' }}</small></td>
         <td>
-          {% if app.status in ['applied', 'shortlisted'] %}
+          {% if app.status not in ['withdrawn', 'hired'] %}
             <form method="POST" action="{{ url_for('candidate.withdraw_application', app_id=app.id) }}"
                   onsubmit="return confirm('Withdraw this application?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

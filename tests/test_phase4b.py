@@ -1090,3 +1090,316 @@ def test_route_method_security(test_client):
 
     response = test_client.get(f"/recruiter/interview/{iv_id}/complete")
     assert response.status_code == 405
+
+
+# ---------------------------------------------------------
+# PHASE 4B STEP 4 UI TESTS
+# ---------------------------------------------------------
+
+
+def test_ui_recruiter_real_template_render(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+    _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))
+    _create_interview_raw(app_id, "completed", db_now - datetime.timedelta(days=2))
+    _create_interview_raw(app_id, "cancelled", db_now - datetime.timedelta(days=3))
+
+    _set_session(test_client, reca, "recruiter")
+
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    assert response.status_code == 200
+
+    html = response.data.decode("utf-8")
+
+    # Assert candidate name and job title
+    assert "Candidate 1" in html
+    assert "Job A" in html
+
+    # Assert schedule form exists
+    assert "Schedule New Interview" in html
+
+    # Assert mode values
+    assert 'value="online"' in html
+    assert 'value="in_person"' in html
+    assert 'value="phone"' in html
+    assert 'value="in-person"' not in html
+
+    # Assert duration contract
+    assert 'min="5"' in html
+    assert 'max="480"' in html
+
+    # Assert location maxlength
+    assert 'maxlength="500"' in html
+
+    # Assert notes maxlength
+    assert 'maxlength="2000"' in html
+
+
+def test_ui_recruiter_control_visibility(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    iv_future = _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+    iv_past = _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))
+    iv_comp = _create_interview_raw(app_id, "completed", db_now - datetime.timedelta(days=2))
+    iv_canc = _create_interview_raw(app_id, "cancelled", db_now - datetime.timedelta(days=3))
+
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    html = response.data.decode("utf-8")
+
+    # Helper to check if a specific action exists for an interview
+    def has_action(iv_id, action):
+        return f"/recruiter/interview/{iv_id}/{action}" in html
+
+    def has_edit(iv_id):
+        # We look for the edit form action URL
+        return f"/recruiter/interview/{iv_id}/update" in html
+
+    # Future scheduled: edit visible, cancel visible, complete NOT visible
+    assert has_edit(iv_future)
+    assert has_action(iv_future, "cancel")
+    assert not has_action(iv_future, "complete")
+
+    # Past scheduled: edit may be visible, cancel visible, complete visible
+    assert has_action(iv_past, "cancel")
+    assert has_action(iv_past, "complete")
+
+    # Completed: no mutation controls
+    assert not has_edit(iv_comp)
+    assert not has_action(iv_comp, "cancel")
+    assert not has_action(iv_comp, "complete")
+
+    # Cancelled: no mutation controls
+    assert not has_edit(iv_canc)
+    assert not has_action(iv_canc, "cancel")
+    assert not has_action(iv_canc, "complete")
+
+    # Delete control should not exist at all
+    assert "/delete" not in html
+
+
+def test_ui_non_shortlisted_application(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "rejected")
+    db_now = _get_db_now()
+
+    iv_past = _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))
+
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    html = response.data.decode("utf-8")
+
+    # Should render history
+    assert "Interview History" in html
+
+    # NOT render schedule form
+    assert "Schedule New Interview" not in html
+
+    # NOT render edit form (no update action in HTML for any interview)
+    assert f"/recruiter/interview/{iv_past}/update" not in html
+
+    # Cancel may remain visible if status is scheduled
+    assert f"/recruiter/interview/{iv_past}/cancel" in html
+
+    # No delete action
+    assert "/delete" not in html
+
+
+def test_ui_candidate_real_template(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    _create_interview_raw(app_id, "scheduled", db_now + datetime.timedelta(days=1))
+
+    _set_session(test_client, cand1, "candidate")
+    response = test_client.get("/candidate/interviews")
+    assert response.status_code == 200
+
+    html = response.data.decode("utf-8")
+
+    # Job title appears
+    assert "Job A" in html
+
+    # Does not contain literal field name 'notes'
+    assert "notes" not in html.lower()
+
+    # Contains no URLs/actions for recruiter mutations
+    assert "recruiter.schedule_interview" not in html
+    assert "/interviews/schedule" not in html
+    assert "/update" not in html
+    assert "/cancel" not in html
+    assert "/complete" not in html
+
+
+def test_ui_xss_escaping(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                INSERT INTO interviews (application_id, scheduled_at, duration_minutes,
+                                        mode, location_or_link, status, notes)
+                VALUES (%s, %s, 30, 'online', '<img src=x onerror=alert(1)>', 'scheduled', '<script>alert(1)</script>')
+                """,
+                (app_id, db_now + datetime.timedelta(days=1)),
+            )
+            conn.commit()
+
+    # Recruiter check
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    html = response.data.decode("utf-8")
+
+    assert "<script>alert(1)</script>" not in html
+    assert "<img src=x onerror=alert(1)>" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+    # Candidate check
+    _set_session(test_client, cand1, "candidate")
+    response = test_client.get("/candidate/interviews")
+    html = response.data.decode("utf-8")
+
+    assert "alert(1)" not in html  # notes are not rendered at all
+    assert "&lt;img src=x onerror=alert(1)&gt;" in html
+
+
+def test_ui_unsafe_link(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                INSERT INTO interviews (application_id, scheduled_at, duration_minutes,
+                                        mode, location_or_link, status, notes)
+                VALUES (%s, %s, 30, 'online', 'javascript:alert(1)', 'scheduled', '')
+                """,
+                (app_id, db_now + datetime.timedelta(days=1)),
+            )
+            conn.commit()
+
+    # Recruiter check
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    html = response.data.decode("utf-8")
+
+    assert 'href="javascript:alert(1)"' not in html
+
+    # Candidate check
+    _set_session(test_client, cand1, "candidate")
+    response = test_client.get("/candidate/interviews")
+    html = response.data.decode("utf-8")
+
+    assert 'href="javascript:alert(1)"' not in html
+
+
+def test_ui_csrf_template(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    _create_interview_raw(app_id, "scheduled", db_now - datetime.timedelta(days=1))
+
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    html = response.data.decode("utf-8")
+
+    # Count CSRF tokens for forms (schedule, update, cancel, complete)
+    assert html.count('name="csrf_token"') >= 4
+
+
+def test_ui_candidate_withdraw(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+
+    app_applied = create_application(cand1, ja, res1, "applied")
+    app_shortlisted = create_application(cand1, ja, res1, "shortlisted")
+    app_rejected = create_application(cand1, ja, res1, "rejected")
+    app_hired = create_application(cand1, ja, res1, "hired")
+    app_withdrawn = create_application(cand1, ja, res1, "withdrawn")
+
+    _set_session(test_client, cand1, "candidate")
+    response = test_client.get("/candidate/dashboard")
+    html = response.data.decode("utf-8")
+
+    # Ensure withdraw is present for applied and shortlisted
+    assert f"/candidate/application/{app_applied}/withdraw" in html
+    assert f"/candidate/application/{app_shortlisted}/withdraw" in html
+
+    # Ensure withdraw is absent for others
+    assert f"/candidate/application/{app_rejected}/withdraw" not in html
+    assert f"/candidate/application/{app_hired}/withdraw" not in html
+    assert f"/candidate/application/{app_withdrawn}/withdraw" not in html
+
+
+def test_ui_recruiter_transition(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+
+    app_applied = create_application(cand1, ja, res1, "applied")
+    app_shortlisted = create_application(cand2, ja, res1, "shortlisted")
+
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get(f"/recruiter/job/{ja}/applicants")
+    html = response.data.decode("utf-8")
+
+    # applied: shortlisted action present, rejected action present, hired action absent
+    assert f'data-app-id="{app_applied}" data-status="shortlisted"' in html
+    assert f'data-app-id="{app_applied}" data-status="rejected"' in html
+    assert f'data-app-id="{app_applied}" data-status="hired"' not in html
+
+    # shortlisted: hired action present, rejected action present, shortlisted action absent
+    assert f'data-app-id="{app_shortlisted}" data-status="hired"' in html
+    assert f'data-app-id="{app_shortlisted}" data-status="rejected"' in html
+    assert f'data-app-id="{app_shortlisted}" data-status="shortlisted"' not in html
+
+    # Hidden single-status POST form contains CSRF token
+    assert 'id="singleStatusForm"' in html
+
+    # All applications should have Interview history link
+    assert f"/recruiter/application/{app_applied}/interviews" in html
+    assert f"/recruiter/application/{app_shortlisted}/interviews" in html
+
+
+def test_ui_no_user_data_in_js(test_client):
+    reca, recb, recc, cand1, cand2, ja, res1 = setup_data()
+    app_id = create_application(cand1, ja, res1, "shortlisted")
+    db_now = _get_db_now()
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                INSERT INTO interviews (application_id, scheduled_at, duration_minutes,
+                                        mode, location_or_link, status, notes)
+                VALUES (%s, %s, 30, 'online', 'loc_inject_test', 'scheduled', 'notes_inject_test')
+                """,
+                (app_id, db_now + datetime.timedelta(days=1)),
+            )
+            # Update user and job names to malicious values
+            cur.execute("UPDATE users SET name = 'cand_inject_test' WHERE id = %s", (cand1,))
+            cur.execute("UPDATE jobs SET job_title = 'job_inject_test' WHERE id = %s", (ja,))
+            conn.commit()
+
+    _set_session(test_client, reca, "recruiter")
+    response = test_client.get(f"/recruiter/application/{app_id}/interviews")
+    html = response.data.decode("utf-8")
+
+    # Extract the script block content to verify JS doesn't contain injected values
+    import re
+
+    script_blocks = re.findall(r"<script>(.*?)</script>", html, re.DOTALL)
+    for block in script_blocks:
+        assert "loc_inject_test" not in block
+        assert "notes_inject_test" not in block
+        assert "cand_inject_test" not in block
+        assert "job_inject_test" not in block

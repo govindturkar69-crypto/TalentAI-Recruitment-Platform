@@ -7,7 +7,7 @@
         <strong>Job:</strong> {{ app_info.job_title }}<br>
         <strong>Status:</strong> <span class="badge bg-info text-dark">{{ app_info.application_status }}</span>
     </p>
-    
+
     <div class="mb-4">
         <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
     </div>
@@ -18,7 +18,7 @@
         <div class="card-body">
             <form action="{{ url_for('recruiter.schedule_interview', app_id=app_info.application_id) }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
+
                 <div class="mb-3">
                     <label for="scheduled_at" class="form-label">Date & Time</label>
                     <input type="datetime-local" class="form-control" name="scheduled_at" id="scheduled_at" required>
@@ -79,7 +79,7 @@
                         <p class="card-text">
                             <strong>Date & Time:</strong> {{ iv.scheduled_at }}<br>
                             <strong>Duration:</strong> {{ iv.duration_minutes }} minutes<br>
-                            <strong>Status:</strong> 
+                            <strong>Status:</strong>
                             {% if iv.status == 'scheduled' %}
                                 Scheduled
                             {% elif iv.status == 'completed' %}
@@ -105,7 +105,7 @@
                             <br>
                             <strong>Notes:</strong> {{ iv.notes }}
                         </p>
-                        
+
                         <div class="d-flex gap-2 flex-wrap">
                             {% if iv.status == 'scheduled' %}
                                 {% if app_info.application_status == 'shortlisted' %}
@@ -128,10 +128,10 @@
                         <div id="edit_form_{{ iv.id }}" style="display: none;" class="mt-3 border-top pt-3">
                             <form action="{{ url_for('recruiter.update_interview', interview_id=iv.id) }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                
+
                                 <div class="mb-3">
                                     <label for="scheduled_at_{{ iv.id }}" class="form-label">Date & Time</label>
-                                    <input type="datetime-local" class="form-control" name="scheduled_at" id="scheduled_at_{{ iv.id }}" 
+                                    <input type="datetime-local" class="form-control" name="scheduled_at" id="scheduled_at_{{ iv.id }}"
                                         {% if iv.scheduled_at %}
                                         value="{{ iv.scheduled_at.strftime('%Y-%m-%dT%H:%M') }}"
                                         {% endif %}
@@ -180,7 +180,7 @@
         function updateLocationField(modeSelect, locationInput, locationLabel) {
             if (!modeSelect || !locationInput || !locationLabel) return;
             var mode = modeSelect.value;
-            
+
             if (mode === 'online') {
                 locationLabel.innerText = 'Meeting link';
                 locationInput.disabled = false;
@@ -220,7 +220,7 @@
                 var locLabel = document.getElementById('label_location_or_link_' + targetId);
                 updateLocationField(this, locInput, locLabel);
             });
-            
+
             // Initial call to set labels based on current values
             var targetId = selectEl.getAttribute('data-target-id');
             var locInput = document.getElementById('location_or_link_' + targetId);

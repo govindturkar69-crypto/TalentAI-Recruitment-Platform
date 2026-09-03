@@ -23,7 +23,7 @@
                         <p class="card-text">
                             <strong>Date & Time:</strong> {{ iv.scheduled_at }}<br>
                             <strong>Duration:</strong> {{ iv.duration_minutes }} minutes<br>
-                            <strong>Mode:</strong> 
+                            <strong>Mode:</strong>
                             {% if iv.mode == 'online' %}
                                 Online
                             {% elif iv.mode == 'in_person' %}
@@ -33,7 +33,7 @@
                             {% else %}
                                 {{ iv.mode }}
                             {% endif %}<br>
-                            
+
                             <strong>Location/Link:</strong>
                             {% if iv.mode == 'online' %}
                                 {% if iv.location_or_link and (iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://')) %}
@@ -47,8 +47,8 @@
                                 Phone interview
                             {% endif %}
                             <br>
-                            
-                            <strong>Status:</strong> 
+
+                            <strong>Status:</strong>
                             {% if iv.status == 'scheduled' %}
                                 Scheduled
                             {% elif iv.status == 'completed' %}

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Interviews for {{ app_info.candidate_name }}</h2>
+    <p>
+        <strong>Job:</strong> {{ app_info.job_title }}<br>
+        <strong>Status:</strong> <span class="badge bg-info text-dark">{{ app_info.application_status }}</span>
+    </p>
+    
+    <div class="mb-4">
+        <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+
+    {% if app_info.application_status == 'shortlisted' %}
+    <div class="card mb-4">
+        <div class="card-header">Schedule New Interview</div>
+        <div class="card-body">
+            <form action="{{ url_for('recruiter.schedule_interview', app_id=app_info.application_id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-3">
+                    <label for="scheduled_at" class="form-label">Date & Time</label>
+                    <input type="datetime-local" class="form-control" name="scheduled_at" id="scheduled_at" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="duration_minutes" class="form-label">Duration (minutes)</label>
+                    <input type="number" class="form-control" name="duration_minutes" id="duration_minutes" min="5" max="480" value="30" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="mode" class="form-label">Mode</label>
+                    <select class="form-select" name="mode" id="mode" required data-schedule="true">
+                        <option value="">Select Mode...</option>
+                        <option value="online">Online</option>
+                        <option value="in_person">In person</option>
+                        <option value="phone">Phone</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="location_or_link" class="form-label" id="label_location_or_link">Location / link</label>
+                    <input type="text" class="form-control" name="location_or_link" id="location_or_link" maxlength="500">
+                </div>
+
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" name="notes" id="notes" maxlength="2000"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Schedule Interview</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <h3>Interview History</h3>
+    {% if not interviews %}
+        <p>No interviews scheduled yet.</p>
+    {% else %}
+        <div class="row">
+        {% for iv in interviews %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {% if iv.mode == 'online' %}
+                                Online
+                            {% elif iv.mode == 'in_person' %}
+                                In person
+                            {% elif iv.mode == 'phone' %}
+                                Phone
+                            {% else %}
+                                {{ iv.mode }}
+                            {% endif %}
+                            Interview
+                        </h5>
+                        <p class="card-text">
+                            <strong>Date & Time:</strong> {{ iv.scheduled_at }}<br>
+                            <strong>Duration:</strong> {{ iv.duration_minutes }} minutes<br>
+                            <strong>Status:</strong> 
+                            {% if iv.status == 'scheduled' %}
+                                Scheduled
+                            {% elif iv.status == 'completed' %}
+                                Completed
+                            {% elif iv.status == 'cancelled' %}
+                                Cancelled
+                            {% else %}
+                                {{ iv.status }}
+                            {% endif %}
+                            <br>
+                            <strong>Location/Link:</strong>
+                            {% if iv.mode == 'online' %}
+                                {% if iv.location_or_link and (iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://')) %}
+                                    <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer">Join meeting</a>
+                                {% else %}
+                                    {{ iv.location_or_link }}
+                                {% endif %}
+                            {% elif iv.mode == 'in_person' %}
+                                {{ iv.location_or_link }}
+                            {% elif iv.mode == 'phone' %}
+                                Phone interview
+                            {% endif %}
+                            <br>
+                            <strong>Notes:</strong> {{ iv.notes }}
+                        </p>
+                        
+                        <div class="d-flex gap-2 flex-wrap">
+                            {% if iv.status == 'scheduled' %}
+                                {% if app_info.application_status == 'shortlisted' %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-toggle-btn" data-target="edit_form_{{ iv.id }}">Edit</button>
+                                {% endif %}
+                                {% if iv.can_complete %}
+                                    <form action="{{ url_for('recruiter.complete_interview', interview_id=iv.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-success">Complete</button>
+                                    </form>
+                                {% endif %}
+                                <form action="{{ url_for('recruiter.cancel_interview', interview_id=iv.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel this interview?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
+                                </form>
+                            {% endif %}
+                        </div>
+
+                        {% if iv.status == 'scheduled' and app_info.application_status == 'shortlisted' %}
+                        <div id="edit_form_{{ iv.id }}" style="display: none;" class="mt-3 border-top pt-3">
+                            <form action="{{ url_for('recruiter.update_interview', interview_id=iv.id) }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="mb-3">
+                                    <label for="scheduled_at_{{ iv.id }}" class="form-label">Date & Time</label>
+                                    <input type="datetime-local" class="form-control" name="scheduled_at" id="scheduled_at_{{ iv.id }}" 
+                                        {% if iv.scheduled_at %}
+                                        value="{{ iv.scheduled_at.strftime('%Y-%m-%dT%H:%M') }}"
+                                        {% endif %}
+                                    required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="duration_minutes_{{ iv.id }}" class="form-label">Duration (minutes)</label>
+                                    <input type="number" class="form-control" name="duration_minutes" id="duration_minutes_{{ iv.id }}" min="5" max="480" value="{{ iv.duration_minutes }}" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="mode_{{ iv.id }}" class="form-label">Mode</label>
+                                    <select class="form-select mode-select" name="mode" id="mode_{{ iv.id }}" required data-target-id="{{ iv.id }}">
+                                        <option value="online" {% if iv.mode == 'online' %}selected{% endif %}>Online</option>
+                                        <option value="in_person" {% if iv.mode == 'in_person' %}selected{% endif %}>In person</option>
+                                        <option value="phone" {% if iv.mode == 'phone' %}selected{% endif %}>Phone</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="location_or_link_{{ iv.id }}" class="form-label" id="label_location_or_link_{{ iv.id }}">Location / link</label>
+                                    <input type="text" class="form-control location-input" name="location_or_link" id="location_or_link_{{ iv.id }}" maxlength="500" value="{{ iv.location_or_link }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="notes_{{ iv.id }}" class="form-label">Notes</label>
+                                    <textarea class="form-control" name="notes" id="notes_{{ iv.id }}" maxlength="2000">{{ iv.notes }}</textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                                <button type="button" class="btn btn-secondary btn-sm cancel-edit-btn" data-target="edit_form_{{ iv.id }}">Cancel Edit</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        function updateLocationField(modeSelect, locationInput, locationLabel) {
+            if (!modeSelect || !locationInput || !locationLabel) return;
+            var mode = modeSelect.value;
+            
+            if (mode === 'online') {
+                locationLabel.innerText = 'Meeting link';
+                locationInput.disabled = false;
+                locationInput.required = true;
+            } else if (mode === 'in_person') {
+                locationLabel.innerText = 'Location';
+                locationInput.disabled = false;
+                locationInput.required = true;
+            } else if (mode === 'phone') {
+                locationLabel.innerText = 'Location / link';
+                locationInput.value = '';
+                locationInput.disabled = true;
+                locationInput.required = false;
+            } else {
+                locationLabel.innerText = 'Location / link';
+                locationInput.disabled = false;
+                locationInput.required = false;
+            }
+        }
+
+        // Schedule form
+        var scheduleMode = document.getElementById('mode');
+        if (scheduleMode) {
+            scheduleMode.addEventListener('change', function() {
+                var locInput = document.getElementById('location_or_link');
+                var locLabel = document.getElementById('label_location_or_link');
+                updateLocationField(scheduleMode, locInput, locLabel);
+            });
+            updateLocationField(scheduleMode, document.getElementById('location_or_link'), document.getElementById('label_location_or_link'));
+        }
+
+        // Edit forms
+        document.querySelectorAll('.mode-select').forEach(function(selectEl) {
+            selectEl.addEventListener('change', function() {
+                var targetId = this.getAttribute('data-target-id');
+                var locInput = document.getElementById('location_or_link_' + targetId);
+                var locLabel = document.getElementById('label_location_or_link_' + targetId);
+                updateLocationField(this, locInput, locLabel);
+            });
+            
+            // Initial call to set labels based on current values
+            var targetId = selectEl.getAttribute('data-target-id');
+            var locInput = document.getElementById('location_or_link_' + targetId);
+            var locLabel = document.getElementById('label_location_or_link_' + targetId);
+            if (locInput && locLabel) {
+                // Don't clear value for phone on initial load, although it shouldn't have one
+                var initialMode = selectEl.value;
+                if (initialMode === 'online') {
+                    locLabel.innerText = 'Meeting link';
+                    locInput.disabled = false;
+                    locInput.required = true;
+                } else if (initialMode === 'in_person') {
+                    locLabel.innerText = 'Location';
+                    locInput.disabled = false;
+                    locInput.required = true;
+                } else if (initialMode === 'phone') {
+                    locLabel.innerText = 'Location / link';
+                    locInput.disabled = true;
+                    locInput.required = false;
+                }
+            }
+        });
+
+        // Edit toggles
+        document.querySelectorAll('.edit-toggle-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var targetId = this.getAttribute('data-target');
+                document.getElementById(targetId).style.display = 'block';
+            });
+        });
+
+        document.querySelectorAll('.cancel-edit-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var targetId = this.getAttribute('data-target');
+                document.getElementById(targetId).style.display = 'none';
+            });
+        });
+    });
+</script>
+{% endblock %}

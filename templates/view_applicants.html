@@ -157,15 +157,19 @@
           </td>
           <td>
             <div class="d-flex flex-column gap-2">
-              <select name="status_{{ app.id }}" class="form-select form-select-sm saas-input border" style="width:auto; border-color: var(--border-color) !important;"
-                      onchange="updateSingleStatus({{ app.id }}, this.value)">
-                <option value="applied"     {% if app.status=='applied' %}selected{% endif %}>Applied</option>
-                <option value="shortlisted" {% if app.status=='shortlisted' %}selected{% endif %}>Shortlist ✓</option>
-                <option value="rejected"    {% if app.status=='rejected' %}selected{% endif %}>Reject ✗</option>
-                <option value="hired"       {% if app.status=='hired' %}selected{% endif %}>Hired 🎉</option>
-                <option value="withdrawn"   {% if app.status=='withdrawn' %}selected{% endif %} disabled>Withdrawn</option>
-              </select>
+              <div class="d-flex gap-1 flex-wrap">
+                {% if app.status == 'applied' %}
+                  <button type="button" class="btn btn-sm btn-success update-status-btn" data-app-id="{{ app.id }}" data-status="shortlisted">Shortlist</button>
+                  <button type="button" class="btn btn-sm btn-danger update-status-btn" data-app-id="{{ app.id }}" data-status="rejected">Reject</button>
+                {% elif app.status == 'shortlisted' %}
+                  <button type="button" class="btn btn-sm btn-warning update-status-btn" data-app-id="{{ app.id }}" data-status="hired">Hire</button>
+                  <button type="button" class="btn btn-sm btn-danger update-status-btn" data-app-id="{{ app.id }}" data-status="rejected">Reject</button>
+                {% else %}
+                  <span class="text-muted small">No further status actions</span>
+                {% endif %}
+              </div>
               <div class="d-flex gap-2">
+                <a href="{{ url_for('recruiter.manage_interviews', app_id=app.id) }}" class="btn btn-sm btn-outline-info py-0" title="Interviews"><i class="bi bi-calendar-event"></i></a>
                 <a href="{{ url_for('recruiter.view_candidate_profile', app_id=app.id) }}" class="btn btn-sm btn-outline-primary py-0" title="View Profile"><i class="bi bi-person"></i></a>
                 <a href="{{ url_for('recruiter.view_candidate_resume', app_id=app.id) }}" class="btn btn-sm btn-outline-secondary py-0" title="View Resume" target="_blank"><i class="bi bi-file-earmark-pdf"></i></a>
               </div>
@@ -178,25 +182,13 @@
   </div>
 </form>
 
-<!-- Hidden single-status form (reused by the dropdown above) -->
+<!-- Hidden single-status form (reused by the buttons above) -->
 <form method="POST" id="singleStatusForm" action="" class="d-none">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="status" id="singleStatusValue">
 </form>
 
 <script>
-function updateSingleStatus(appId, statusValue) {
-  if (!confirm(`Set status to "${statusValue}"?`)) {
-    location.reload();
-    return;
-  }
-  const form = document.getElementById('singleStatusForm');
-  form.action = "{{ url_for('recruiter.update_status', app_id=0) }}".replace('/0/', `/${appId}/`);
-  document.getElementById('singleStatusValue').value = statusValue;
-  form.submit();
-}
-
-// Select-all checkbox logic
 document.addEventListener('DOMContentLoaded', function () {
   const selectAll = document.getElementById('selectAllCheckbox');
   const rowChecks = document.querySelectorAll('.row-checkbox');
@@ -214,6 +206,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   rowChecks.forEach(cb => cb.addEventListener('change', updateCount));
+
+  document.querySelectorAll('.update-status-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const appId = this.getAttribute('data-app-id');
+      const statusValue = this.getAttribute('data-status');
+      const form = document.getElementById('singleStatusForm');
+      form.action = "{{ url_for('recruiter.update_status', app_id=0) }}".replace('/0/', `/${appId}/`);
+      document.getElementById('singleStatusValue').value = statusValue;
+      form.submit();
+    });
+  });
 });
 </script>
 {% else %}

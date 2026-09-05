@@ -108,11 +108,11 @@
           <td>
             <div class="d-flex align-items-center gap-3">
               <div class="avatar-circle" style="width: 40px; height: 40px; font-size: 1.1rem;">{{ app.candidate_name[0]|upper }}</div>
-              <div>
-                <div class="fw-bold text-dark">
-                  <a href="{{ url_for('recruiter.view_candidate_profile', app_id=app.id) }}" class="text-decoration-none text-dark">{{ app.candidate_name }}</a>
+              <div style="min-width: 0;">
+                <div class="fw-bold text-dark text-truncate" style="max-width: 170px;">
+                  <a href="{{ url_for('recruiter.view_candidate_profile', app_id=app.id) }}" class="text-decoration-none text-dark" title="{{ app.candidate_name }}">{{ app.candidate_name }}</a>
                 </div>
-                <small class="text-muted">{{ app.email }}</small>
+                <small class="text-muted text-truncate d-inline-block" style="max-width: 170px;" title="{{ app.email }}">{{ app.email }}</small>
               </div>
             </div>
           </td>

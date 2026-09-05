@@ -1,16 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Interviews for {{ app_info.candidate_name }}</h2>
-    <p>
-        <strong>Job:</strong> {{ app_info.job_title }}<br>
+<div class="saas-page-header">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+    <div>
+      <div class="saas-page-header-eyebrow">RECRUITER WORKSPACE</div>
+      <h1 class="saas-page-header-title">Interviews for {{ app_info.candidate_name }}</h1>
+      <p class="saas-page-header-sub">
+        <strong>Job:</strong> {{ app_info.job_title }} &nbsp;|&nbsp;
         <strong>Status:</strong> <span class="badge bg-info text-dark">{{ app_info.application_status }}</span>
-    </p>
-    
-    <div class="mb-4">
-        <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+      </p>
     </div>
+    <a href="{{ url_for('recruiter.recruiter_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+  </div>
+</div>
 
     {% if app_info.application_status == 'shortlisted' %}
     <div class="card mb-4">
@@ -93,12 +96,12 @@
                             <strong>Location/Link:</strong>
                             {% if iv.mode == 'online' %}
                                 {% if iv.location_or_link and (iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://')) %}
-                                    <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer">Join meeting</a>
+                                    <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer" class="text-break">Join meeting</a>
                                 {% else %}
-                                    {{ iv.location_or_link }}
+                                    <span class="text-break">{{ iv.location_or_link }}</span>
                                 {% endif %}
                             {% elif iv.mode == 'in_person' %}
-                                {{ iv.location_or_link }}
+                                <span class="text-break">{{ iv.location_or_link }}</span>
                             {% elif iv.mode == 'phone' %}
                                 Phone interview
                             {% endif %}
@@ -173,7 +176,6 @@
         {% endfor %}
         </div>
     {% endif %}
-</div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {

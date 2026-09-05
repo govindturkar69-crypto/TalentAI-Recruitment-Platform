@@ -88,6 +88,10 @@
 }
 
 /* ── Base ──────────────────────────────────────────────────── */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg-primary);
@@ -1245,4 +1249,44 @@ main.container { animation: fadeInUp 0.35s var(--ease); }
 /* ── Reduce motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+}
+
+/* ── Global Layout & Consistency System ──────────────────────── */
+.saas-form-card {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.saas-form-readonly {
+  background: var(--bg-alt) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+.saas-cell-truncate {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.table-responsive {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.text-break-word {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.form-control, .form-select {
+  min-height: 38px;
+}
+
+.form-control-sm, .form-select-sm {
+  min-height: 31px;
 }

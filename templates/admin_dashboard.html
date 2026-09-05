@@ -72,38 +72,36 @@
 
 <div class="row g-4">
   <!-- Main Column: User Management -->
-  <div class="col-lg-8">
+  <div class="col-12 col-xl-9">
     <div class="saas-card h-100">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-3">
-          <h5 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
-          <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-building me-1"></i>Manage Companies</a>
-        </div>
+        <h5 class="fw-bold mb-0 text-nowrap"><i class="bi bi-people me-2"></i>User Management</h5>
+        <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-primary text-nowrap">
+          <i class="bi bi-building me-1"></i>Manage Companies
+        </a>
       </div>
 
       <!-- Server-Side Filter Form -->
-      <form method="GET" action="{{ url_for('admin.dashboard') }}" class="row g-2 align-items-center mb-3">
-        <div class="col-12 col-md-3">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control" placeholder="Search name or email..." value="{{ filters.q }}">
-          </div>
+      <form method="GET" action="{{ url_for('admin.dashboard') }}" class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <div class="input-group input-group-sm flex-grow-1" style="min-width: 180px;">
+          <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Search name or email..." value="{{ filters.q }}">
         </div>
-        <div class="col-6 col-md-2">
+        <div style="min-width: 120px;">
           <select name="role" class="form-select form-select-sm">
             <option value="" {% if not filters.role %}selected{% endif %}>Role: All</option>
             <option value="candidate" {% if filters.role == 'candidate' %}selected{% endif %}>Candidate</option>
             <option value="recruiter" {% if filters.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
           </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div style="min-width: 120px;">
           <select name="status" class="form-select form-select-sm">
             <option value="" {% if not filters.status %}selected{% endif %}>Status: All</option>
             <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
             <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
           </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div style="min-width: 140px;">
           <select name="company_id" class="form-select form-select-sm">
             <option value="" {% if not filters.company_id %}selected{% endif %}>Company: All</option>
             {% for company in companies %}
@@ -111,30 +109,30 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-6 col-md-1">
+        <div style="width: 85px;">
           <select name="per_page" class="form-select form-select-sm">
             <option value="20" {% if filters.per_page == 20 %}selected{% endif %}>20 / pg</option>
             <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50 / pg</option>
             <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100 / pg</option>
           </select>
         </div>
-        <div class="col-12 col-md-2 d-flex gap-1 justify-content-end">
-          <button type="submit" class="saas-btn-primary btn-sm flex-grow-1" style="font-size:0.8rem; padding: 4px 8px;">Apply Filters</button>
-          <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary flex-grow-1 text-center" style="font-size:0.8rem; padding: 4px 8px;">Clear</a>
+        <div class="d-flex gap-2">
+          <button type="submit" class="saas-btn-primary btn-sm text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Apply Filters</button>
+          <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Clear</a>
         </div>
       </form>
 
       <div class="table-responsive">
-        <table class="table saas-table table-sm align-middle" id="usersTable">
+        <table class="table saas-table table-sm align-middle mb-0" id="usersTable">
           <thead>
             <tr>
-              <th>User</th>
-              <th>Email</th>
-              <th>Status</th>
-              <th>Role</th>
-              <th>Company</th>
-              <th>Joined</th>
-              <th class="text-end">Actions</th>
+              <th style="min-width: 110px;">User</th>
+              <th style="min-width: 130px;">Email</th>
+              <th style="width: 70px; white-space: nowrap;">Status</th>
+              <th style="width: 80px; white-space: nowrap;">Role</th>
+              <th style="min-width: 90px;">Company</th>
+              <th style="width: 85px; white-space: nowrap;">Joined</th>
+              <th class="text-end" style="min-width: 200px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -142,21 +140,21 @@
             <tr>
               <td class="fw-semibold">
                 <div class="d-flex align-items-center gap-2">
-                  <div class="saas-avatar-sm rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:28px;height:28px;font-size:0.75rem;">
+                  <div class="saas-avatar-sm rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;font-size:0.75rem;">
                     {{ user.name[:2] | upper }}
                   </div>
-                  {{ user.name }}
+                  <span class="text-truncate" style="max-width: 140px;" title="{{ user.name }}">{{ user.name }}</span>
                 </div>
               </td>
-              <td><span class="text-muted small">{{ user.email }}</span></td>
-              <td>
+              <td><span class="text-muted small" style="word-break: break-all;">{{ user.email }}</span></td>
+              <td style="white-space: nowrap;">
                 {% if user.is_active %}
                   <span class="saas-skill-chip" style="background:var(--success-tint);color:#166534;border-color:rgba(34,197,94,0.25);padding:2px 6px;font-size:0.7rem;">Active</span>
                 {% else %}
                   <span class="saas-skill-chip" style="background:var(--danger-tint);color:#991b1b;border-color:rgba(239,68,68,0.25);padding:2px 6px;font-size:0.7rem;">Inactive</span>
                 {% endif %}
               </td>
-              <td>
+              <td style="white-space: nowrap;">
                 {% if user.role == 'recruiter' %}
                   <span class="saas-skill-chip" style="background:var(--warning-tint);color:#b45309;border-color:rgba(245,158,11,0.25);padding:2px 6px;font-size:0.7rem;">
                     Recruiter
@@ -167,51 +165,56 @@
                   </span>
                 {% endif %}
               </td>
-              <td>
+              <td style="word-break: break-word;">
                 {% if user.role == 'recruiter' %}
                   <span class="text-muted small">{{ user.company_name or 'Unassigned' }}</span>
                 {% else %}
                   <span class="text-muted small">-</span>
                 {% endif %}
               </td>
-              <td>
+              <td style="white-space: nowrap;">
                 <span class="text-muted" style="font-size: 0.8rem;">
                   {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'Unknown' }}
                 </span>
               </td>
               <td class="text-end">
-                <!-- Action Form -->
-                <div class="d-flex align-items-center justify-content-end gap-2">
-                  <form action="{{ url_for('admin.update_role', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <select name="role" class="form-select" style="width: 100px; font-size: 0.75rem; padding: 2px 4px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
-                      <option value="candidate" {% if user.role == 'candidate' %}selected{% endif %}>Candidate</option>
-                      <option value="recruiter" {% if user.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
-                    </select>
-                    <button type="submit" class="saas-btn-primary" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
-                      Save
-                    </button>
-                  </form>
-                  <form action="{{ url_for('admin.update_status', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    {% if user.is_active %}
-                      <input type="hidden" name="status" value="inactive">
-                      <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Deactivate</button>
-                    {% else %}
-                      <input type="hidden" name="status" value="active">
-                      <button type="submit" class="btn btn-sm btn-outline-success" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Activate</button>
-                    {% endif %}
-                  </form>
+                <!-- Action Form Container -->
+                <div class="d-flex flex-column align-items-end gap-1">
+                  <div class="d-flex align-items-center justify-content-end gap-1 flex-wrap">
+                    <!-- Role Mutation Form -->
+                    <form action="{{ url_for('admin.update_role', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <select name="role" class="form-select form-select-sm" style="width: 90px; font-size: 0.75rem; padding: 2px 4px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
+                        <option value="candidate" {% if user.role == 'candidate' %}selected{% endif %}>Candidate</option>
+                        <option value="recruiter" {% if user.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
+                      </select>
+                      <button type="submit" class="saas-btn-primary text-nowrap" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
+                        Save
+                      </button>
+                    </form>
+                    <!-- Status Mutation Form -->
+                    <form action="{{ url_for('admin.update_status', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      {% if user.is_active %}
+                        <input type="hidden" name="status" value="inactive">
+                        <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Deactivate</button>
+                      {% else %}
+                        <input type="hidden" name="status" value="active">
+                        <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Activate</button>
+                      {% endif %}
+                    </form>
+                  </div>
                   {% if user.role == 'recruiter' %}
-                  <form action="{{ url_for('admin.assign_company', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                  <!-- Company Assignment Form -->
+                  <form action="{{ url_for('admin.assign_company', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center justify-content-end gap-1">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <select name="company_id" class="form-select" style="width: 120px; font-size: 0.75rem; padding: 2px 4px;">
+                    <select name="company_id" class="form-select form-select-sm" style="width: 125px; font-size: 0.75rem; padding: 2px 4px;">
                       <option value="">-- No Company --</option>
                       {% for company in companies if company.is_active %}
                       <option value="{{ company.id }}" {% if user.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
                       {% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem; padding: 2px 8px;">Assign</button>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.75rem; padding: 2px 8px;">Assign</button>
                   </form>
                   {% endif %}
                 </div>
@@ -232,7 +235,7 @@
 
       <!-- Server-Side Pagination Bar -->
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top">
-        <div class="text-muted small">
+        <div class="text-muted small text-nowrap">
           {% if pagination.total == 0 %}
             Showing 0 users
           {% else %}
@@ -241,15 +244,15 @@
         </div>
         {% if pagination.total_pages > 1 %}
         <nav aria-label="User table navigation">
-          <ul class="pagination pagination-sm mb-0">
+          <ul class="pagination pagination-sm mb-0 flex-wrap">
             <!-- Previous Link -->
             <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
               {% if pagination.has_prev %}
-                <a class="page-link" href="{{ url_for('admin.dashboard', page=pagination.prev_page, **active_filters) }}" aria-label="Previous">
+                <a class="page-link text-nowrap" href="{{ url_for('admin.dashboard', page=pagination.prev_page, **active_filters) }}" aria-label="Previous">
                   &laquo; Prev
                 </a>
               {% else %}
-                <span class="page-link">&laquo; Prev</span>
+                <span class="page-link text-nowrap">&laquo; Prev</span>
               {% endif %}
             </li>
 
@@ -267,11 +270,11 @@
             <!-- Next Link -->
             <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
               {% if pagination.has_next %}
-                <a class="page-link" href="{{ url_for('admin.dashboard', page=pagination.next_page, **active_filters) }}" aria-label="Next">
+                <a class="page-link text-nowrap" href="{{ url_for('admin.dashboard', page=pagination.next_page, **active_filters) }}" aria-label="Next">
                   Next &raquo;
                 </a>
               {% else %}
-                <span class="page-link">Next &raquo;</span>
+                <span class="page-link text-nowrap">Next &raquo;</span>
               {% endif %}
             </li>
           </ul>
@@ -282,23 +285,23 @@
   </div>
 
   <!-- Side Column: Recent Registrations -->
-  <div class="col-lg-4">
+  <div class="col-12 col-xl-3">
     <div class="saas-card h-100">
-      <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Recent Registrations</h6>
+      <h6 class="fw-bold mb-3 pb-2 border-bottom"><i class="bi bi-clock-history me-2"></i>Recent Registrations</h6>
       
       {% if recent_users %}
         <div class="list-group list-group-flush">
           {% for ru in recent_users %}
-          <div class="list-group-item px-0 py-2 border-bottom-0 mb-2">
-            <div class="d-flex justify-content-between align-items-start mb-1">
-              <span class="fw-semibold" style="font-size:0.85rem;">{{ ru.name }}</span>
-              <small class="text-muted" style="font-size:0.7rem;">
+          <div class="list-group-item px-0 py-2 border-bottom">
+            <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+              <span class="fw-semibold text-truncate" style="font-size:0.85rem;" title="{{ ru.name }}">{{ ru.name }}</span>
+              <small class="text-muted text-nowrap" style="font-size:0.7rem;">
                 {{ ru.created_at.strftime('%b %d, %Y') if ru.created_at else '' }}
               </small>
             </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="text-muted text-truncate" style="font-size:0.75rem; max-width: 180px;">{{ ru.email }}</span>
-              <span style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:{% if ru.role == 'recruiter' %}#b45309{% else %}#0369a1{% endif %}">
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <span class="text-muted text-truncate" style="font-size:0.75rem;" title="{{ ru.email }}">{{ ru.email }}</span>
+              <span class="text-nowrap" style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:{% if ru.role == 'recruiter' %}#b45309{% else %}#0369a1{% endif %}">
                 {{ ru.role }}
               </span>
             </div>

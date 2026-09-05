@@ -129,7 +129,7 @@ body {
   background: radial-gradient(700px 500px at 70% 20%, rgba(6,182,212,0.06), transparent 60%), var(--bg);
 }
 .auth-card {
-  width: 100%; max-width: 400px;
+  width: 100%; max-width: 460px;
   background: linear-gradient(180deg, rgba(30,41,59,0.55), rgba(17,24,39,0.85));
   border: 1px solid var(--line-2); border-radius: var(--radius);
   padding: 38px 34px;
@@ -233,10 +233,23 @@ body {
   * { animation: none !important; transition: none !important; }
 }
 
+@media (max-width: 1100px) {
+  .brand-panel { padding: 40px 32px; }
+  .brand-copy h1 { font-size: 32px; }
+  .auth-panel { padding: 32px 24px; }
+}
+
 @media (max-width: 900px) {
   body { grid-template-columns: 1fr; }
   .brand-panel { display: none; }
-  .auth-panel { padding: 24px; }
+  .auth-panel { padding: 32px 20px; min-height: 100vh; }
+}
+
+@media (max-width: 480px) {
+  .auth-panel { padding: 24px 16px; }
+  .auth-card { padding: 28px 18px; border-radius: var(--radius-sm); }
+  .auth-card h2 { font-size: 22px; }
+  .btn-primary { height: 46px; }
 }
 
 /* ── Page-specific brand visuals ── */

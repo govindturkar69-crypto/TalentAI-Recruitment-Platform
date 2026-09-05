@@ -54,6 +54,7 @@
     font-size: 18px;
     flex-shrink: 0;
   }
+  [data-theme="dark"] .analysis-resume-icon,
   [data-bs-theme="dark"] .analysis-resume-icon {
     background-color: rgba(32, 201, 151, 0.15);
     color: #20c997;
@@ -63,6 +64,7 @@
     background-color: rgba(255, 193, 7, 0.1);
     color: #ffc107;
   }
+  [data-theme="dark"] .analysis-resume-icon.warning,
   [data-bs-theme="dark"] .analysis-resume-icon.warning {
     background-color: rgba(255, 193, 7, 0.15);
   }
@@ -73,6 +75,7 @@
     font-weight: 600;
     color: #198754;
   }
+  [data-theme="dark"] .analysis-resume-text h6,
   [data-bs-theme="dark"] .analysis-resume-text h6 {
     color: #20c997;
   }
@@ -151,9 +154,10 @@
     font-weight: 500;
   }
   
+  [data-theme="dark"] #localResult,
   [data-bs-theme="dark"] #localResult {
-    background: var(--bs-tertiary-bg) !important;
-    border-color: var(--bs-border-color) !important;
+    background: var(--bg-alt) !important;
+    border-color: var(--border-color) !important;
   }
 </style>
 
@@ -238,7 +242,7 @@
 
     <div id="errorAlert" class="alert alert-danger mt-3 d-none small"></div>
 
-    <div id="resultsContainer" class="d-none">
+    <div id="resultsContainer" class="d-none" style="overflow-wrap: break-word; word-break: break-word;">
       
       <!-- Summary -->
       <div class="saas-card mb-4 border-primary">

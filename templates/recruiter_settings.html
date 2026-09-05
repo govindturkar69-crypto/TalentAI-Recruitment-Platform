@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="saas-page-header">
-  <div class="d-flex justify-content-between align-items-center w-100">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
     <div>
       <div class="saas-page-header-eyebrow">RECRUITER ACCOUNT</div>
       <h1 class="saas-page-header-title">Settings</h1>
@@ -13,59 +13,59 @@
   </div>
 </div>
 
-<div class="row g-4">
-  <div class="col-lg-6">
-    <div class="saas-card h-100">
-      <h5 class="fw-bold mb-4"><i class="bi bi-person-badge me-2"></i>Personal Details</h5>
+<div class="row g-4 justify-content-center">
+  <div class="col-12 col-lg-6 col-xl-5">
+    <div class="saas-card h-100 p-4">
+      <h5 class="fw-bold mb-4"><i class="bi bi-person-badge me-2 text-primary"></i>Personal Details</h5>
       
       <div class="mb-3">
-        <label class="form-label text-muted small fw-bold">Name</label>
-        <div class="form-control bg-light">{{ user_data.name }}</div>
+        <label class="form-label text-muted small fw-bold text-uppercase">Name</label>
+        <div class="form-control" style="background: var(--bg-alt); color: var(--text-primary); border-color: var(--border-color);">{{ user_data.name }}</div>
       </div>
       <div class="mb-3">
-        <label class="form-label text-muted small fw-bold">Email</label>
-        <div class="form-control bg-light">{{ user_data.email }}</div>
+        <label class="form-label text-muted small fw-bold text-uppercase">Email</label>
+        <div class="form-control" style="background: var(--bg-alt); color: var(--text-primary); border-color: var(--border-color);">{{ user_data.email }}</div>
       </div>
       <div class="mb-3">
-        <label class="form-label text-muted small fw-bold">Role</label>
-        <div class="form-control bg-light text-capitalize">Recruiter</div>
+        <label class="form-label text-muted small fw-bold text-uppercase">Role</label>
+        <div class="form-control text-capitalize" style="background: var(--bg-alt); color: var(--text-primary); border-color: var(--border-color);">Recruiter</div>
       </div>
-      <p class="text-muted small mt-4"><i class="bi bi-info-circle me-1"></i>Contact an administrator to change your personal details.</p>
+      <p class="text-muted small mt-4 mb-0"><i class="bi bi-info-circle me-1"></i>Contact an administrator to change your personal details.</p>
     </div>
   </div>
 
-  <div class="col-lg-6">
-    <div class="saas-card h-100">
-      <h5 class="fw-bold mb-4"><i class="bi bi-building me-2"></i>Company Association</h5>
+  <div class="col-12 col-lg-6 col-xl-5">
+    <div class="saas-card h-100 p-4">
+      <h5 class="fw-bold mb-4"><i class="bi bi-building me-2 text-primary"></i>Company Association</h5>
       
       {% if user_data.company_id %}
         {% if not user_data.is_active %}
-        <div class="alert alert-warning py-2 small" role="alert">
+        <div class="alert alert-warning py-2 small mb-3" role="alert">
           <i class="bi bi-exclamation-triangle-fill me-1"></i> Your company is currently marked as inactive.
         </div>
         {% endif %}
         <div class="mb-3">
-          <label class="form-label text-muted small fw-bold">Company Name</label>
-          <div class="form-control bg-light">{{ user_data.company_name }}</div>
+          <label class="form-label text-muted small fw-bold text-uppercase">Company Name</label>
+          <div class="form-control" style="background: var(--bg-alt); color: var(--text-primary); border-color: var(--border-color);">{{ user_data.company_name }}</div>
         </div>
         <div class="mb-3">
-          <label class="form-label text-muted small fw-bold">Website</label>
-          <div class="form-control bg-light">
+          <label class="form-label text-muted small fw-bold text-uppercase">Website</label>
+          <div class="form-control" style="background: var(--bg-alt); color: var(--text-primary); border-color: var(--border-color);">
             {% if user_data.website %}
-              <a href="{{ user_data.website }}" target="_blank" rel="noopener noreferrer">{{ user_data.website }}</a>
+              <a href="{{ user_data.website }}" target="_blank" rel="noopener noreferrer" class="text-primary text-truncate d-inline-block mw-100">{{ user_data.website }}</a>
             {% else %}
               <span class="text-muted">Not specified</span>
             {% endif %}
           </div>
         </div>
         <div class="mb-3">
-          <label class="form-label text-muted small fw-bold">Description</label>
-          <div class="form-control bg-light" style="min-height: 80px; white-space: pre-wrap;">{{ user_data.description or 'No description provided.' }}</div>
+          <label class="form-label text-muted small fw-bold text-uppercase">Description</label>
+          <div class="form-control" style="background: var(--bg-alt); color: var(--text-primary); border-color: var(--border-color); min-height: 80px; white-space: pre-wrap;">{{ user_data.description or 'No description provided.' }}</div>
         </div>
       {% else %}
-        <div class="alert alert-info py-3" role="alert">
+        <div class="alert alert-info py-3 mb-0" role="alert">
           <div class="d-flex">
-            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+            <i class="bi bi-info-circle-fill fs-4 me-3 flex-shrink-0"></i>
             <div>
               <strong>No Company Assigned</strong><br>
               <span class="small">No company has been assigned to your recruiter account yet. Please contact an administrator to have your account associated with a company.</span>

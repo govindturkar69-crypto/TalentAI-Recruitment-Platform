@@ -10,30 +10,30 @@
   </div>
 </div>
 
-<div class="row">
-  <div class="col-lg-6">
-    <div class="saas-card">
-      <h5 class="fw-bold mb-4">Change Password</h5>
+<div class="row justify-content-center">
+  <div class="col-12 col-md-9 col-lg-7 col-xl-6">
+    <div class="saas-card p-4 p-md-5" style="max-width: 680px; margin: 0 auto;">
+      <h5 class="fw-bold mb-4"><i class="bi bi-shield-lock me-2 text-primary"></i>Change Password</h5>
       <form action="{{ url_for('auth.settings') }}" method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="mb-3">
-          <label class="form-label text-muted" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;">Current Password</label>
+          <label class="form-label text-muted small fw-bold text-uppercase">Current Password</label>
           <input type="password" name="current_password" class="form-control" required>
         </div>
         
         <div class="mb-3">
-          <label class="form-label text-muted" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;">New Password</label>
+          <label class="form-label text-muted small fw-bold text-uppercase">New Password</label>
           <input type="password" name="new_password" class="form-control" required minlength="8">
           <div class="form-text">Must be at least 8 characters long.</div>
         </div>
         
         <div class="mb-4">
-          <label class="form-label text-muted" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;">Confirm New Password</label>
+          <label class="form-label text-muted small fw-bold text-uppercase">Confirm New Password</label>
           <input type="password" name="confirm_password" class="form-control" required minlength="8">
         </div>
         
-        <button type="submit" class="saas-btn-primary w-100">Update Password</button>
+        <button type="submit" class="saas-btn-primary w-100 py-2">Update Password</button>
       </form>
     </div>
   </div>

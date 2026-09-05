@@ -1,16 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>My Interviews</h2>
+<div class="saas-page-header">
+  <div>
+    <div class="saas-page-header-eyebrow">CANDIDATE INTERVIEWS</div>
+    <h1 class="saas-page-header-title">My Interviews</h1>
+    <p class="saas-page-header-sub">Track your scheduled interviews and past meeting history.</p>
+  </div>
+</div>
 
     {% if not interviews %}
-        <p>You have no interviews scheduled at this time.</p>
+        <div class="saas-empty-state">
+            <div class="saas-empty-state-icon"><i class="bi bi-calendar-x"></i></div>
+            <h5>No Interviews Scheduled</h5>
+            <p>You have no interviews scheduled at this time.</p>
+        </div>
     {% else %}
-        <div class="row">
+        <div class="row g-4">
         {% for iv in interviews %}
             <div class="col-md-6 mb-4">
-                <div class="card h-100 {% if iv.is_upcoming %}border-primary{% endif %}">
+                <div class="card saas-card h-100 {% if iv.is_upcoming %}border-primary{% endif %}">
                     <div class="card-header {% if iv.is_upcoming %}bg-primary text-white{% endif %}">
                         {% if iv.is_upcoming %}
                             Upcoming Interview
@@ -19,7 +28,7 @@
                         {% endif %}
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title">{{ iv.job_title }}</h5>
+                        <h5 class="card-title fw-bold">{{ iv.job_title }}</h5>
                         <p class="card-text">
                             <strong>Date & Time:</strong> {{ iv.scheduled_at }}<br>
                             <strong>Duration:</strong> {{ iv.duration_minutes }} minutes<br>
@@ -37,12 +46,12 @@
                             <strong>Location/Link:</strong>
                             {% if iv.mode == 'online' %}
                                 {% if iv.location_or_link and (iv.location_or_link.startswith('http://') or iv.location_or_link.startswith('https://')) %}
-                                    <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer">Join meeting</a>
+                                    <a href="{{ iv.location_or_link }}" target="_blank" rel="noopener noreferrer" class="text-break">Join meeting</a>
                                 {% else %}
-                                    {{ iv.location_or_link }}
+                                    <span class="text-break">{{ iv.location_or_link }}</span>
                                 {% endif %}
                             {% elif iv.mode == 'in_person' %}
-                                {{ iv.location_or_link }}
+                                <span class="text-break">{{ iv.location_or_link }}</span>
                             {% elif iv.mode == 'phone' %}
                                 Phone interview
                             {% endif %}
@@ -67,5 +76,4 @@
         {% endfor %}
         </div>
     {% endif %}
-</div>
 {% endblock %}

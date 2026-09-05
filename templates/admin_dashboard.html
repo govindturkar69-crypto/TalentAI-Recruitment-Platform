@@ -79,19 +79,50 @@
           <h5 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>User Management</h5>
           <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-building me-1"></i>Manage Companies</a>
         </div>
-        <!-- Simple JS-based filter -->
-        <div class="d-flex gap-2 flex-grow-1 justify-content-lg-end">
-          <div class="input-group input-group-sm" style="max-width: 250px;">
+      </div>
+
+      <!-- Server-Side Filter Form -->
+      <form method="GET" action="{{ url_for('admin.dashboard') }}" class="row g-2 align-items-center mb-3">
+        <div class="col-12 col-md-3">
+          <div class="input-group input-group-sm">
             <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
-            <input type="text" id="userSearch" class="form-control" placeholder="Search users...">
+            <input type="text" name="q" class="form-control" placeholder="Search name or email..." value="{{ filters.q }}">
           </div>
-          <select id="roleFilter" class="form-select form-select-sm" style="width: 130px;">
-            <option value="all">Role: All</option>
-            <option value="candidate">Candidate</option>
-            <option value="recruiter">Recruiter</option>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="role" class="form-select form-select-sm">
+            <option value="" {% if not filters.role %}selected{% endif %}>Role: All</option>
+            <option value="candidate" {% if filters.role == 'candidate' %}selected{% endif %}>Candidate</option>
+            <option value="recruiter" {% if filters.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
           </select>
         </div>
-      </div>
+        <div class="col-6 col-md-2">
+          <select name="status" class="form-select form-select-sm">
+            <option value="" {% if not filters.status %}selected{% endif %}>Status: All</option>
+            <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="company_id" class="form-select form-select-sm">
+            <option value="" {% if not filters.company_id %}selected{% endif %}>Company: All</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}" {% if filters.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-1">
+          <select name="per_page" class="form-select form-select-sm">
+            <option value="20" {% if filters.per_page == 20 %}selected{% endif %}>20 / pg</option>
+            <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50 / pg</option>
+            <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100 / pg</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-1 justify-content-end">
+          <button type="submit" class="saas-btn-primary btn-sm flex-grow-1" style="font-size:0.8rem; padding: 4px 8px;">Apply Filters</button>
+          <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary flex-grow-1 text-center" style="font-size:0.8rem; padding: 4px 8px;">Clear</a>
+        </div>
+      </form>
 
       <div class="table-responsive">
         <table class="table saas-table table-sm align-middle" id="usersTable">
@@ -108,7 +139,7 @@
           </thead>
           <tbody>
             {% for user in users %}
-            <tr class="user-row" data-role="{{ user.role }}" data-name="{{ user.name | lower }}" data-email="{{ user.email | lower }}">
+            <tr>
               <td class="fw-semibold">
                 <div class="d-flex align-items-center gap-2">
                   <div class="saas-avatar-sm rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:28px;height:28px;font-size:0.75rem;">
@@ -151,7 +182,7 @@
               <td class="text-end">
                 <!-- Action Form -->
                 <div class="d-flex align-items-center justify-content-end gap-2">
-                  <form action="{{ url_for('admin.update_role', user_id=user.id) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                  <form action="{{ url_for('admin.update_role', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <select name="role" class="form-select" style="width: 100px; font-size: 0.75rem; padding: 2px 4px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
                       <option value="candidate" {% if user.role == 'candidate' %}selected{% endif %}>Candidate</option>
@@ -161,7 +192,7 @@
                       Save
                     </button>
                   </form>
-                  <form action="{{ url_for('admin.update_status', user_id=user.id) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                  <form action="{{ url_for('admin.update_status', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     {% if user.is_active %}
                       <input type="hidden" name="status" value="inactive">
@@ -172,11 +203,11 @@
                     {% endif %}
                   </form>
                   {% if user.role == 'recruiter' %}
-                  <form action="{{ url_for('admin.assign_company', user_id=user.id) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                  <form action="{{ url_for('admin.assign_company', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <select name="company_id" class="form-select" style="width: 120px; font-size: 0.75rem; padding: 2px 4px;">
                       <option value="">-- No Company --</option>
-                      {% for company in companies %}
+                      {% for company in companies if company.is_active %}
                       <option value="{{ company.id }}" {% if user.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
                       {% endfor %}
                     </select>
@@ -198,6 +229,55 @@
         <h5>No users found</h5>
       </div>
       {% endif %}
+
+      <!-- Server-Side Pagination Bar -->
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top">
+        <div class="text-muted small">
+          {% if pagination.total == 0 %}
+            Showing 0 users
+          {% else %}
+            Showing {{ pagination.start_idx }}-{{ pagination.end_idx }} of {{ pagination.total }} users
+          {% endif %}
+        </div>
+        {% if pagination.total_pages > 1 %}
+        <nav aria-label="User table navigation">
+          <ul class="pagination pagination-sm mb-0">
+            <!-- Previous Link -->
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+              {% if pagination.has_prev %}
+                <a class="page-link" href="{{ url_for('admin.dashboard', page=pagination.prev_page, **active_filters) }}" aria-label="Previous">
+                  &laquo; Prev
+                </a>
+              {% else %}
+                <span class="page-link">&laquo; Prev</span>
+              {% endif %}
+            </li>
+
+            <!-- Bounded Page Numbers -->
+            {% for p in pagination.page_numbers %}
+            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+              {% if p == pagination.page %}
+                <span class="page-link">{{ p }}</span>
+              {% else %}
+                <a class="page-link" href="{{ url_for('admin.dashboard', page=p, **active_filters) }}">{{ p }}</a>
+              {% endif %}
+            </li>
+            {% endfor %}
+
+            <!-- Next Link -->
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+              {% if pagination.has_next %}
+                <a class="page-link" href="{{ url_for('admin.dashboard', page=pagination.next_page, **active_filters) }}" aria-label="Next">
+                  Next &raquo;
+                </a>
+              {% else %}
+                <span class="page-link">Next &raquo;</span>
+              {% endif %}
+            </li>
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -233,38 +313,4 @@
     </div>
   </div>
 </div>
-
-<!-- Filtering JS -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const searchInput = document.getElementById('userSearch');
-  const roleFilter = document.getElementById('roleFilter');
-  const rows = document.querySelectorAll('.user-row');
-
-  function filterUsers() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const selectedRole = roleFilter.value;
-
-    rows.forEach(row => {
-      const name = row.getAttribute('data-name');
-      const email = row.getAttribute('data-email');
-      const role = row.getAttribute('data-role');
-      
-      const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
-      const matchesRole = selectedRole === 'all' || role === selectedRole;
-
-      if (matchesSearch && matchesRole) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
-  }
-
-  if(searchInput && roleFilter) {
-    searchInput.addEventListener('input', filterUsers);
-    roleFilter.addEventListener('change', filterUsers);
-  }
-});
-</script>
 {% endblock %}

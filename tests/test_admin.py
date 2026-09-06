@@ -75,11 +75,39 @@ class TestAdminPanel:
         mock_admin_conn.cursor.return_value = mock_admin_cur
 
         mock_admin_cur.fetchone.side_effect = [
-            {"total": 10},  # total
-            {"total": 8},  # candidates
-            {"total": 2},  # recruiters
-            {"total": 5},  # jobs
-            {"total": 15},  # applications
+            {
+                "total_users": 10,
+                "candidates": 8,
+                "recruiters": 2,
+                "active_users": 9,
+                "inactive_users": 1,
+                "unassigned_recruiters": 0,
+            },
+            {
+                "total_jobs": 5,
+                "active_jobs": 4,
+                "inactive_jobs": 1,
+            },
+            {
+                "total_applications": 15,
+                "applied": 5,
+                "shortlisted": 4,
+                "hired": 2,
+                "rejected": 3,
+                "withdrawn": 1,
+            },
+            {
+                "total_interviews": 6,
+                "scheduled": 3,
+                "completed": 2,
+                "cancelled": 1,
+                "upcoming": 2,
+            },
+            {
+                "total_companies": 3,
+                "active_companies": 2,
+                "inactive_companies": 1,
+            },
             {"total": 1},  # filtered_total
         ]
         test_user = {
@@ -208,11 +236,39 @@ def _setup_admin_dashboard_mock(
         recent_users = []
 
     mock_admin_cur.fetchone.side_effect = [
-        {"total": 10},  # total_users
-        {"total": 8},  # total_candidates
-        {"total": 2},  # total_recruiters
-        {"total": 5},  # total_jobs
-        {"total": 15},  # total_applications
+        {
+            "total_users": 10,
+            "candidates": 8,
+            "recruiters": 2,
+            "active_users": 9,
+            "inactive_users": 1,
+            "unassigned_recruiters": 0,
+        },
+        {
+            "total_jobs": 5,
+            "active_jobs": 4,
+            "inactive_jobs": 1,
+        },
+        {
+            "total_applications": 15,
+            "applied": 5,
+            "shortlisted": 4,
+            "hired": 2,
+            "rejected": 3,
+            "withdrawn": 1,
+        },
+        {
+            "total_interviews": 6,
+            "scheduled": 3,
+            "completed": 2,
+            "cancelled": 1,
+            "upcoming": 2,
+        },
+        {
+            "total_companies": 3,
+            "active_companies": 2,
+            "inactive_companies": 1,
+        },
         {"total": filtered_total},  # filtered_total
     ]
 
@@ -477,3 +533,275 @@ class TestAdminScalingPhase5B:
         location = resp.headers["Location"]
         assert "evil.example" not in location
         assert location.startswith("/admin/dashboard")
+
+
+class TestAdminPlatformAnalyticsPhase5C:
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_dashboard_aggregate_metrics_render(self, mock_core_db, mock_admin_db, client):
+        """Verify mocked rows correctly populate users, jobs, applications, interviews, companies."""
+        _login_as(client, role="recruiter", email=app.config["ADMIN_EMAIL"])
+        mock_core_conn = MagicMock()
+        mock_core_db.return_value = mock_core_conn
+        mock_core_cur = MagicMock()
+        mock_core_conn.cursor.return_value = mock_core_cur
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
+
+        mock_admin_conn = MagicMock()
+        mock_admin_db.return_value = mock_admin_conn
+        mock_admin_cur = MagicMock()
+        mock_admin_conn.cursor.return_value = mock_admin_cur
+
+        mock_admin_cur.fetchone.side_effect = [
+            {
+                "total_users": 150,
+                "candidates": 100,
+                "recruiters": 50,
+                "active_users": 140,
+                "inactive_users": 10,
+                "unassigned_recruiters": 7,
+            },
+            {
+                "total_jobs": 42,
+                "active_jobs": 35,
+                "inactive_jobs": 7,
+            },
+            {
+                "total_applications": 200,
+                "applied": 80,
+                "shortlisted": 50,
+                "hired": 20,
+                "rejected": 40,
+                "withdrawn": 10,
+            },
+            {
+                "total_interviews": 55,
+                "scheduled": 25,
+                "completed": 20,
+                "cancelled": 10,
+                "upcoming": 12,
+            },
+            {
+                "total_companies": 18,
+                "active_companies": 15,
+                "inactive_companies": 3,
+            },
+            {"total": 150},  # filtered_total
+        ]
+        mock_admin_cur.fetchall.side_effect = [
+            [],  # users
+            [],  # companies
+            [],  # recent_users
+        ]
+
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+
+        # Platform Overview cards
+        assert "Total Users" in html
+        assert "150" in html
+        assert "Total Jobs" in html
+        assert "42" in html
+        assert "Total Applications" in html
+        assert "200" in html
+        assert "Total Interviews" in html
+        assert "55" in html
+        assert "Active Companies" in html
+        assert "15" in html
+
+        # Application Pipeline section
+        assert "Application Pipeline" in html
+        assert "40.0%" in html  # 80/200
+        assert "25.0%" in html  # 50/200
+        assert "10.0%" in html  # 20/200
+        assert "20.0%" in html  # 40/200
+        assert "5.0%" in html  # 10/200
+
+        # Interview Overview section
+        assert "Interview Overview" in html
+        assert "Scheduled" in html
+        assert "25" in html
+        assert "Upcoming" in html
+        assert "12" in html
+        assert "Completed" in html
+        assert "20" in html
+        assert "Cancelled" in html
+        assert "10" in html
+
+        # Operational Health section
+        assert "Operational Health" in html
+        assert "Active: 140" in html
+        assert "Inactive: 10" in html
+        assert "Unassigned Recruiters" in html
+        assert "7" in html
+        assert "Active: 35" in html
+        assert "Inactive: 7" in html
+        assert "Active: 15" in html
+        assert "Inactive: 3" in html
+
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_empty_database_behavior(self, mock_core_db, mock_admin_db, client):
+        """All aggregate values render as zero without divide-by-zero or template errors."""
+        _login_as(client, role="recruiter", email=app.config["ADMIN_EMAIL"])
+        mock_core_conn = MagicMock()
+        mock_core_db.return_value = mock_core_conn
+        mock_core_cur = MagicMock()
+        mock_core_conn.cursor.return_value = mock_core_cur
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
+
+        mock_admin_conn = MagicMock()
+        mock_admin_db.return_value = mock_admin_conn
+        mock_admin_cur = MagicMock()
+        mock_admin_conn.cursor.return_value = mock_admin_cur
+
+        mock_admin_cur.fetchone.side_effect = [
+            None,  # users
+            None,  # jobs
+            None,  # applications
+            None,  # interviews
+            None,  # companies
+            {"total": 0},  # filtered_total
+        ]
+        mock_admin_cur.fetchall.side_effect = [
+            [],  # users
+            [],  # companies
+            [],  # recent_users
+        ]
+
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "Application Pipeline" in html
+        assert "Interview Overview" in html
+        assert "Operational Health" in html
+        assert "0.0%" in html
+        assert "Active: 0" in html
+        assert "Inactive: 0" in html
+
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_upcoming_interview_query_contract(self, mock_core_db, mock_admin_db, client):
+        """Verify interview query uses DB NOW() for upcoming without Python system time or extra params."""
+        _login_as(client, role="recruiter", email=app.config["ADMIN_EMAIL"])
+        mock_core_conn = MagicMock()
+        mock_core_db.return_value = mock_core_conn
+        mock_core_cur = MagicMock()
+        mock_core_conn.cursor.return_value = mock_core_cur
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
+
+        mock_admin_conn = MagicMock()
+        mock_admin_db.return_value = mock_admin_conn
+        mock_admin_cur = MagicMock()
+        mock_admin_conn.cursor.return_value = mock_admin_cur
+
+        mock_admin_cur.fetchone.side_effect = [{}, {}, {}, {}, {}, {"total": 0}]
+        mock_admin_cur.fetchall.side_effect = [[], [], []]
+
+        client.get("/admin/dashboard")
+
+        interview_query = None
+        for call in mock_admin_cur.execute.call_args_list:
+            q = call[0][0]
+            if "FROM interviews" in q:
+                interview_query = q
+                break
+
+        assert interview_query is not None
+        assert "status = 'scheduled'" in interview_query
+        assert "scheduled_at > NOW()" in interview_query
+        # Ensure no sensitive fields exposed
+        assert "notes" not in interview_query.lower()
+        assert "location_or_link" not in interview_query.lower()
+
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_application_pipeline_values_and_zero_division(self, mock_core_db, mock_admin_db, client):
+        """Verify pipeline computes percentages accurately and handles zero total cleanly."""
+        _login_as(client, role="recruiter", email=app.config["ADMIN_EMAIL"])
+        mock_core_conn = MagicMock()
+        mock_core_db.return_value = mock_core_conn
+        mock_core_cur = MagicMock()
+        mock_core_conn.cursor.return_value = mock_core_cur
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
+
+        mock_admin_conn = MagicMock()
+        mock_admin_db.return_value = mock_admin_conn
+        mock_admin_cur = MagicMock()
+        mock_admin_conn.cursor.return_value = mock_admin_cur
+
+        mock_admin_cur.fetchone.side_effect = [
+            {"total_users": 10},
+            {"total_jobs": 5},
+            {
+                "total_applications": 20,
+                "applied": 10,
+                "shortlisted": 5,
+                "hired": 2,
+                "rejected": 2,
+                "withdrawn": 1,
+            },
+            {"total_interviews": 0},
+            {"total_companies": 0},
+            {"total": 10},
+        ]
+        mock_admin_cur.fetchall.side_effect = [[], [], []]
+
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "50.0%" in html  # 10/20
+        assert "25.0%" in html  # 5/20
+        assert "10.0%" in html  # 2/20
+        assert "5.0%" in html  # 1/20
+
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_operational_metrics_contract(self, mock_core_db, mock_admin_db, client):
+        """Verify active/inactive users/jobs/companies and unassigned recruiters display."""
+        _login_as(client, role="recruiter", email=app.config["ADMIN_EMAIL"])
+        mock_core_conn = MagicMock()
+        mock_core_db.return_value = mock_core_conn
+        mock_core_cur = MagicMock()
+        mock_core_conn.cursor.return_value = mock_core_cur
+        mock_core_cur.fetchone.return_value = {"email": app.config["ADMIN_EMAIL"], "is_active": True}
+
+        mock_admin_conn = MagicMock()
+        mock_admin_db.return_value = mock_admin_conn
+        mock_admin_cur = MagicMock()
+        mock_admin_conn.cursor.return_value = mock_admin_cur
+
+        mock_admin_cur.fetchone.side_effect = [
+            {
+                "total_users": 50,
+                "candidates": 30,
+                "recruiters": 20,
+                "active_users": 45,
+                "inactive_users": 5,
+                "unassigned_recruiters": 3,
+            },
+            {"total_jobs": 10, "active_jobs": 8, "inactive_jobs": 2},
+            {"total_applications": 0, "applied": 0, "shortlisted": 0, "hired": 0, "rejected": 0, "withdrawn": 0},
+            {"total_interviews": 0, "scheduled": 0, "completed": 0, "cancelled": 0, "upcoming": 0},
+            {"total_companies": 5, "active_companies": 4, "inactive_companies": 1},
+            {"total": 50},
+        ]
+        mock_admin_cur.fetchall.side_effect = [[], [], []]
+
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "Active: 45" in html
+        assert "Inactive: 5" in html
+        assert "Active: 8" in html
+        assert "Inactive: 2" in html
+        assert "Active: 4" in html
+        assert "Inactive: 1" in html
+        assert "Unassigned Recruiters" in html
+
+    def test_non_admin_cannot_access_analytics(self, client):
+        """Unauthorized users cannot access the dashboard or see analytics."""
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]

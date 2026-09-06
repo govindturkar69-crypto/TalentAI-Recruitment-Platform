@@ -20,29 +20,7 @@
       </div>
       <div>
         <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Users</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_users }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="ats-metric-card h-100">
-      <div class="ats-metric-icon info">
-        <i class="bi bi-person-badge"></i>
-      </div>
-      <div>
-        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Candidates</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_candidates }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="ats-metric-card h-100">
-      <div class="ats-metric-icon warning">
-        <i class="bi bi-person-lines-fill"></i>
-      </div>
-      <div>
-        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Recruiters</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_recruiters }}</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_users }}</div>
       </div>
     </div>
   </div>
@@ -52,19 +30,196 @@
         <i class="bi bi-briefcase-fill"></i>
       </div>
       <div>
-        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Jobs</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_jobs }}</div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Jobs</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_jobs }}</div>
       </div>
     </div>
   </div>
   <div class="col">
     <div class="ats-metric-card h-100">
-      <div class="ats-metric-icon danger">
+      <div class="ats-metric-icon info">
         <i class="bi bi-file-earmark-person-fill"></i>
       </div>
       <div>
-        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Applications</div>
-        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ metrics.total_applications }}</div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Applications</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_applications }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="ats-metric-card h-100">
+      <div class="ats-metric-icon warning">
+        <i class="bi bi-calendar-event-fill"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Interviews</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_interviews }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="ats-metric-card h-100">
+      <div class="ats-metric-icon primary" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+        <i class="bi bi-building-fill"></i>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Active Companies</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.active_companies }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Platform Analytics Row -->
+<div class="row g-3 mb-4">
+  <!-- Application Pipeline -->
+  <div class="col-12 col-xl-6">
+    <div class="saas-card h-100 p-3 p-md-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-funnel me-2"></i>Application Pipeline</h6>
+        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">Total: {{ application_metrics.total }}</span>
+      </div>
+
+      <!-- Segmented Distribution Bar -->
+      <div class="progress mb-3" style="height: 10px; background: var(--bg-alt); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden;">
+        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ application_metrics.percentages.applied }}%;" aria-valuenow="{{ application_metrics.percentages.applied }}" aria-valuemin="0" aria-valuemax="100" title="Applied: {{ application_metrics.applied }} ({{ application_metrics.percentages.applied }}%)"></div>
+        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ application_metrics.percentages.shortlisted }}%;" aria-valuenow="{{ application_metrics.percentages.shortlisted }}" aria-valuemin="0" aria-valuemax="100" title="Shortlisted: {{ application_metrics.shortlisted }} ({{ application_metrics.percentages.shortlisted }}%)"></div>
+        <div class="progress-bar bg-success" role="progressbar" style="width: {{ application_metrics.percentages.hired }}%;" aria-valuenow="{{ application_metrics.percentages.hired }}" aria-valuemin="0" aria-valuemax="100" title="Hired: {{ application_metrics.hired }} ({{ application_metrics.percentages.hired }}%)"></div>
+        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ application_metrics.percentages.rejected }}%;" aria-valuenow="{{ application_metrics.percentages.rejected }}" aria-valuemin="0" aria-valuemax="100" title="Rejected: {{ application_metrics.rejected }} ({{ application_metrics.percentages.rejected }}%)"></div>
+        <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ application_metrics.percentages.withdrawn }}%;" aria-valuenow="{{ application_metrics.percentages.withdrawn }}" aria-valuemin="0" aria-valuemax="100" title="Withdrawn: {{ application_metrics.withdrawn }} ({{ application_metrics.percentages.withdrawn }}%)"></div>
+      </div>
+
+      <!-- Status Stat Rows/Cards -->
+      <div class="row g-2 text-center row-cols-2 row-cols-sm-3 row-cols-md-5">
+        <div class="col">
+          <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+            <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+              <span class="rounded-circle bg-primary" style="width: 8px; height: 8px; display: inline-block;"></span>
+              <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Applied</span>
+            </div>
+            <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.applied }}</div>
+            <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.applied }}%</small>
+          </div>
+        </div>
+        <div class="col">
+          <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+            <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+              <span class="rounded-circle bg-warning" style="width: 8px; height: 8px; display: inline-block;"></span>
+              <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Shortlisted</span>
+            </div>
+            <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.shortlisted }}</div>
+            <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.shortlisted }}%</small>
+          </div>
+        </div>
+        <div class="col">
+          <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+            <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+              <span class="rounded-circle bg-success" style="width: 8px; height: 8px; display: inline-block;"></span>
+              <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Hired</span>
+            </div>
+            <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.hired }}</div>
+            <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.hired }}%</small>
+          </div>
+        </div>
+        <div class="col">
+          <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+            <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+              <span class="rounded-circle bg-danger" style="width: 8px; height: 8px; display: inline-block;"></span>
+              <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Rejected</span>
+            </div>
+            <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.rejected }}</div>
+            <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.rejected }}%</small>
+          </div>
+        </div>
+        <div class="col">
+          <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+            <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+              <span class="rounded-circle bg-secondary" style="width: 8px; height: 8px; display: inline-block;"></span>
+              <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Withdrawn</span>
+            </div>
+            <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.withdrawn }}</div>
+            <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.withdrawn }}%</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interview Overview Card -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="saas-card h-100 p-3 p-md-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-calendar2-check me-2"></i>Interview Overview</h6>
+        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">Total: {{ interview_metrics.total }}</span>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        <!-- Scheduled & Upcoming (Subset) -->
+        <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-semibold text-primary" style="font-size: 0.85rem;"><i class="bi bi-calendar-event me-1"></i>Scheduled</span>
+            <span class="fw-bold text-primary" style="font-size: 1.1rem;">{{ interview_metrics.scheduled }}</span>
+          </div>
+          <div class="mt-1 ps-2 border-start border-2 border-primary d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
+            <span class="text-muted"><i class="bi bi-clock me-1 text-primary"></i>Upcoming</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">{{ interview_metrics.upcoming }}</span>
+          </div>
+        </div>
+        <!-- Completed -->
+        <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+          <span class="fw-semibold text-success" style="font-size: 0.85rem;"><i class="bi bi-check-circle me-1"></i>Completed</span>
+          <span class="fw-bold text-success" style="font-size: 1.1rem;">{{ interview_metrics.completed }}</span>
+        </div>
+        <!-- Cancelled -->
+        <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+          <span class="fw-semibold text-danger" style="font-size: 0.85rem;"><i class="bi bi-x-circle me-1"></i>Cancelled</span>
+          <span class="fw-bold text-danger" style="font-size: 1.1rem;">{{ interview_metrics.cancelled }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational Health Card -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="saas-card h-100 p-3 p-md-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-heart-pulse me-2"></i>Operational Health</h6>
+      <div class="d-flex flex-column gap-2" style="font-size: 0.82rem;">
+        <!-- Users & Roles -->
+        <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-semibold"><i class="bi bi-people me-1 text-primary"></i>Users</span>
+            <span>
+              <span class="badge bg-success-subtle text-success">Active: {{ operational_metrics.active_users }}</span>
+              <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive: {{ operational_metrics.inactive_users }}</span>
+            </span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.75rem;">
+            <span>Candidates: <strong class="text-primary">{{ operational_metrics.total_candidates }}</strong></span>
+            <span>Recruiters: <strong class="text-warning">{{ operational_metrics.total_recruiters }}</strong></span>
+          </div>
+        </div>
+        <!-- Unassigned Recruiters -->
+        <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+          <span class="fw-semibold"><i class="bi bi-person-exclamation me-1 text-warning"></i>Unassigned Recruiters</span>
+          <span class="badge {% if operational_metrics.unassigned_recruiters > 0 %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-secondary-subtle text-secondary{% endif %} fw-semibold">
+            {{ operational_metrics.unassigned_recruiters }}
+          </span>
+        </div>
+        <!-- Jobs -->
+        <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+          <span class="fw-semibold"><i class="bi bi-briefcase me-1 text-success"></i>Jobs</span>
+          <span>
+            <span class="badge bg-success-subtle text-success">Active: {{ operational_metrics.active_jobs }}</span>
+            <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive: {{ operational_metrics.inactive_jobs }}</span>
+          </span>
+        </div>
+        <!-- Companies -->
+        <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+          <span class="fw-semibold"><i class="bi bi-buildings me-1 text-info"></i>Companies</span>
+          <span>
+            <span class="badge bg-success-subtle text-success">Active: {{ operational_metrics.active_companies }}</span>
+            <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive: {{ operational_metrics.inactive_companies }}</span>
+          </span>
+        </div>
       </div>
     </div>
   </div>

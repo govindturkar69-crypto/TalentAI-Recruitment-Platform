@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}Admin Audit Logs — TalentAI{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="saas-page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div>
+    <div class="saas-page-header-eyebrow">PLATFORM ADMINISTRATION</div>
+    <h1 class="saas-page-header-title"><i class="bi bi-clock-history me-2"></i>Audit Logs</h1>
+    <p class="saas-page-header-sub">Append-only operational history of administrative, recruiter, and candidate state transitions.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
+      <i class="bi bi-arrow-left me-1"></i>Back to Console
+    </a>
+  </div>
+</div>
+
+<!-- Inverted Date Warning -->
+{% if date_range_inverted %}
+<div class="alert saas-alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2" role="alert">
+  <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+  <div>Start date cannot be after end date. Date filter was ignored.</div>
+</div>
+{% endif %}
+
+<!-- Filter Card -->
+<div class="saas-card p-3 mb-4">
+  <form method="GET" action="{{ url_for('admin.audit_logs') }}" class="row g-2 align-items-end">
+    <!-- Actor Search -->
+    <div class="col-12 col-md-3 col-xl-3">
+      <label class="form-label text-muted small fw-bold mb-1" for="actorFilter">Actor</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+        <input type="text" id="actorFilter" name="actor" class="form-control" placeholder="Search name or email..." value="{{ filters.actor }}">
+      </div>
+    </div>
+
+    <!-- Action Filter -->
+    <div class="col-6 col-md-2 col-xl-2">
+      <label class="form-label text-muted small fw-bold mb-1" for="actionFilter">Action</label>
+      <select id="actionFilter" name="action" class="form-select form-select-sm">
+        <option value="">All Actions</option>
+        {% for key, label in action_options.items() %}
+          <option value="{{ key }}" {% if filters.action == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Target Type Filter -->
+    <div class="col-6 col-md-2 col-xl-2">
+      <label class="form-label text-muted small fw-bold mb-1" for="targetTypeFilter">Target</label>
+      <select id="targetTypeFilter" name="target_type" class="form-select form-select-sm">
+        <option value="">All Targets</option>
+        {% for key, label in target_options.items() %}
+          <option value="{{ key }}" {% if filters.target_type == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Date From -->
+    <div class="col-6 col-md-2 col-xl-2">
+      <label class="form-label text-muted small fw-bold mb-1" for="dateFromFilter">From</label>
+      <input type="date" id="dateFromFilter" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from }}">
+    </div>
+
+    <!-- Date To -->
+    <div class="col-6 col-md-2 col-xl-2">
+      <label class="form-label text-muted small fw-bold mb-1" for="dateToFilter">To</label>
+      <input type="date" id="dateToFilter" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to }}">
+    </div>
+
+    <!-- Per Page & Actions -->
+    <div class="col-12 col-xl-1 d-flex gap-2">
+      <div class="flex-grow-1">
+        <label class="form-label text-muted small fw-bold mb-1" for="perPageSelect">Rows</label>
+        <select id="perPageSelect" name="per_page" class="form-select form-select-sm">
+          <option value="25" {% if filters.per_page == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Buttons Row -->
+    <div class="col-12 d-flex gap-2 mt-2">
+      <button type="submit" class="btn btn-sm btn-primary">
+        <i class="bi bi-funnel-fill me-1"></i>Apply Filters
+      </button>
+      {% if filters.actor or filters.action or filters.target_type or filters.date_from or filters.date_to or filters.per_page != 25 %}
+        <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-x-circle me-1"></i>Clear
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Results Card -->
+<div class="saas-card mb-4">
+  {% if total_unfiltered == 0 %}
+    <!-- Case A: Zero records in table -->
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-clock-history" style="font-size: 2.5rem;"></i>
+      <h5 class="mt-3 fw-bold text-muted">No audit events have been recorded yet.</h5>
+      <p class="small text-muted mb-0">System and administrative events will appear here once logged.</p>
+    </div>
+  {% elif pagination.total == 0 %}
+    <!-- Case B: Zero records matching active filters -->
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-funnel" style="font-size: 2.5rem;"></i>
+      <h5 class="mt-3 fw-bold text-muted">No audit events match these filters.</h5>
+      <p class="small text-muted mb-3">Try adjusting your filters or search terms.</p>
+      <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Clear All Filters
+      </a>
+    </div>
+  {% else %}
+    <!-- Desktop Table View (>= 768px) -->
+    <div class="table-responsive d-none d-md-block">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="white-space: nowrap; width: 170px;">Time</th>
+            <th style="white-space: nowrap; min-width: 160px;">Actor</th>
+            <th style="white-space: nowrap; min-width: 170px;">Action</th>
+            <th style="white-space: nowrap; min-width: 140px;">Target</th>
+            <th style="min-width: 250px;">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+            <tr>
+              <!-- Time Column -->
+              <td style="white-space: nowrap;">
+                <div class="fw-semibold text-dark">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</div>
+                <div class="text-muted" style="font-size: 0.72rem;">ID: #{{ log.id }}</div>
+              </td>
+
+              <!-- Actor Column -->
+              <td>
+                <div class="fw-semibold text-dark">{{ log.display_actor }}</div>
+                {% if log.display_email %}
+                  <small class="text-muted d-block" style="font-size: 0.75rem;">{{ log.display_email }}</small>
+                {% endif %}
+              </td>
+
+              <!-- Action Column -->
+              <td>
+                <span class="badge {% if log.action and ('cancelled' in log.action or 'rejected' in log.action) %}bg-danger-subtle text-danger border border-danger-subtle{% elif log.action and ('completed' in log.action or 'hired' in log.action or 'create' in log.action) %}bg-success-subtle text-success border border-success-subtle{% elif log.action and ('status' in log.action or 'updated' in log.action) %}bg-warning-subtle text-warning border border-warning-subtle{% elif log.action and ('withdrawn' in log.action) %}bg-secondary-subtle text-secondary border border-secondary-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %}" style="font-size: 0.75rem; font-weight: 600;">
+                  {{ log.action_label }}
+                </span>
+              </td>
+
+              <!-- Target Column -->
+              <td>
+                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">
+                  {{ log.target_label }}
+                </span>
+                {% if log.target_id %}
+                  <span class="fw-semibold text-muted ms-1" style="font-size: 0.8rem;">#{{ log.target_id }}</span>
+                {% endif %}
+              </td>
+
+              <!-- Details Column -->
+              <td>
+                {% if log.details_list %}
+                  <div class="d-flex flex-wrap gap-1">
+                    {% for d in log.details_list %}
+                      <span class="badge bg-light text-dark border" style="font-weight: 500; font-size: 0.75rem;" title="{{ d.label }}: {{ d.value }}">
+                        <span class="text-muted">{{ d.label }}:</span> {{ d.value }}
+                      </span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="text-muted small">No additional details</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Stacked Cards View (< 768px) -->
+    <div class="d-block d-md-none p-3">
+      {% for log in logs %}
+        <div class="p-3 mb-2 rounded border" style="background: var(--bg-alt); border-color: var(--border-color) !important;">
+          <!-- Top Row: Action & Target -->
+          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+            <span class="badge {% if log.action and ('cancelled' in log.action or 'rejected' in log.action) %}bg-danger-subtle text-danger border border-danger-subtle{% elif log.action and ('completed' in log.action or 'hired' in log.action or 'create' in log.action) %}bg-success-subtle text-success border border-success-subtle{% elif log.action and ('status' in log.action or 'updated' in log.action) %}bg-warning-subtle text-warning border border-warning-subtle{% elif log.action and ('withdrawn' in log.action) %}bg-secondary-subtle text-secondary border border-secondary-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %}" style="font-size: 0.75rem;">
+              {{ log.action_label }}
+            </span>
+            <div class="d-flex align-items-center gap-1">
+              <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.72rem;">{{ log.target_label }}{% if log.target_id %} #{{ log.target_id }}{% endif %}</span>
+              <small class="text-muted" style="font-size: 0.72rem;">#{{ log.id }}</small>
+            </div>
+          </div>
+
+          <!-- Actor & Time -->
+          <div class="d-flex justify-content-between align-items-center mb-2 text-muted" style="font-size: 0.75rem;">
+            <div>
+              <i class="bi bi-person me-1"></i><span class="fw-semibold text-dark">{{ log.display_actor }}</span>
+            </div>
+            <div>
+              <i class="bi bi-clock me-1"></i>{{ log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '-' }}
+            </div>
+          </div>
+
+          <!-- Details Chips -->
+          {% if log.details_list %}
+            <div class="d-flex flex-wrap gap-1 pt-1 border-top" style="border-color: var(--border-color) !important;">
+              {% for d in log.details_list %}
+                <span class="badge bg-light text-dark border" style="font-size: 0.7rem; font-weight: 500;" title="{{ d.label }}: {{ d.value }}">
+                  <span class="text-muted">{{ d.label }}:</span> {{ d.value }}
+                </span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="pt-1 border-top text-muted small" style="border-color: var(--border-color) !important; font-size: 0.72rem;">
+              No additional details
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination Footer -->
+    {% set q_params = {} %}
+    {% if filters.action %}{% set _ = q_params.update({'action': filters.action}) %}{% endif %}
+    {% if filters.target_type %}{% set _ = q_params.update({'target_type': filters.target_type}) %}{% endif %}
+    {% if filters.actor %}{% set _ = q_params.update({'actor': filters.actor}) %}{% endif %}
+    {% if filters.date_from %}{% set _ = q_params.update({'date_from': filters.date_from}) %}{% endif %}
+    {% if filters.date_to %}{% set _ = q_params.update({'date_to': filters.date_to}) %}{% endif %}
+    {% if filters.per_page != 25 %}{% set _ = q_params.update({'per_page': filters.per_page}) %}{% endif %}
+
+    <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-color: var(--border-color) !important;">
+      <div class="text-muted small">
+        Showing {{ pagination.start_idx }}–{{ pagination.end_idx }} of {{ pagination.total }} entries
+      </div>
+
+      {% if pagination.total_pages > 1 %}
+        <nav aria-label="Audit log pagination">
+          <ul class="pagination pagination-sm mb-0">
+            <!-- Prev -->
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('admin.audit_logs', page=pagination.prev_num, **q_params) }}" aria-label="Previous">
+                &laquo;
+              </a>
+            </li>
+
+            <!-- Numbered Pages -->
+            {% for p in pagination.page_numbers %}
+              <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.audit_logs', page=p, **q_params) }}">{{ p }}</a>
+              </li>
+            {% endfor %}
+
+            <!-- Next -->
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('admin.audit_logs', page=pagination.next_num, **q_params) }}" aria-label="Next">
+                &raquo;
+              </a>
+            </li>
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

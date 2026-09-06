@@ -1,6 +1,8 @@
+import json
 import logging
 import urllib.parse
 from contextlib import closing
+from datetime import datetime, timedelta
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 
@@ -635,3 +637,306 @@ def edit_company(company_id):
 
     flash("Company updated successfully.", "success")
     return redirect(url_for("admin.list_companies"))
+
+
+AUDIT_ACTION_LABELS = {
+    "update_user_role": "Role Updated",
+    "update_user_status": "User Status Updated",
+    "assign_recruiter_company": "Recruiter Company Assigned",
+    "create_company": "Company Created",
+    "update_company": "Company Updated",
+    "application_status_changed": "Application Status Changed",
+    "application_withdrawn": "Application Withdrawn",
+    "interview_scheduled": "Interview Scheduled",
+    "interview_updated": "Interview Updated",
+    "interview_cancelled": "Interview Cancelled",
+    "interview_completed": "Interview Completed",
+}
+
+AUDIT_TARGET_TYPE_LABELS = {
+    "user": "User",
+    "company": "Company",
+    "application": "Application",
+    "interview": "Interview",
+}
+
+VIEWER_SAFE_DETAILS_ALLOWLIST = {
+    "previous_role",
+    "new_role",
+    "is_active_before",
+    "is_active_after",
+    "previous_company_id",
+    "new_company_id",
+    "company_name",
+    "previous_name",
+    "new_name",
+    "previous_status",
+    "new_status",
+    "application_id",
+    "interview_status",
+    "previous_interview_status",
+    "new_interview_status",
+    "scheduled_at",
+    "previous_scheduled_at",
+    "new_scheduled_at",
+    "duration_minutes",
+    "mode",
+}
+
+DETAIL_KEY_LABELS = {
+    "previous_role": "Previous Role",
+    "new_role": "New Role",
+    "is_active_before": "Previous Status",
+    "is_active_after": "New Status",
+    "previous_company_id": "Previous Company ID",
+    "new_company_id": "New Company ID",
+    "company_name": "Company Name",
+    "previous_name": "Previous Name",
+    "new_name": "New Name",
+    "previous_status": "Previous Status",
+    "new_status": "New Status",
+    "application_id": "Application ID",
+    "interview_status": "Interview Status",
+    "previous_interview_status": "Previous Interview Status",
+    "new_interview_status": "New Interview Status",
+    "scheduled_at": "Scheduled At",
+    "previous_scheduled_at": "Previous Scheduled At",
+    "new_scheduled_at": "New Scheduled At",
+    "duration_minutes": "Duration",
+    "mode": "Mode",
+}
+
+
+def _parse_audit_safe_details(raw_json):
+    """Parses raw_json string into a list of {'label': str, 'value': str} dicts.
+
+    Stricter than AUDIT_ALLOWLIST. Returns [] for None/empty/malformed/non-dict inputs.
+    Values are converted to strings and truncated to max 100 characters.
+    Never generates HTML or uses Markup.
+    """
+    if not raw_json or not isinstance(raw_json, str):
+        return []
+
+    try:
+        data = json.loads(raw_json)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        logger.warning("Malformed audit safe_details for audit row")
+        return []
+
+    if not isinstance(data, dict):
+        return []
+
+    result = []
+    for key, val in data.items():
+        if key not in VIEWER_SAFE_DETAILS_ALLOWLIST:
+            continue
+
+        label = DETAIL_KEY_LABELS.get(key, key.replace("_", " ").title())
+
+        if key in ("is_active_before", "is_active_after"):
+            if val is True or val == 1 or val == "1":
+                val_str = "Active"
+            elif val is False or val == 0 or val == "0":
+                val_str = "Inactive"
+            else:
+                val_str = str(val)
+        else:
+            val_str = str(val)
+
+        if len(val_str) > 100:
+            val_str = val_str[:100] + "..."
+
+        result.append({"label": label, "value": val_str})
+
+    return result
+
+
+@admin_bp.route("/audit-logs", methods=["GET"])
+@admin_required
+def audit_logs():
+    action_filter = request.args.get("action", "").strip()
+    if action_filter not in AUDIT_ACTION_LABELS:
+        action_filter = ""
+
+    target_type_filter = request.args.get("target_type", "").strip().lower()
+    if target_type_filter not in AUDIT_TARGET_TYPE_LABELS:
+        target_type_filter = ""
+
+    actor_filter = request.args.get("actor", "").strip()[:100]
+
+    date_from_str = request.args.get("date_from", "").strip()
+    date_to_str = request.args.get("date_to", "").strip()
+
+    date_from_val = None
+    if date_from_str:
+        try:
+            date_from_val = datetime.strptime(date_from_str, "%Y-%m-%d")
+        except ValueError:
+            date_from_str = ""
+
+    date_to_val = None
+    date_to_exclusive = None
+    if date_to_str:
+        try:
+            date_to_val = datetime.strptime(date_to_str, "%Y-%m-%d")
+            date_to_exclusive = date_to_val + timedelta(days=1)
+        except ValueError:
+            date_to_str = ""
+
+    date_range_inverted = False
+    if date_from_val and date_to_val and date_from_val > date_to_val:
+        date_range_inverted = True
+        flash(
+            "Start date cannot be after end date. Please correct the date range.",
+            "warning",
+        )
+
+    per_page_raw = request.args.get("per_page", "25").strip()
+    try:
+        per_page = int(per_page_raw)
+        if per_page not in (25, 50, 100):
+            per_page = 25
+    except (TypeError, ValueError):
+        per_page = 25
+
+    page_raw = request.args.get("page", "1").strip()
+    try:
+        page = int(page_raw)
+        if page < 1:
+            page = 1
+    except (TypeError, ValueError):
+        page = 1
+
+    where_clauses = []
+    params = []
+
+    if date_range_inverted:
+        where_clauses.append("1 = 0")
+    else:
+        if action_filter:
+            where_clauses.append("al.action = %s")
+            params.append(action_filter)
+
+        if target_type_filter:
+            where_clauses.append("al.target_type = %s")
+            params.append(target_type_filter)
+
+        if actor_filter:
+            escaped_actor = _escape_like(actor_filter)
+            where_clauses.append("(u.name LIKE %s ESCAPE '=' OR u.email LIKE %s ESCAPE '=')")
+            params.append(f"%{escaped_actor}%")
+            params.append(f"%{escaped_actor}%")
+
+        if date_from_val:
+            where_clauses.append("al.created_at >= %s")
+            params.append(date_from_val.strftime("%Y-%m-%d 00:00:00"))
+
+        if date_to_exclusive:
+            where_clauses.append("al.created_at < %s")
+            params.append(date_to_exclusive.strftime("%Y-%m-%d 00:00:00"))
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT COUNT(*) AS total_unfiltered FROM audit_logs")
+            total_unfiltered_row = cur.fetchone()
+            total_unfiltered = total_unfiltered_row["total_unfiltered"] if total_unfiltered_row else 0
+
+            count_query = f"""
+                SELECT COUNT(*) AS total
+                FROM audit_logs al
+                LEFT JOIN users u ON al.actor_user_id = u.id
+                {where_sql}
+            """
+            cur.execute(count_query, params)
+            count_row = cur.fetchone()
+            total_filtered = count_row["total"] if count_row else 0
+
+            total_pages = max(1, (total_filtered + per_page - 1) // per_page)
+            if page > total_pages:
+                page = total_pages
+
+            offset = (page - 1) * per_page
+
+            records_query = f"""
+                SELECT
+                    al.id,
+                    al.actor_user_id,
+                    al.action,
+                    al.target_type,
+                    al.target_id,
+                    al.safe_details,
+                    al.created_at,
+                    u.name AS actor_name,
+                    u.email AS actor_email
+                FROM audit_logs al
+                LEFT JOIN users u ON al.actor_user_id = u.id
+                {where_sql}
+                ORDER BY al.created_at DESC, al.id DESC
+                LIMIT %s OFFSET %s
+            """
+            cur.execute(records_query, params + [per_page, offset])
+            raw_logs = cur.fetchall()
+
+    processed_logs = []
+    for row in raw_logs:
+        log_item = dict(row)
+        action_val = str(row.get("action") or "")
+        target_val = str(row.get("target_type") or "")
+        log_item["action"] = action_val
+        log_item["target_type"] = target_val
+        log_item["action_label"] = AUDIT_ACTION_LABELS.get(
+            action_val, action_val.replace("_", " ").title() if action_val else "Unknown"
+        )
+        log_item["target_label"] = AUDIT_TARGET_TYPE_LABELS.get(
+            target_val, target_val.replace("_", " ").title() if target_val else "Unknown"
+        )
+        log_item["details_list"] = _parse_audit_safe_details(row.get("safe_details"))
+
+        if not row.get("actor_user_id") or (not row.get("actor_name") and not row.get("actor_email")):
+            log_item["display_actor"] = "System / Deleted User"
+            log_item["display_email"] = None
+        else:
+            log_item["display_actor"] = row.get("actor_name") or row.get("actor_email")
+            log_item["display_email"] = row.get("actor_email") if row.get("actor_name") else None
+
+        processed_logs.append(log_item)
+
+    filters = {
+        "action": action_filter,
+        "target_type": target_type_filter,
+        "actor": actor_filter,
+        "date_from": date_from_str,
+        "date_to": date_to_str,
+        "per_page": per_page,
+    }
+
+    page_numbers = []
+    for num in range(max(1, page - 2), min(total_pages + 1, page + 3)):
+        page_numbers.append(num)
+
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total": total_filtered,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "prev_num": page - 1,
+        "next_num": page + 1,
+        "start_idx": offset + 1 if total_filtered > 0 else 0,
+        "end_idx": min(offset + per_page, total_filtered),
+        "page_numbers": page_numbers,
+    }
+
+    return render_template(
+        "admin_audit_logs.html",
+        logs=processed_logs,
+        pagination=pagination,
+        filters=filters,
+        action_options=AUDIT_ACTION_LABELS,
+        target_options=AUDIT_TARGET_TYPE_LABELS,
+        total_unfiltered=total_unfiltered,
+        date_range_inverted=False,
+    )

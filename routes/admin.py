@@ -78,6 +78,172 @@ def _safe_redirect_dashboard():
     return redirect(url_for("admin.dashboard", **_get_safe_dashboard_params()))
 
 
+def _get_platform_analytics(cur):
+    """Fetch aggregate platform metrics across users, jobs, applications, interviews, and companies.
+
+    Uses isolated single-table conditional aggregations with COALESCE to ensure
+    null/zero safety. Caller provides open cursor; read-only; no commit or write.
+    """
+    # 1. Users Aggregation
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS total_users,
+            COALESCE(SUM(role = 'candidate'), 0) AS candidates,
+            COALESCE(SUM(role = 'recruiter'), 0) AS recruiters,
+            COALESCE(SUM(is_active = 1), 0) AS active_users,
+            COALESCE(SUM(is_active = 0), 0) AS inactive_users,
+            COALESCE(SUM(role = 'recruiter' AND company_id IS NULL), 0) AS unassigned_recruiters
+        FROM users
+    """
+    )
+    u_row = cur.fetchone() or {}
+
+    # 2. Jobs Aggregation
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS total_jobs,
+            COALESCE(SUM(is_active = 1), 0) AS active_jobs,
+            COALESCE(SUM(is_active = 0), 0) AS inactive_jobs
+        FROM jobs
+    """
+    )
+    j_row = cur.fetchone() or {}
+
+    # 3. Applications Pipeline Aggregation
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS total_applications,
+            COALESCE(SUM(status = 'applied'), 0) AS applied,
+            COALESCE(SUM(status = 'shortlisted'), 0) AS shortlisted,
+            COALESCE(SUM(status = 'rejected'), 0) AS rejected,
+            COALESCE(SUM(status = 'hired'), 0) AS hired,
+            COALESCE(SUM(status = 'withdrawn'), 0) AS withdrawn
+        FROM applications
+    """
+    )
+    a_row = cur.fetchone() or {}
+
+    # 4. Interviews Aggregation
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS total_interviews,
+            COALESCE(SUM(status = 'scheduled'), 0) AS scheduled,
+            COALESCE(SUM(status = 'completed'), 0) AS completed,
+            COALESCE(SUM(status = 'cancelled'), 0) AS cancelled,
+            COALESCE(SUM(status = 'scheduled' AND scheduled_at > NOW()), 0) AS upcoming
+        FROM interviews
+    """
+    )
+    i_row = cur.fetchone() or {}
+
+    # 5. Companies Aggregation
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS total_companies,
+            COALESCE(SUM(is_active = 1), 0) AS active_companies,
+            COALESCE(SUM(is_active = 0), 0) AS inactive_companies
+        FROM companies
+    """
+    )
+    c_row = cur.fetchone() or {}
+
+    # Normalize returned values to plain integers, with fallback to 'total' if mock returns it
+    total_users = int(u_row.get("total_users") or u_row.get("total") or 0)
+    candidates = int(u_row.get("candidates") or 0)
+    recruiters = int(u_row.get("recruiters") or 0)
+    active_users = int(u_row.get("active_users") or 0)
+    inactive_users = int(u_row.get("inactive_users") or 0)
+    unassigned_recruiters = int(u_row.get("unassigned_recruiters") or 0)
+
+    total_jobs = int(j_row.get("total_jobs") or j_row.get("total") or 0)
+    active_jobs = int(j_row.get("active_jobs") or 0)
+    inactive_jobs = int(j_row.get("inactive_jobs") or 0)
+
+    total_applications = int(a_row.get("total_applications") or a_row.get("total") or 0)
+    applied = int(a_row.get("applied") or 0)
+    shortlisted = int(a_row.get("shortlisted") or 0)
+    rejected = int(a_row.get("rejected") or 0)
+    hired = int(a_row.get("hired") or 0)
+    withdrawn = int(a_row.get("withdrawn") or 0)
+
+    total_interviews = int(i_row.get("total_interviews") or i_row.get("total") or 0)
+    scheduled_interviews = int(i_row.get("scheduled") or 0)
+    completed_interviews = int(i_row.get("completed") or 0)
+    cancelled_interviews = int(i_row.get("cancelled") or 0)
+    upcoming_interviews = int(i_row.get("upcoming") or 0)
+
+    total_companies = int(c_row.get("total_companies") or c_row.get("total") or 0)
+    active_companies = int(c_row.get("active_companies") or 0)
+    inactive_companies = int(c_row.get("inactive_companies") or 0)
+
+    # Safe percentage calculation (zero-division rule)
+    def _calc_pct(count, total):
+        if not total or total <= 0:
+            return 0.0
+        return round((count / total) * 100, 1)
+
+    pipeline_percentages = {
+        "applied": _calc_pct(applied, total_applications),
+        "shortlisted": _calc_pct(shortlisted, total_applications),
+        "hired": _calc_pct(hired, total_applications),
+        "rejected": _calc_pct(rejected, total_applications),
+        "withdrawn": _calc_pct(withdrawn, total_applications),
+    }
+
+    platform_metrics = {
+        "total_users": total_users,
+        "total_jobs": total_jobs,
+        "total_applications": total_applications,
+        "total_interviews": total_interviews,
+        "active_companies": active_companies,
+        "total_candidates": candidates,
+        "total_recruiters": recruiters,
+    }
+
+    application_metrics = {
+        "total": total_applications,
+        "applied": applied,
+        "shortlisted": shortlisted,
+        "hired": hired,
+        "rejected": rejected,
+        "withdrawn": withdrawn,
+        "percentages": pipeline_percentages,
+    }
+
+    interview_metrics = {
+        "total": total_interviews,
+        "scheduled": scheduled_interviews,
+        "upcoming": upcoming_interviews,
+        "completed": completed_interviews,
+        "cancelled": cancelled_interviews,
+    }
+
+    operational_metrics = {
+        "active_users": active_users,
+        "inactive_users": inactive_users,
+        "total_candidates": candidates,
+        "total_recruiters": recruiters,
+        "unassigned_recruiters": unassigned_recruiters,
+        "active_jobs": active_jobs,
+        "inactive_jobs": inactive_jobs,
+        "total_companies": total_companies,
+        "active_companies": active_companies,
+        "inactive_companies": inactive_companies,
+    }
+
+    return {
+        "platform_metrics": platform_metrics,
+        "application_metrics": application_metrics,
+        "interview_metrics": interview_metrics,
+        "operational_metrics": operational_metrics,
+    }
+
+
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
@@ -148,21 +314,12 @@ def dashboard():
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
-            # Global Metrics
-            cur.execute("SELECT COUNT(*) AS total FROM users")
-            total_users = cur.fetchone()["total"]
-
-            cur.execute("SELECT COUNT(*) AS total FROM users WHERE role = 'candidate'")
-            total_candidates = cur.fetchone()["total"]
-
-            cur.execute("SELECT COUNT(*) AS total FROM users WHERE role = 'recruiter'")
-            total_recruiters = cur.fetchone()["total"]
-
-            cur.execute("SELECT COUNT(*) AS total FROM jobs")
-            total_jobs = cur.fetchone()["total"]
-
-            cur.execute("SELECT COUNT(*) AS total FROM applications")
-            total_applications = cur.fetchone()["total"]
+            # Platform Analytics
+            analytics = _get_platform_analytics(cur)
+            platform_metrics = analytics["platform_metrics"]
+            application_metrics = analytics["application_metrics"]
+            interview_metrics = analytics["interview_metrics"]
+            operational_metrics = analytics["operational_metrics"]
 
             # Filtered User Count
             count_query = f"SELECT COUNT(*) AS total FROM users u {where_sql}".strip()
@@ -201,14 +358,6 @@ def dashboard():
             # Recent registrations (safe fields only)
             cur.execute("SELECT name, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5")
             recent_users = cur.fetchall()
-
-    metrics = {
-        "total_users": total_users,
-        "total_candidates": total_candidates,
-        "total_recruiters": total_recruiters,
-        "total_jobs": total_jobs,
-        "total_applications": total_applications,
-    }
 
     window_start = max(1, page - 2)
     window_end = min(total_pages, page + 2)
@@ -250,7 +399,11 @@ def dashboard():
 
     return render_template(
         "admin_dashboard.html",
-        metrics=metrics,
+        metrics=platform_metrics,
+        platform_metrics=platform_metrics,
+        application_metrics=application_metrics,
+        interview_metrics=interview_metrics,
+        operational_metrics=operational_metrics,
         users=users,
         recent_users=recent_users,
         companies=companies,

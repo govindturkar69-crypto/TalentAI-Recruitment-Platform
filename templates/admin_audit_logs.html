@@ -10,7 +10,7 @@
     <p class="saas-page-header-sub">Append-only operational history of administrative, recruiter, and candidate state transitions.</p>
   </div>
   <div>
-    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary text-nowrap d-inline-flex align-items-center" style="height: 38px;">
       <i class="bi bi-arrow-left me-1"></i>Back to Console
     </a>
   </div>
@@ -24,78 +24,91 @@
 </div>
 {% endif %}
 
-<!-- Filter Card -->
-<div class="saas-card p-3 mb-4">
-  <form method="GET" action="{{ url_for('admin.audit_logs') }}" class="audit-filter-grid">
-    <!-- Actor Search -->
-    <div>
-      <label class="form-label text-muted small fw-bold mb-1" for="actorFilter">Actor</label>
-      <div class="input-group input-group-sm">
-        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
-        <input type="text" id="actorFilter" name="actor" class="form-control" placeholder="Search name or email..." value="{{ filters.actor }}">
+<!-- Filter Panel -->
+<div class="saas-card mb-4 p-3">
+  <div class="audit-filter-panel">
+    <form method="GET" action="{{ url_for('admin.audit_logs') }}" class="audit-filter-grid">
+      <!-- Actor Search -->
+      <div>
+        <label class="form-label text-muted small fw-bold mb-1" for="actorFilter">Actor</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+          <input type="text" id="actorFilter" name="actor" class="form-control" placeholder="Search name or email..." value="{{ filters.actor }}">
+        </div>
       </div>
-    </div>
 
-    <!-- Action Filter -->
-    <div>
-      <label class="form-label text-muted small fw-bold mb-1" for="actionFilter">Action</label>
-      <select id="actionFilter" name="action" class="form-select form-select-sm">
-        <option value="">All Actions</option>
-        {% for key, label in action_options.items() %}
-          <option value="{{ key }}" {% if filters.action == key %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
+      <!-- Action Filter -->
+      <div>
+        <label class="form-label text-muted small fw-bold mb-1" for="actionFilter">Action</label>
+        <select id="actionFilter" name="action" class="form-select form-select-sm">
+          <option value="">All Actions</option>
+          {% for key, label in action_options.items() %}
+            <option value="{{ key }}" {% if filters.action == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    <!-- Target Type Filter -->
-    <div>
-      <label class="form-label text-muted small fw-bold mb-1" for="targetTypeFilter">Target</label>
-      <select id="targetTypeFilter" name="target_type" class="form-select form-select-sm">
-        <option value="">All Targets</option>
-        {% for key, label in target_options.items() %}
-          <option value="{{ key }}" {% if filters.target_type == key %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
+      <!-- Target Type Filter -->
+      <div>
+        <label class="form-label text-muted small fw-bold mb-1" for="targetTypeFilter">Target</label>
+        <select id="targetTypeFilter" name="target_type" class="form-select form-select-sm">
+          <option value="">All Targets</option>
+          {% for key, label in target_options.items() %}
+            <option value="{{ key }}" {% if filters.target_type == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    <!-- Date From -->
-    <div>
-      <label class="form-label text-muted small fw-bold mb-1" for="dateFromFilter">From</label>
-      <input type="date" id="dateFromFilter" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from }}">
-    </div>
+      <!-- Date From -->
+      <div>
+        <label class="form-label text-muted small fw-bold mb-1" for="dateFromFilter">From</label>
+        <input type="date" id="dateFromFilter" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from }}">
+      </div>
 
-    <!-- Date To -->
-    <div>
-      <label class="form-label text-muted small fw-bold mb-1" for="dateToFilter">To</label>
-      <input type="date" id="dateToFilter" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to }}">
-    </div>
+      <!-- Date To -->
+      <div>
+        <label class="form-label text-muted small fw-bold mb-1" for="dateToFilter">To</label>
+        <input type="date" id="dateToFilter" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to }}">
+      </div>
 
-    <!-- Rows -->
-    <div>
-      <label class="form-label text-muted small fw-bold mb-1" for="perPageSelect">Rows</label>
-      <select id="perPageSelect" name="per_page" class="form-select form-select-sm">
-        <option value="25" {% if filters.per_page == 25 %}selected{% endif %}>25</option>
-        <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50</option>
-        <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100</option>
-      </select>
-    </div>
+      <!-- Rows -->
+      <div>
+        <label class="form-label text-muted small fw-bold mb-1" for="perPageSelect">Rows</label>
+        <select id="perPageSelect" name="per_page" class="form-select form-select-sm">
+          <option value="25" {% if filters.per_page == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100</option>
+        </select>
+      </div>
 
-    <!-- Buttons Block -->
-    <div class="audit-filter-actions">
-      <button type="submit" class="btn btn-sm btn-primary text-nowrap" style="font-size:0.8rem; padding: 5px 14px;">
-        <i class="bi bi-funnel-fill me-1"></i>Apply Filters
-      </button>
-      {% if filters.actor or filters.action or filters.target_type or filters.date_from or filters.date_to or filters.per_page != 25 %}
-        <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.8rem; padding: 5px 12px;">
-          <i class="bi bi-x-circle me-1"></i>Clear
-        </a>
-      {% endif %}
-    </div>
-  </form>
+      <!-- Buttons Block -->
+      <div class="audit-filter-actions">
+        <button type="submit" class="btn btn-sm btn-primary text-nowrap d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 14px;">
+          <i class="bi bi-funnel-fill me-1"></i>Apply Filters
+        </button>
+        {% if filters.actor or filters.action or filters.target_type or filters.date_from or filters.date_to or filters.per_page != 25 %}
+          <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary text-nowrap d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 12px;">
+            <i class="bi bi-x-circle me-1"></i>Clear
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Results Card -->
-<div class="saas-card mb-4">
+<div class="saas-card mb-4 p-3 p-md-4">
+  <!-- Activity History Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold mb-0 text-nowrap"><i class="bi bi-clock-history me-2"></i>Activity History</h5>
+      <p class="text-muted small mb-0 mt-1">Administrative and workflow events across the platform.</p>
+    </div>
+    <span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="font-size: 0.78rem;">
+      {{ pagination.total }} events
+    </span>
+  </div>
+
   {% if total_unfiltered == 0 %}
     <!-- Case A: Zero records in table -->
     <div class="text-center py-5 text-muted">
@@ -114,16 +127,34 @@
       </a>
     </div>
   {% else %}
+    <!-- Enum mapping dictionary for safe, restricted humanization -->
+    {% set enum_labels = ['Previous Role', 'New Role', 'Previous Status', 'New Status', 'Interview Status', 'Previous Interview Status', 'New Interview Status', 'Mode'] %}
+    {% set enum_map = {
+      'scheduled': 'Scheduled',
+      'cancelled': 'Cancelled',
+      'completed': 'Completed',
+      'candidate': 'Candidate',
+      'recruiter': 'Recruiter',
+      'online': 'Online',
+      'in_person': 'In person',
+      'phone': 'Phone',
+      'applied': 'Applied',
+      'shortlisted': 'Shortlisted',
+      'rejected': 'Rejected',
+      'hired': 'Hired',
+      'withdrawn': 'Withdrawn'
+    } %}
+
     <!-- Desktop Table View (>= 768px) -->
     <div class="table-responsive d-none d-md-block">
-      <table class="table table-hover align-middle mb-0" style="table-layout: fixed; width: 100%;">
+      <table class="table saas-table audit-table align-middle mb-0" style="table-layout: fixed; width: 100%;">
         <thead>
           <tr>
-            <th style="width: 17%; white-space: nowrap;">Time</th>
+            <th style="width: 15%; white-space: nowrap;">Time</th>
             <th style="width: 20%;">Actor</th>
-            <th style="width: 17%; white-space: nowrap;">Action</th>
+            <th style="width: 18%; white-space: nowrap;">Event</th>
             <th style="width: 13%; white-space: nowrap;">Target</th>
-            <th style="width: 33%;">Details</th>
+            <th style="width: 34%;">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -131,43 +162,80 @@
             <tr>
               <!-- Time Column -->
               <td style="white-space: nowrap;">
-                <div class="fw-semibold" style="color: var(--text-primary);">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</div>
-                <div class="text-muted" style="font-size: 0.72rem;">ID: #{{ log.id }}</div>
+                <div class="fw-semibold" style="color: var(--text-primary); font-size: 0.85rem;">
+                  {{ log.created_at.strftime('%d %b %Y') if log.created_at else '-' }}
+                </div>
+                <div class="text-muted" style="font-size: 0.72rem;">
+                  {{ log.created_at.strftime('%H:%M:%S') if log.created_at else '' }} · #{{ log.id }}
+                </div>
               </td>
 
               <!-- Actor Column -->
               <td>
-                <div class="fw-semibold text-truncate" style="color: var(--text-primary);" title="{{ log.display_actor }}">{{ log.display_actor }}</div>
-                {% if log.display_email %}
-                  <div class="text-muted text-truncate" style="font-size: 0.75rem;" title="{{ log.display_email }}">{{ log.display_email }}</div>
+                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                  {% if log.display_actor in ['System', 'Deleted User'] %}
+                    <div class="audit-actor-avatar" style="background: var(--bg-alt); color: var(--text-muted);">
+                      <i class="bi bi-gear-fill" style="font-size: 0.75rem;"></i>
+                    </div>
+                  {% else %}
+                    <div class="audit-actor-avatar">
+                      {{ log.display_actor[:2] | upper }}
+                    </div>
+                  {% endif %}
+                  <div class="overflow-hidden">
+                    <div class="fw-semibold text-truncate" style="color: var(--text-primary); font-size: 0.83rem;" title="{{ log.display_actor }}">
+                      {{ log.display_actor }}
+                    </div>
+                    {% if log.display_email %}
+                      <div class="text-muted text-truncate" style="font-size: 0.72rem;" title="{{ log.display_email }}">
+                        {{ log.display_email }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+
+              <!-- Event Column -->
+              <td style="white-space: nowrap;">
+                {% if log.action and ('cancelled' in log.action or 'rejected' in log.action) %}
+                  <span class="badge-soft-danger d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-x-circle"></i>{{ log.action_label }}
+                  </span>
+                {% elif log.action and ('completed' in log.action or 'hired' in log.action or 'create' in log.action) %}
+                  <span class="badge-soft-success d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-check-circle"></i>{{ log.action_label }}
+                  </span>
+                {% elif log.action and ('scheduled' in log.action) %}
+                  <span class="badge-soft-info d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-calendar-event"></i>{{ log.action_label }}
+                  </span>
+                {% else %}
+                  <span class="badge-soft-warning d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-repeat"></i>{{ log.action_label }}
+                  </span>
                 {% endif %}
               </td>
 
-              <!-- Action Column -->
+              <!-- Target Column (Cohesive Single Pill) -->
               <td style="white-space: nowrap;">
-                <span class="badge {% if log.action and ('cancelled' in log.action or 'rejected' in log.action) %}bg-danger-subtle text-danger border border-danger-subtle{% elif log.action and ('completed' in log.action or 'hired' in log.action or 'create' in log.action) %}bg-success-subtle text-success border border-success-subtle{% elif log.action and ('status' in log.action or 'updated' in log.action) %}bg-warning-subtle text-warning border border-warning-subtle{% elif log.action and ('withdrawn' in log.action) %}bg-secondary-subtle text-secondary border border-secondary-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %}" style="font-size: 0.75rem; font-weight: 600;">
-                  {{ log.action_label }}
+                <span class="audit-target-pill">
+                  {{ log.target_label }}{% if log.target_id %} #{{ log.target_id }}{% endif %}
                 </span>
               </td>
 
-              <!-- Target Column -->
-              <td style="white-space: nowrap;">
-                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">
-                  {{ log.target_label }}
-                </span>
-                {% if log.target_id %}
-                  <span class="fw-semibold text-muted ms-1" style="font-size: 0.8rem;">#{{ log.target_id }}</span>
-                {% endif %}
-              </td>
-
-              <!-- Details Column -->
+              <!-- Details Column (Semantic Key/Value Typography, No Chip Wall) -->
               <td>
                 {% if log.details_list %}
-                  <div class="d-flex flex-wrap gap-1">
+                  <div class="audit-details">
                     {% for d in log.details_list %}
-                      <span class="saas-skill-chip" style="background: var(--bg-alt); color: var(--text-primary); border: 1px solid var(--border-color); font-weight: 500; font-size: 0.72rem; padding: 2px 6px;" title="{{ d.label }}: {{ d.value }}">
-                        <span class="text-muted">{{ d.label }}:</span> {{ d.value }}
-                      </span>
+                      {% set val = d.value %}
+                      {% if d.label in enum_labels and d.value in enum_map %}
+                        {% set val = enum_map[d.value] %}
+                      {% endif %}
+                      <div class="audit-detail">
+                        <span class="audit-detail-label">{{ d.label }}</span>
+                        <span class="audit-detail-value">{{ val }}</span>
+                      </div>
                     {% endfor %}
                   </div>
                 {% else %}
@@ -181,41 +249,63 @@
     </div>
 
     <!-- Mobile Stacked Cards View (< 768px) -->
-    <div class="d-block d-md-none p-3">
+    <div class="d-block d-md-none pt-2">
       {% for log in logs %}
-        <div class="p-3 mb-2 rounded border" style="background: var(--bg-alt); border-color: var(--border-color) !important;">
-          <!-- Top Row: Action & Target -->
+        <div class="audit-card-mobile mb-3">
+          <!-- Top Row: Event & Target -->
           <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
-            <span class="badge {% if log.action and ('cancelled' in log.action or 'rejected' in log.action) %}bg-danger-subtle text-danger border border-danger-subtle{% elif log.action and ('completed' in log.action or 'hired' in log.action or 'create' in log.action) %}bg-success-subtle text-success border border-success-subtle{% elif log.action and ('status' in log.action or 'updated' in log.action) %}bg-warning-subtle text-warning border border-warning-subtle{% elif log.action and ('withdrawn' in log.action) %}bg-secondary-subtle text-secondary border border-secondary-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %}" style="font-size: 0.75rem;">
-              {{ log.action_label }}
-            </span>
+            {% if log.action and ('cancelled' in log.action or 'rejected' in log.action) %}
+              <span class="badge-soft-danger d-inline-flex align-items-center gap-1">
+                <i class="bi bi-x-circle"></i>{{ log.action_label }}
+              </span>
+            {% elif log.action and ('completed' in log.action or 'hired' in log.action or 'create' in log.action) %}
+              <span class="badge-soft-success d-inline-flex align-items-center gap-1">
+                <i class="bi bi-check-circle"></i>{{ log.action_label }}
+              </span>
+            {% elif log.action and ('scheduled' in log.action) %}
+              <span class="badge-soft-info d-inline-flex align-items-center gap-1">
+                <i class="bi bi-calendar-event"></i>{{ log.action_label }}
+              </span>
+            {% else %}
+              <span class="badge-soft-warning d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-repeat"></i>{{ log.action_label }}
+              </span>
+            {% endif %}
+
             <div class="d-flex align-items-center gap-1">
-              <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.72rem;">{{ log.target_label }}{% if log.target_id %} #{{ log.target_id }}{% endif %}</span>
+              <span class="audit-target-pill">{{ log.target_label }}{% if log.target_id %} #{{ log.target_id }}{% endif %}</span>
               <small class="text-muted" style="font-size: 0.72rem;">#{{ log.id }}</small>
             </div>
           </div>
 
           <!-- Actor & Time -->
           <div class="d-flex justify-content-between align-items-center mb-2 text-muted" style="font-size: 0.75rem;">
-            <div>
-              <i class="bi bi-person me-1"></i><span class="fw-semibold text-dark">{{ log.display_actor }}</span>
+            <div class="d-flex align-items-center gap-1 overflow-hidden">
+              <i class="bi bi-person me-1"></i><span class="fw-semibold text-truncate" style="color: var(--text-primary);">{{ log.display_actor }}</span>
             </div>
-            <div>
-              <i class="bi bi-clock me-1"></i>{{ log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '-' }}
+            <div class="text-nowrap">
+              <i class="bi bi-clock me-1"></i>{{ log.created_at.strftime('%d %b %Y %H:%M') if log.created_at else '-' }}
             </div>
           </div>
 
-          <!-- Details Chips -->
+          <!-- Semantic Details Section -->
           {% if log.details_list %}
-            <div class="d-flex flex-wrap gap-1 pt-1 border-top" style="border-color: var(--border-color) !important;">
-              {% for d in log.details_list %}
-                <span class="badge bg-light text-dark border" style="font-size: 0.7rem; font-weight: 500;" title="{{ d.label }}: {{ d.value }}">
-                  <span class="text-muted">{{ d.label }}:</span> {{ d.value }}
-                </span>
-              {% endfor %}
+            <div class="pt-2 border-top" style="border-color: var(--border-color) !important;">
+              <div class="audit-details">
+                {% for d in log.details_list %}
+                  {% set val = d.value %}
+                  {% if d.label in enum_labels and d.value in enum_map %}
+                    {% set val = enum_map[d.value] %}
+                  {% endif %}
+                  <div class="audit-detail">
+                    <span class="audit-detail-label">{{ d.label }}</span>
+                    <span class="audit-detail-value">{{ val }}</span>
+                  </div>
+                {% endfor %}
+              </div>
             </div>
           {% else %}
-            <div class="pt-1 border-top text-muted small" style="border-color: var(--border-color) !important; font-size: 0.72rem;">
+            <div class="pt-2 border-top text-muted small" style="border-color: var(--border-color) !important; font-size: 0.72rem;">
               No additional details
             </div>
           {% endif %}

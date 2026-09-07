@@ -1,490 +1,922 @@
 {% extends "base.html" %}
+
 {% block title %}Admin Console{% endblock %}
 
+
+
 {% block content %}
+
 <!-- Page Header -->
+
 <div class="saas-page-header">
+
   <div>
+
     <div class="saas-page-header-eyebrow">PLATFORM ADMINISTRATION</div>
+
     <h1 class="saas-page-header-title">Admin Console</h1>
+
     <p class="saas-page-header-sub">Manage users, roles and platform activity across TalentAI.</p>
+
   </div>
+
 </div>
+
+
 
 <!-- Metrics Strip (5 Cards) -->
+
 <div class="row g-3 mb-4 row-cols-2 row-cols-md-3 row-cols-lg-5">
+
   <div class="col">
+
     <div class="ats-metric-card h-100">
+
       <div class="ats-metric-icon primary">
+
         <i class="bi bi-people-fill"></i>
+
       </div>
+
       <div>
+
         <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Users</div>
+
         <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_users }}</div>
+
       </div>
+
     </div>
+
   </div>
+
   <div class="col">
+
     <div class="ats-metric-card h-100">
+
       <div class="ats-metric-icon success">
+
         <i class="bi bi-briefcase-fill"></i>
+
       </div>
+
       <div>
+
         <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Jobs</div>
+
         <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_jobs }}</div>
+
       </div>
+
     </div>
+
   </div>
+
   <div class="col">
+
     <div class="ats-metric-card h-100">
+
       <div class="ats-metric-icon info">
+
         <i class="bi bi-file-earmark-person-fill"></i>
+
       </div>
+
       <div>
+
         <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Applications</div>
+
         <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_applications }}</div>
+
       </div>
+
     </div>
+
   </div>
+
   <div class="col">
+
     <div class="ats-metric-card h-100">
+
       <div class="ats-metric-icon warning">
+
         <i class="bi bi-calendar-event-fill"></i>
+
       </div>
+
       <div>
+
         <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Interviews</div>
+
         <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.total_interviews }}</div>
+
       </div>
+
     </div>
+
   </div>
+
   <div class="col">
+
     <div class="ats-metric-card h-100">
+
       <div class="ats-metric-icon primary" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+
         <i class="bi bi-building-fill"></i>
+
       </div>
+
       <div>
+
         <div class="text-muted" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Active Companies</div>
+
         <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);line-height:1">{{ platform_metrics.active_companies }}</div>
+
       </div>
+
     </div>
+
   </div>
+
 </div>
+
+
 
 <!-- Platform Analytics Row -->
+
 <div class="row g-3 mb-4">
+
   <!-- Application Pipeline -->
+
   <div class="col-12 col-xl-6">
+
     <div class="saas-card h-100 p-3 p-md-4">
+
       <div class="d-flex justify-content-between align-items-center mb-3">
+
         <h6 class="fw-bold mb-0"><i class="bi bi-funnel me-2"></i>Application Pipeline</h6>
+
         <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">Total: {{ application_metrics.total }}</span>
+
       </div>
+
+
 
       <!-- Segmented Distribution Bar -->
+
       <div class="progress mb-3" style="height: 10px; background: var(--bg-alt); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden;">
+
         <div class="progress-bar bg-primary" role="progressbar" style="width: {{ application_metrics.percentages.applied }}%;" aria-valuenow="{{ application_metrics.percentages.applied }}" aria-valuemin="0" aria-valuemax="100" title="Applied: {{ application_metrics.applied }} ({{ application_metrics.percentages.applied }}%)"></div>
+
         <div class="progress-bar bg-warning" role="progressbar" style="width: {{ application_metrics.percentages.shortlisted }}%;" aria-valuenow="{{ application_metrics.percentages.shortlisted }}" aria-valuemin="0" aria-valuemax="100" title="Shortlisted: {{ application_metrics.shortlisted }} ({{ application_metrics.percentages.shortlisted }}%)"></div>
+
         <div class="progress-bar bg-success" role="progressbar" style="width: {{ application_metrics.percentages.hired }}%;" aria-valuenow="{{ application_metrics.percentages.hired }}" aria-valuemin="0" aria-valuemax="100" title="Hired: {{ application_metrics.hired }} ({{ application_metrics.percentages.hired }}%)"></div>
+
         <div class="progress-bar bg-danger" role="progressbar" style="width: {{ application_metrics.percentages.rejected }}%;" aria-valuenow="{{ application_metrics.percentages.rejected }}" aria-valuemin="0" aria-valuemax="100" title="Rejected: {{ application_metrics.rejected }} ({{ application_metrics.percentages.rejected }}%)"></div>
+
         <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ application_metrics.percentages.withdrawn }}%;" aria-valuenow="{{ application_metrics.percentages.withdrawn }}" aria-valuemin="0" aria-valuemax="100" title="Withdrawn: {{ application_metrics.withdrawn }} ({{ application_metrics.percentages.withdrawn }}%)"></div>
+
       </div>
+
+
 
       <!-- Status Stat Rows/Cards -->
+
       <div class="row g-2 text-center row-cols-2 row-cols-sm-3 row-cols-md-5">
+
         <div class="col">
+
           <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
             <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+
               <span class="rounded-circle bg-primary" style="width: 8px; height: 8px; display: inline-block;"></span>
+
               <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Applied</span>
+
             </div>
+
             <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.applied }}</div>
+
             <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.applied }}%</small>
+
           </div>
+
         </div>
+
         <div class="col">
+
           <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
             <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+
               <span class="rounded-circle bg-warning" style="width: 8px; height: 8px; display: inline-block;"></span>
+
               <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Shortlisted</span>
+
             </div>
+
             <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.shortlisted }}</div>
+
             <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.shortlisted }}%</small>
+
           </div>
+
         </div>
+
         <div class="col">
+
           <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
             <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+
               <span class="rounded-circle bg-success" style="width: 8px; height: 8px; display: inline-block;"></span>
+
               <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Hired</span>
+
             </div>
+
             <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.hired }}</div>
+
             <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.hired }}%</small>
+
           </div>
+
         </div>
+
         <div class="col">
+
           <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
             <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+
               <span class="rounded-circle bg-danger" style="width: 8px; height: 8px; display: inline-block;"></span>
+
               <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Rejected</span>
+
             </div>
+
             <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.rejected }}</div>
+
             <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.rejected }}%</small>
+
           </div>
+
         </div>
+
         <div class="col">
+
           <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
             <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+
               <span class="rounded-circle bg-secondary" style="width: 8px; height: 8px; display: inline-block;"></span>
+
               <span class="text-muted" style="font-size: 0.7rem; font-weight: 600;">Withdrawn</span>
+
             </div>
+
             <div class="fw-bold" style="font-size: 1.1rem; color: var(--text-primary);">{{ application_metrics.withdrawn }}</div>
+
             <small class="text-muted" style="font-size: 0.7rem;">{{ application_metrics.percentages.withdrawn }}%</small>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Interview Overview Card -->
+
   <div class="col-12 col-md-6 col-xl-3">
+
     <div class="saas-card h-100 p-3 p-md-4">
+
       <div class="d-flex justify-content-between align-items-center mb-3">
+
         <h6 class="fw-bold mb-0"><i class="bi bi-calendar2-check me-2"></i>Interview Overview</h6>
+
         <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">Total: {{ interview_metrics.total }}</span>
+
       </div>
+
       <div class="d-flex flex-column gap-2">
+
         <!-- Scheduled & Upcoming (Subset) -->
+
         <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
           <div class="d-flex justify-content-between align-items-center">
+
             <span class="fw-semibold text-primary" style="font-size: 0.85rem;"><i class="bi bi-calendar-event me-1"></i>Scheduled</span>
+
             <span class="fw-bold text-primary" style="font-size: 1.1rem;">{{ interview_metrics.scheduled }}</span>
+
           </div>
+
           <div class="mt-1 ps-2 border-start border-2 border-primary d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
+
             <span class="text-muted"><i class="bi bi-clock me-1 text-primary"></i>Upcoming</span>
+
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">{{ interview_metrics.upcoming }}</span>
+
           </div>
+
         </div>
+
         <!-- Completed -->
+
         <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
           <span class="fw-semibold text-success" style="font-size: 0.85rem;"><i class="bi bi-check-circle me-1"></i>Completed</span>
+
           <span class="fw-bold text-success" style="font-size: 1.1rem;">{{ interview_metrics.completed }}</span>
+
         </div>
+
         <!-- Cancelled -->
+
         <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
           <span class="fw-semibold text-danger" style="font-size: 0.85rem;"><i class="bi bi-x-circle me-1"></i>Cancelled</span>
+
           <span class="fw-bold text-danger" style="font-size: 1.1rem;">{{ interview_metrics.cancelled }}</span>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Operational Health Card -->
+
   <div class="col-12 col-md-6 col-xl-3">
+
     <div class="saas-card h-100 p-3 p-md-4">
+
       <h6 class="fw-bold mb-3"><i class="bi bi-heart-pulse me-2"></i>Operational Health</h6>
+
       <div class="d-flex flex-column gap-2" style="font-size: 0.82rem;">
+
         <!-- Users & Roles -->
+
         <div class="p-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
           <div class="d-flex justify-content-between align-items-center mb-1">
+
             <span class="fw-semibold"><i class="bi bi-people me-1 text-primary"></i>Users</span>
+
             <span>
+
               <span class="badge bg-success-subtle text-success">Active: {{ operational_metrics.active_users }}</span>
+
               <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive: {{ operational_metrics.inactive_users }}</span>
+
             </span>
+
           </div>
+
           <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.75rem;">
+
             <span>Candidates: <strong class="text-primary">{{ operational_metrics.total_candidates }}</strong></span>
+
             <span>Recruiters: <strong class="text-warning">{{ operational_metrics.total_recruiters }}</strong></span>
+
           </div>
+
         </div>
+
         <!-- Unassigned Recruiters -->
+
         <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
           <span class="fw-semibold"><i class="bi bi-person-exclamation me-1 text-warning"></i>Unassigned Recruiters</span>
+
           <span class="badge {% if operational_metrics.unassigned_recruiters > 0 %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-secondary-subtle text-secondary{% endif %} fw-semibold">
+
             {{ operational_metrics.unassigned_recruiters }}
+
           </span>
+
         </div>
+
         <!-- Jobs -->
+
         <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
           <span class="fw-semibold"><i class="bi bi-briefcase me-1 text-success"></i>Jobs</span>
+
           <span>
+
             <span class="badge bg-success-subtle text-success">Active: {{ operational_metrics.active_jobs }}</span>
+
             <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive: {{ operational_metrics.inactive_jobs }}</span>
+
           </span>
+
         </div>
+
         <!-- Companies -->
+
         <div class="p-2 rounded d-flex justify-content-between align-items-center" style="background: var(--bg-alt); border: 1px solid var(--border-color);">
+
           <span class="fw-semibold"><i class="bi bi-buildings me-1 text-info"></i>Companies</span>
+
           <span>
+
             <span class="badge bg-success-subtle text-success">Active: {{ operational_metrics.active_companies }}</span>
+
             <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive: {{ operational_metrics.inactive_companies }}</span>
+
           </span>
+
         </div>
+
       </div>
+
+    </div>
+
+  </div>
+
+</div>
+<!-- User Management Section (Primary Workspace) -->
+<div class="saas-card mb-4 p-3 p-md-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold mb-0 text-nowrap"><i class="bi bi-people me-2"></i>User Management</h5>
+      <p class="text-muted small mb-0 mt-1">Manage platform users, roles and company access.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary text-nowrap d-inline-flex align-items-center" style="height: 38px;">
+        <i class="bi bi-clock-history me-1"></i>Audit Logs
+      </a>
+      <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-primary text-nowrap d-inline-flex align-items-center" style="height: 38px;">
+        <i class="bi bi-building me-1"></i>Manage Companies
+      </a>
     </div>
   </div>
-</div>
 
-<div class="row g-4">
-  <!-- Main Column: User Management -->
-  <div class="col-admin-management">
-    <div class="saas-card h-100">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h5 class="fw-bold mb-0 text-nowrap"><i class="bi bi-people me-2"></i>User Management</h5>
-        <div class="d-flex gap-2 flex-wrap">
-          <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
-            <i class="bi bi-clock-history me-1"></i>Audit Logs
-          </a>
-          <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-primary text-nowrap">
-            <i class="bi bi-building me-1"></i>Manage Companies
-          </a>
-        </div>
+  <!-- Server-Side Filter Panel -->
+  <div class="admin-filter-panel mb-3">
+    <form method="GET" action="{{ url_for('admin.dashboard') }}" class="admin-filter-grid">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Search name or email..." value="{{ filters.q }}">
       </div>
-
-      <!-- Server-Side Filter Form -->
-      <form method="GET" action="{{ url_for('admin.dashboard') }}" class="user-filter-grid mb-3">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
-          <input type="text" name="q" class="form-control" placeholder="Search name or email..." value="{{ filters.q }}">
-        </div>
-        <div>
-          <select name="role" class="form-select form-select-sm">
-            <option value="" {% if not filters.role %}selected{% endif %}>Role: All</option>
-            <option value="candidate" {% if filters.role == 'candidate' %}selected{% endif %}>Candidate</option>
-            <option value="recruiter" {% if filters.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
-          </select>
-        </div>
-        <div>
-          <select name="status" class="form-select form-select-sm">
-            <option value="" {% if not filters.status %}selected{% endif %}>Status: All</option>
-            <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
-            <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
-          </select>
-        </div>
-        <div>
-          <select name="company_id" class="form-select form-select-sm">
-            <option value="" {% if not filters.company_id %}selected{% endif %}>Company: All</option>
-            {% for company in companies %}
-            <option value="{{ company.id }}" {% if filters.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <select name="per_page" class="form-select form-select-sm">
-            <option value="20" {% if filters.per_page == 20 %}selected{% endif %}>20 / pg</option>
-            <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50 / pg</option>
-            <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100 / pg</option>
-          </select>
-        </div>
-        <div class="user-filter-actions">
-          <button type="submit" class="saas-btn-primary btn-sm text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Apply Filters</button>
-          {% if filters.q or filters.role or filters.status or filters.company_id or filters.per_page != 20 %}
-          <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Clear</a>
-          {% endif %}
-        </div>
-      </form>
-
-      <div class="table-responsive">
-        <table class="table saas-table table-sm align-middle mb-0" id="usersTable" style="table-layout: fixed; width: 100%;">
-          <thead>
-            <tr>
-              <th style="width: 17%;">User</th>
-              <th style="width: 20%;">Email</th>
-              <th style="width: 8%; white-space: nowrap;">Status</th>
-              <th style="width: 9%; white-space: nowrap;">Role</th>
-              <th style="width: 13%;">Company</th>
-              <th style="width: 10%; white-space: nowrap;">Joined</th>
-              <th class="text-end" style="width: 23%;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for user in users %}
-            <tr>
-              <td class="fw-semibold">
-                <div class="d-flex align-items-center gap-2 overflow-hidden">
-                  <div class="saas-avatar-sm rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;font-size:0.75rem;">
-                    {{ user.name[:2] | upper }}
-                  </div>
-                  <span class="text-truncate" title="{{ user.name }}">{{ user.name }}</span>
-                </div>
-              </td>
-              <td>
-                <div class="text-truncate" title="{{ user.email }}">
-                  <span class="text-muted small">{{ user.email }}</span>
-                </div>
-              </td>
-              <td style="white-space: nowrap;">
-                {% if user.is_active %}
-                  <span class="saas-skill-chip" style="background:var(--success-tint);color:#166534;border-color:rgba(34,197,94,0.25);padding:2px 6px;font-size:0.7rem;">Active</span>
-                {% else %}
-                  <span class="saas-skill-chip" style="background:var(--danger-tint);color:#991b1b;border-color:rgba(239,68,68,0.25);padding:2px 6px;font-size:0.7rem;">Inactive</span>
-                {% endif %}
-              </td>
-              <td style="white-space: nowrap;">
-                {% if user.role == 'recruiter' %}
-                  <span class="saas-skill-chip" style="background:var(--warning-tint);color:#b45309;border-color:rgba(245,158,11,0.25);padding:2px 6px;font-size:0.7rem;">
-                    Recruiter
-                  </span>
-                {% else %}
-                  <span class="saas-skill-chip" style="background:var(--info-tint);color:#0369a1;border-color:rgba(14,165,233,0.25);padding:2px 6px;font-size:0.7rem;">
-                    Candidate
-                  </span>
-                {% endif %}
-              </td>
-              <td>
-                {% if user.role == 'recruiter' %}
-                  <div class="text-truncate" title="{{ user.company_name or 'Unassigned' }}">
-                    <span class="text-muted small">{{ user.company_name or 'Unassigned' }}</span>
-                  </div>
-                {% else %}
-                  <span class="text-muted small">-</span>
-                {% endif %}
-              </td>
-              <td style="white-space: nowrap;">
-                <span class="text-muted" style="font-size: 0.8rem;">
-                  {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'Unknown' }}
-                </span>
-              </td>
-              <td class="text-end">
-                <div class="admin-user-actions">
-                  <!-- Row 1: Role select + Save + Activate/Deactivate -->
-                  <div class="admin-action-row">
-                    <!-- Role Mutation Form -->
-                    <form action="{{ url_for('admin.update_role', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1 m-0">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <select name="role" class="form-select form-select-sm" style="width: 86px; font-size: 0.72rem; padding: 2px 4px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
-                        <option value="candidate" {% if user.role == 'candidate' %}selected{% endif %}>Candidate</option>
-                        <option value="recruiter" {% if user.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
-                      </select>
-                      <button type="submit" class="saas-btn-primary text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
-                        Save
-                      </button>
-                    </form>
-                    <!-- Status Mutation Form -->
-                    <form action="{{ url_for('admin.update_status', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center m-0">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      {% if user.is_active %}
-                        <input type="hidden" name="status" value="inactive">
-                        <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Deactivate</button>
-                      {% else %}
-                        <input type="hidden" name="status" value="active">
-                        <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Activate</button>
-                      {% endif %}
-                    </form>
-                  </div>
-
-                  <!-- Row 2 for recruiter only: Company select + Assign -->
-                  {% if user.role == 'recruiter' %}
-                  <div class="admin-action-row">
-                    <form action="{{ url_for('admin.assign_company', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1 m-0">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <select name="company_id" class="form-select form-select-sm" style="width: 120px; font-size: 0.72rem; padding: 2px 4px; min-height: 28px;">
-                        <option value="">-- No Company --</option>
-                        {% for company in companies if company.is_active %}
-                        <option value="{{ company.id }}" {% if user.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
-                        {% endfor %}
-                      </select>
-                      <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;">Assign</button>
-                    </form>
-                  </div>
-                  {% endif %}
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div>
+        <select name="role" class="form-select form-select-sm">
+          <option value="" {% if not filters.role %}selected{% endif %}>Role: All</option>
+          <option value="candidate" {% if filters.role == 'candidate' %}selected{% endif %}>Candidate</option>
+          <option value="recruiter" {% if filters.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
+        </select>
       </div>
-      {% if not users %}
-      <div class="saas-empty-state">
-        <div class="saas-empty-state-icon">
-          <i class="bi bi-people"></i>
-        </div>
-        <h5>No users found</h5>
+      <div>
+        <select name="status" class="form-select form-select-sm">
+          <option value="" {% if not filters.status %}selected{% endif %}>Status: All</option>
+          <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
       </div>
-      {% endif %}
-
-      <!-- Server-Side Pagination Bar -->
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top">
-        <div class="text-muted small text-nowrap">
-          {% if pagination.total == 0 %}
-            Showing 0 users
-          {% else %}
-            Showing {{ pagination.start_idx }}-{{ pagination.end_idx }} of {{ pagination.total }} users
-          {% endif %}
-        </div>
-        {% if pagination.total_pages > 1 %}
-        <nav aria-label="User table navigation">
-          <ul class="pagination pagination-sm mb-0 flex-wrap">
-            <!-- Previous Link -->
-            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-              {% if pagination.has_prev %}
-                <a class="page-link text-nowrap" href="{{ url_for('admin.dashboard', page=pagination.prev_page, **active_filters) }}" aria-label="Previous">
-                  &laquo; Prev
-                </a>
-              {% else %}
-                <span class="page-link text-nowrap">&laquo; Prev</span>
-              {% endif %}
-            </li>
-
-            <!-- Bounded Page Numbers -->
-            {% for p in pagination.page_numbers %}
-            <li class="page-item {% if p == pagination.page %}active{% endif %}">
-              {% if p == pagination.page %}
-                <span class="page-link">{{ p }}</span>
-              {% else %}
-                <a class="page-link" href="{{ url_for('admin.dashboard', page=p, **active_filters) }}">{{ p }}</a>
-              {% endif %}
-            </li>
-            {% endfor %}
-
-            <!-- Next Link -->
-            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-              {% if pagination.has_next %}
-                <a class="page-link text-nowrap" href="{{ url_for('admin.dashboard', page=pagination.next_page, **active_filters) }}" aria-label="Next">
-                  Next &raquo;
-                </a>
-              {% else %}
-                <span class="page-link text-nowrap">Next &raquo;</span>
-              {% endif %}
-            </li>
-          </ul>
-        </nav>
+      <div>
+        <select name="company_id" class="form-select form-select-sm">
+          <option value="" {% if not filters.company_id %}selected{% endif %}>Company: All</option>
+          {% for company in companies %}
+          <option value="{{ company.id }}" {% if filters.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <select name="per_page" class="form-select form-select-sm">
+          <option value="20" {% if filters.per_page == 20 %}selected{% endif %}>20 / pg</option>
+          <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50 / pg</option>
+          <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100 / pg</option>
+        </select>
+      </div>
+      <div class="admin-filter-actions">
+        <button type="submit" class="saas-btn-primary btn-sm text-nowrap d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 14px;">Apply Filters</button>
+        {% if filters.q or filters.role or filters.status or filters.company_id or filters.per_page != 20 %}
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary text-nowrap d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 12px;">Clear</a>
         {% endif %}
       </div>
-    </div>
+    </form>
   </div>
 
-  <!-- Side Column: Recent Registrations -->
-  <div class="col-admin-recent">
-    <div class="saas-card h-100">
-      <h6 class="fw-bold mb-3 pb-2 border-bottom"><i class="bi bi-clock-history me-2"></i>Recent Registrations</h6>
-      
-      {% if recent_users %}
-        <div class="recent-registrations-grid">
-          {% for ru in recent_users %}
-          <div class="recent-reg-item">
-            <div class="d-flex justify-content-between align-items-start gap-2">
-              <span class="fw-semibold text-truncate" style="font-size:0.83rem;" title="{{ ru.name }}">{{ ru.name }}</span>
-              <small class="text-muted text-nowrap" style="font-size:0.7rem;">
-                {{ ru.created_at.strftime('%b %d, %Y') if ru.created_at else '' }}
-              </small>
+  <!-- Clean Informational User Table -->
+  <div class="table-responsive">
+    <table class="table saas-table admin-user-table align-middle mb-0" id="usersTable" style="table-layout: fixed; width: 100%;">
+      <thead>
+        <tr>
+          <th style="width: 18%;">User</th>
+          <th style="width: 20%;">Email</th>
+          <th style="width: 10%; white-space: nowrap;">Status</th>
+          <th style="width: 12%; white-space: nowrap;">Role</th>
+          <th style="width: 14%;">Company</th>
+          <th style="width: 12%; white-space: nowrap;">Joined</th>
+          <th class="text-end" style="width: 14%;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2 overflow-hidden">
+              <div class="saas-avatar-sm rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:34px;height:34px;font-size:0.78rem;font-weight:700;">
+                {{ user.name[:2] | upper }}
+              </div>
+              <span class="fw-semibold text-truncate" title="{{ user.name }}" style="color: var(--text-primary);">{{ user.name }}</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center gap-2">
-              <span class="text-muted text-truncate" style="font-size:0.75rem;" title="{{ ru.email }}">{{ ru.email }}</span>
-              <span class="text-nowrap" style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:{% if ru.role == 'recruiter' %}#b45309{% else %}#0369a1{% endif %}">
-                {{ ru.role }}
-              </span>
+          </td>
+          <td>
+            <div class="text-truncate" title="{{ user.email }}">
+              <span class="text-muted small">{{ user.email }}</span>
+            </div>
+          </td>
+          <td style="white-space: nowrap;">
+            {% if user.is_active %}
+              <span class="badge-soft-success">Active</span>
+            {% else %}
+              <span class="badge-soft-danger">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="white-space: nowrap;">
+            {% if user.role == 'recruiter' %}
+              <span class="badge-soft-warning">Recruiter</span>
+            {% else %}
+              <span class="badge-soft-info">Candidate</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if user.role == 'recruiter' %}
+              <div class="text-truncate" title="{{ user.company_name or 'Unassigned' }}">
+                <span class="text-muted small">{{ user.company_name or 'Unassigned' }}</span>
+              </div>
+            {% else %}
+              <span class="text-muted small">-</span>
+            {% endif %}
+          </td>
+          <td style="white-space: nowrap;">
+            <span class="text-muted small">
+              {{ user.created_at.strftime('%d %b %Y') if user.created_at else 'Unknown' }}
+            </span>
+          </td>
+          <td class="text-end">
+            <button type="button"
+                    class="admin-manage-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#adminUserManageModal"
+                    data-user-id="{{ user.id }}"
+                    data-user-name="{{ user.name }}"
+                    data-user-email="{{ user.email }}"
+                    data-user-role="{{ user.role }}"
+                    data-user-company-id="{{ user.company_id or '' }}"
+                    data-user-active="{{ 'true' if user.is_active else 'false' }}"
+                    data-is-self="{{ 'true' if user.id == session.get('user_id') else 'false' }}"
+                    data-role-url="{{ url_for('admin.update_role', user_id=user.id, page=pagination.page, **active_filters) }}"
+                    data-status-url="{{ url_for('admin.update_status', user_id=user.id, page=pagination.page, **active_filters) }}"
+                    data-company-url="{{ url_for('admin.assign_company', user_id=user.id, page=pagination.page, **active_filters) }}">
+              <i class="bi bi-gear me-1"></i>Manage
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not users %}
+  <div class="saas-empty-state">
+    <div class="saas-empty-state-icon">
+      <i class="bi bi-people"></i>
+    </div>
+    <h5>No users found</h5>
+  </div>
+  {% endif %}
+
+  <!-- Server-Side Pagination Bar -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top" style="border-color: var(--border-color) !important;">
+    <div class="text-muted small text-nowrap">
+      {% if pagination.total == 0 %}
+        Showing 0 users
+      {% else %}
+        Showing {{ pagination.start_idx }}-{{ pagination.end_idx }} of {{ pagination.total }} users
+      {% endif %}
+    </div>
+    {% if pagination.total_pages > 1 %}
+    <nav aria-label="User table navigation">
+      <ul class="pagination pagination-sm mb-0 flex-wrap">
+        <!-- Previous Link -->
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          {% if pagination.has_prev %}
+            <a class="page-link text-nowrap" href="{{ url_for('admin.dashboard', page=pagination.prev_page, **active_filters) }}" aria-label="Previous">
+              &laquo; Prev
+            </a>
+          {% else %}
+            <span class="page-link text-nowrap">&laquo; Prev</span>
+          {% endif %}
+        </li>
+
+        <!-- Bounded Page Numbers -->
+        {% for p in pagination.page_numbers %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+          {% if p == pagination.page %}
+            <span class="page-link">{{ p }}</span>
+          {% else %}
+            <a class="page-link" href="{{ url_for('admin.dashboard', page=p, **active_filters) }}">{{ p }}</a>
+          {% endif %}
+        </li>
+        {% endfor %}
+
+        <!-- Next Link -->
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          {% if pagination.has_next %}
+            <a class="page-link text-nowrap" href="{{ url_for('admin.dashboard', page=pagination.next_page, **active_filters) }}" aria-label="Next">
+              Next &raquo;
+            </a>
+          {% else %}
+            <span class="page-link text-nowrap">Next &raquo;</span>
+          {% endif %}
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Secondary Section: Recent Registrations (Full Width Auto-Fit Grid) -->
+<div class="saas-card mb-4 p-3 p-md-4">
+  <div class="mb-3">
+    <h6 class="fw-bold mb-1"><i class="bi bi-clock-history me-2"></i>Recent Registrations</h6>
+    <p class="text-muted small mb-0">Latest user accounts created on the platform.</p>
+  </div>
+
+  {% if recent_users %}
+    <div class="recent-registration-grid">
+      {% for ru in recent_users %}
+      <div class="recent-reg-card">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="d-flex align-items-center gap-2 overflow-hidden">
+            <div class="recent-reg-avatar">
+              {{ ru.name[:2] | upper }}
+            </div>
+            <div class="overflow-hidden">
+              <div class="fw-semibold text-truncate" style="font-size:0.85rem; color: var(--text-primary);" title="{{ ru.name }}">{{ ru.name }}</div>
+              <div class="text-muted text-truncate" style="font-size:0.75rem;" title="{{ ru.email }}">{{ ru.email }}</div>
             </div>
           </div>
-          {% endfor %}
+          <small class="text-muted text-nowrap" style="font-size:0.72rem;">
+            {{ ru.created_at.strftime('%d %b %Y') if ru.created_at else '' }}
+          </small>
         </div>
-      {% else %}
-        <div class="text-center text-muted py-3">
-          <small>No recent registrations.</small>
+        <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-color: var(--border-color) !important;">
+          <span class="text-muted" style="font-size:0.72rem;">Role</span>
+          {% if ru.role == 'recruiter' %}
+            <span class="badge-soft-warning">Recruiter</span>
+          {% else %}
+            <span class="badge-soft-info">Candidate</span>
+          {% endif %}
         </div>
-      {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center text-muted py-3">
+      <small>No recent registrations.</small>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Reusable Manage User Modal (Single Modal Outside Loop) -->
+<div class="modal fade" id="adminUserManageModal" tabindex="-1" aria-labelledby="adminUserManageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content admin-modal-content">
+      <!-- Modal Header -->
+      <div class="admin-modal-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3 overflow-hidden">
+          <div class="admin-modal-avatar" id="modalUserAvatar">--</div>
+          <div class="overflow-hidden">
+            <h6 class="modal-title fw-bold mb-0 text-truncate" id="modalUserName">User Name</h6>
+            <div class="text-muted small text-truncate" id="modalUserEmail">email@example.com</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="admin-modal-body">
+        <!-- Self Protection Warning (Shown only if isSelf is true) -->
+        <div class="alert saas-alert-warning py-2 px-3 mb-3 d-none align-items-center gap-2" id="modalSelfWarning" role="alert">
+          <i class="bi bi-shield-exclamation flex-shrink-0"></i>
+          <div style="font-size: 0.8rem;">You cannot change your own role or account status.</div>
+        </div>
+
+        <!-- Section 1: Account Role -->
+        <div class="modal-section pt-0">
+          <div class="modal-section-title">Account Role</div>
+          <form id="modalRoleForm" action="" method="POST" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="role" id="modalRoleSelect" class="form-select form-select-sm" style="height: 38px;">
+              <option value="candidate">Candidate</option>
+              <option value="recruiter">Recruiter</option>
+            </select>
+            <button type="submit" id="modalRoleSubmitBtn" class="saas-btn-primary btn-sm text-nowrap" style="height: 38px; padding: 0 14px;">
+              Save Role
+            </button>
+          </form>
+        </div>
+
+        <!-- Section 2: Company Access -->
+        <div class="modal-section" id="modalCompanySection">
+          <div class="modal-section-title">Company Access</div>
+          <!-- Candidate explanation notice -->
+          <div class="text-muted small mb-2 d-none" id="modalCompanyNotice">
+            <i class="bi bi-info-circle me-1"></i>Save the Recruiter role first, then reopen Manage to assign a company.
+          </div>
+          <form id="modalCompanyForm" action="" method="POST" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="company_id" id="modalCompanySelect" class="form-select form-select-sm" style="height: 38px;">
+              <option value="">-- No Company --</option>
+              {% for company in companies if company.is_active %}
+              <option value="{{ company.id }}">{{ company.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" id="modalCompanySubmitBtn" class="btn btn-sm btn-outline-primary text-nowrap" style="height: 38px; padding: 0 14px;">
+              Assign Company
+            </button>
+          </form>
+        </div>
+
+        <!-- Section 3: Account Status -->
+        <div class="modal-section pb-1">
+          <div class="modal-section-title">Account Status</div>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <span class="text-muted small">Current status:</span>
+              <span id="modalStatusBadge" class="badge-soft-success ms-1">Active</span>
+            </div>
+            <form id="modalStatusForm" action="" method="POST" class="m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" id="modalStatusInput" value="inactive">
+              <button type="submit" id="modalStatusSubmitBtn" class="btn btn-sm btn-outline-danger text-nowrap" style="height: 38px; padding: 0 14px;">
+                Deactivate Account
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const manageModal = document.getElementById('adminUserManageModal');
+  if (!manageModal) return;
+
+  let persistedRole = 'candidate';
+  let isSelfUser = false;
+
+  manageModal.addEventListener('show.bs.modal', function (event) {
+    const btn = event.relatedTarget;
+    if (!btn) return;
+
+    const userId = btn.dataset.userId || '';
+    const userName = btn.dataset.userName || '';
+    const userEmail = btn.dataset.userEmail || '';
+    persistedRole = btn.dataset.userRole || 'candidate';
+    const userCompanyId = btn.dataset.userCompanyId || '';
+    const userActive = btn.dataset.userActive === 'true';
+    isSelfUser = btn.dataset.isSelf === 'true';
+
+    const roleUrl = btn.dataset.roleUrl || '';
+    const statusUrl = btn.dataset.statusUrl || '';
+    const companyUrl = btn.dataset.companyUrl || '';
+
+    // Header updates (safe DOM textContent)
+    const avatar = document.getElementById('modalUserAvatar');
+    if (avatar) avatar.textContent = (userName.slice(0, 2) || '--').toUpperCase();
+
+    const nameEl = document.getElementById('modalUserName');
+    if (nameEl) nameEl.textContent = userName;
+
+    const emailEl = document.getElementById('modalUserEmail');
+    if (emailEl) emailEl.textContent = userEmail;
+
+    // Self warning
+    const selfWarning = document.getElementById('modalSelfWarning');
+    if (selfWarning) {
+      if (isSelfUser) {
+        selfWarning.classList.remove('d-none');
+        selfWarning.classList.add('d-flex');
+      } else {
+        selfWarning.classList.add('d-none');
+        selfWarning.classList.remove('d-flex');
+      }
+    }
+
+    // Role Form
+    const roleForm = document.getElementById('modalRoleForm');
+    if (roleForm && roleUrl) roleForm.action = roleUrl;
+
+    const roleSelect = document.getElementById('modalRoleSelect');
+    if (roleSelect) {
+      roleSelect.value = persistedRole;
+      roleSelect.disabled = isSelfUser;
+    }
+
+    const roleSubmitBtn = document.getElementById('modalRoleSubmitBtn');
+    if (roleSubmitBtn) roleSubmitBtn.disabled = isSelfUser;
+
+    // Company Form & Backend Guard
+    const companyForm = document.getElementById('modalCompanyForm');
+    if (companyForm && companyUrl) companyForm.action = companyUrl;
+
+    const companySelect = document.getElementById('modalCompanySelect');
+    if (companySelect) companySelect.value = userCompanyId;
+
+    updateCompanyAccessUI(roleSelect ? roleSelect.value : persistedRole);
+
+    // Status Form
+    const statusForm = document.getElementById('modalStatusForm');
+    if (statusForm && statusUrl) statusForm.action = statusUrl;
+
+    const statusInput = document.getElementById('modalStatusInput');
+    const statusBadge = document.getElementById('modalStatusBadge');
+    const statusSubmitBtn = document.getElementById('modalStatusSubmitBtn');
+
+    if (userActive) {
+      if (statusInput) statusInput.value = 'inactive';
+      if (statusBadge) {
+        statusBadge.textContent = 'Active';
+        statusBadge.className = 'badge-soft-success ms-1';
+      }
+      if (statusSubmitBtn) {
+        statusSubmitBtn.textContent = 'Deactivate Account';
+        statusSubmitBtn.className = 'btn btn-sm btn-outline-danger text-nowrap';
+        statusSubmitBtn.disabled = isSelfUser;
+      }
+    } else {
+      if (statusInput) statusInput.value = 'active';
+      if (statusBadge) {
+        statusBadge.textContent = 'Inactive';
+        statusBadge.className = 'badge-soft-danger ms-1';
+      }
+      if (statusSubmitBtn) {
+        statusSubmitBtn.textContent = 'Activate Account';
+        statusSubmitBtn.className = 'btn btn-sm btn-outline-success text-nowrap';
+        statusSubmitBtn.disabled = isSelfUser;
+      }
+    }
+  });
+
+  // Handle role dropdown change visually inside the modal
+  const roleSelect = document.getElementById('modalRoleSelect');
+  if (roleSelect) {
+    roleSelect.addEventListener('change', function () {
+      updateCompanyAccessUI(this.value);
+    });
+  }
+
+  function updateCompanyAccessUI(currentSelectedRole) {
+    const companySelect = document.getElementById('modalCompanySelect');
+    const companySubmitBtn = document.getElementById('modalCompanySubmitBtn');
+    const companyNotice = document.getElementById('modalCompanyNotice');
+
+    if (persistedRole === 'candidate') {
+      if (companySelect) companySelect.disabled = true;
+      if (companySubmitBtn) companySubmitBtn.disabled = true;
+      if (companyNotice) {
+        companyNotice.classList.remove('d-none');
+        if (currentSelectedRole === 'recruiter') {
+          companyNotice.textContent = 'Save the Recruiter role first, then reopen Manage to assign a company.';
+        } else {
+          companyNotice.textContent = 'Only recruiters can be assigned to companies.';
+        }
+      }
+    } else {
+      if (currentSelectedRole === 'candidate') {
+        if (companySelect) companySelect.disabled = true;
+        if (companySubmitBtn) companySubmitBtn.disabled = true;
+        if (companyNotice) {
+          companyNotice.classList.remove('d-none');
+          companyNotice.textContent = 'Role changed to Candidate. Save role or revert to assign company.';
+        }
+      } else {
+        if (companySelect) companySelect.disabled = false;
+        if (companySubmitBtn) companySubmitBtn.disabled = false;
+        if (companyNotice) companyNotice.classList.add('d-none');
+      }
+    }
+  }
+});
+</script>
 {% endblock %}

@@ -2,8 +2,8 @@
 {% block title %}Manage Companies{% endblock %}
 
 {% block content %}
-<div class="saas-page-header">
-  <div class="d-flex justify-content-between align-items-center w-100">
+<div class="saas-page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 w-100">
     <div>
       <div class="saas-page-header-eyebrow">PLATFORM ADMINISTRATION</div>
       <h1 class="saas-page-header-title">Companies</h1>
@@ -13,101 +13,247 @@
   </div>
 </div>
 
-<div class="row g-4">
+<div class="row g-3 g-lg-4">
   <div class="col-lg-8">
-    <div class="saas-card h-100">
-      <h5 class="fw-bold mb-3"><i class="bi bi-buildings me-2"></i>Existing Companies</h5>
-      
-      <div class="table-responsive">
-        <table class="table saas-table table-sm align-middle">
+    <div class="saas-card p-3 p-md-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-buildings me-2"></i>Existing Companies</h5>
+        {% if pagination and pagination.total > 0 %}
+          <span class="text-muted small">Total: {{ pagination.total }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Filter Toolbar -->
+      <form method="GET" action="{{ url_for('admin.list_companies') }}" class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <div class="input-group input-group-sm flex-grow-1" style="min-width: 140px;">
+          <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Search by company or website..." value="{{ filters.q if filters else '' }}">
+        </div>
+        <div class="flex-grow-1 flex-sm-grow-0" style="min-width: 95px;">
+          <select name="status" class="form-select form-select-sm">
+            <option value="" {% if not filters or not filters.status %}selected{% endif %}>Status: All</option>
+            <option value="active" {% if filters and filters.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if filters and filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+        <div class="flex-grow-1 flex-sm-grow-0" style="min-width: 85px;">
+          <select name="per_page" class="form-select form-select-sm">
+            <option value="20" {% if not pagination or pagination.per_page == 20 %}selected{% endif %}>20 / pg</option>
+            <option value="50" {% if pagination and pagination.per_page == 50 %}selected{% endif %}>50 / pg</option>
+            <option value="100" {% if pagination and pagination.per_page == 100 %}selected{% endif %}>100 / pg</option>
+          </select>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="saas-btn-primary btn-sm text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Filter</button>
+          {% if filters and (filters.q or filters.status or (pagination and pagination.per_page != 20 and 'per_page' in request.args)) %}
+          <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Clear</a>
+          {% endif %}
+        </div>
+      </form>
+
+      {% if companies %}
+      <!-- Desktop Table (md+) -->
+      <div class="table-responsive d-none d-md-block">
+        <table class="table saas-table table-sm align-middle mb-0" style="table-layout: auto;">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
+              <th>Company</th>
               <th>Website</th>
-              <th>Status</th>
-              <th>Recruiters</th>
-              <th class="text-end">Actions</th>
+              <th class="text-center" style="width: 75px;">Status</th>
+              <th class="text-center" style="width: 75px;">Recruiters</th>
+              <th style="width: 90px;">Updated</th>
+              <th class="text-end" style="width: 140px;">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for company in companies %}
             <tr>
-              <td class="text-muted small">#{{ company.id }}</td>
-              <td class="fw-semibold">{{ company.name }}</td>
+              <td>
+                <div class="fw-semibold text-truncate" style="max-width: 160px;" title="{{ company.name }}">
+                  <span class="text-muted small me-1">#{{ company.id }}</span>{{ company.name }}
+                </div>
+                {% if company.description %}
+                <div class="text-muted small text-truncate" style="max-width: 160px; font-size: 0.72rem;" title="{{ company.description }}">{{ company.description }}</div>
+                {% endif %}
+              </td>
               <td>
                 {% if company.website %}
-                  <a href="{{ company.website }}" target="_blank" rel="noopener noreferrer" class="text-primary small text-truncate d-inline-block" style="max-width: 150px;">
+                  <a href="{{ company.website }}" target="_blank" rel="noopener noreferrer" class="text-primary small text-truncate d-inline-block" style="max-width: 130px;" title="{{ company.website }}">
                     {{ company.website }}
                   </a>
                 {% else %}
                   <span class="text-muted small">-</span>
                 {% endif %}
               </td>
-              <td>
+              <td class="text-center text-nowrap">
                 {% if company.is_active %}
                   <span class="saas-skill-chip" style="background:var(--success-tint);color:#166534;border-color:rgba(34,197,94,0.25);padding:2px 6px;font-size:0.7rem;">Active</span>
                 {% else %}
                   <span class="saas-skill-chip" style="background:var(--danger-tint);color:#991b1b;border-color:rgba(239,68,68,0.25);padding:2px 6px;font-size:0.7rem;">Inactive</span>
                 {% endif %}
               </td>
-              <td><span class="badge bg-secondary">{{ company.recruiter_count }}</span></td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editCompanyModal{{ company.id }}" style="font-size:0.75rem; padding: 2px 8px;">Edit</button>
+              <td class="text-center"><span class="badge bg-secondary">{{ company.recruiter_count }}</span></td>
+              <td class="text-muted small text-nowrap">
+                {{ company.updated_at.strftime('%Y-%m-%d') if company.updated_at else (company.created_at.strftime('%Y-%m-%d') if company.created_at else '-') }}
               </td>
-            </tr>
-
-            <!-- Edit Modal -->
-            <div class="modal fade" id="editCompanyModal{{ company.id }}" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog">
-                <div class="modal-content">
-                  <form action="{{ url_for('admin.edit_company', company_id=company.id) }}" method="POST">
+              <td class="text-end text-nowrap">
+                <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                  <button type="button"
+                          class="btn btn-sm btn-outline-secondary edit-company-btn"
+                          data-bs-toggle="modal"
+                          data-bs-target="#companyEditModal"
+                          data-edit-url="{{ url_for('admin.edit_company', company_id=company.id, page=pagination.page if pagination else 1, **active_filters if active_filters else {}) }}"
+                          data-company-name="{{ company.name }}"
+                          data-company-website="{{ company.website or '' }}"
+                          data-company-description="{{ company.description or '' }}"
+                          style="font-size:0.72rem; padding: 2px 7px;">
+                    Edit
+                  </button>
+                  <form action="{{ url_for('admin.update_company_status', company_id=company.id, page=pagination.page if pagination else 1, **active_filters if active_filters else {}) }}" method="POST" class="d-inline m-0">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="modal-header">
-                      <h5 class="modal-title">Edit Company</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                      <div class="mb-3">
-                        <label class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="name" value="{{ company.name }}" required maxlength="255">
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" rows="3">{{ company.description or '' }}</textarea>
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Website</label>
-                        <input type="url" class="form-control" name="website" value="{{ company.website or '' }}" placeholder="https://example.com" maxlength="255">
-                      </div>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                      <button type="submit" class="saas-btn-primary">Save Changes</button>
-                    </div>
+                    <input type="hidden" name="status" value="{{ 'inactive' if company.is_active else 'active' }}">
+                    <input type="hidden" name="q" value="{{ filters.q if filters else '' }}">
+                    <input type="hidden" name="filter_status" value="{{ filters.status if filters else '' }}">
+                    <input type="hidden" name="page" value="{{ pagination.page if pagination else 1 }}">
+                    <input type="hidden" name="per_page" value="{{ pagination.per_page if pagination else 20 }}">
+                    {% if company.is_active %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap" style="font-size:0.72rem; padding: 2px 7px;" onclick="return confirm('Are you sure you want to deactivate this company?');">Deactivate</button>
+                    {% else %}
+                      <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" style="font-size:0.72rem; padding: 2px 7px;">Activate</button>
+                    {% endif %}
                   </form>
                 </div>
-              </div>
-            </div>
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      {% if not companies %}
-      <div class="text-center text-muted mt-4 mb-4">
-        <i class="bi bi-buildings fs-1"></i>
-        <h5 class="mt-2">No companies found</h5>
-        <p class="small">Create one using the form.</p>
+
+      <!-- Mobile Stacked Cards (<md) -->
+      <div class="d-block d-md-none">
+        {% for company in companies %}
+        <div class="p-2 mb-2 rounded" style="background: var(--bg-alt); border: 1px solid var(--border-color); overflow: hidden;">
+          <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+            <div class="fw-bold text-truncate" style="min-width: 0; flex: 1;">
+              <span class="text-muted small me-1">#{{ company.id }}</span>{{ company.name }}
+            </div>
+            <div class="flex-shrink-0">
+              {% if company.is_active %}
+                <span class="saas-skill-chip" style="background:var(--success-tint);color:#166534;border-color:rgba(34,197,94,0.25);padding:1px 5px;font-size:0.68rem;">Active</span>
+              {% else %}
+                <span class="saas-skill-chip" style="background:var(--danger-tint);color:#991b1b;border-color:rgba(239,68,68,0.25);padding:1px 5px;font-size:0.68rem;">Inactive</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if company.description %}
+          <p class="text-muted small mb-1 text-truncate" style="font-size: 0.72rem;">{{ company.description }}</p>
+          {% endif %}
+
+          <div class="d-flex flex-wrap gap-2 text-muted small mb-2 align-items-center" style="font-size: 0.72rem; min-width: 0;">
+            {% if company.website %}
+              <a href="{{ company.website }}" target="_blank" rel="noopener noreferrer" class="text-primary text-truncate d-inline-block" style="max-width: 140px;">
+                <i class="bi bi-link-45deg"></i>{{ company.website }}
+              </a>
+            {% else %}
+              <span class="text-muted"><i class="bi bi-link-45deg"></i>No web</span>
+            {% endif %}
+            <span>&bull;</span>
+            <span>{{ company.recruiter_count }} recruiters</span>
+            <span>&bull;</span>
+            <span>{{ company.updated_at.strftime('%Y-%m-%d') if company.updated_at else (company.created_at.strftime('%Y-%m-%d') if company.created_at else '-') }}</span>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 pt-1 border-top" style="border-color: var(--border-color) !important;">
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary edit-company-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#companyEditModal"
+                    data-edit-url="{{ url_for('admin.edit_company', company_id=company.id, page=pagination.page if pagination else 1, **active_filters if active_filters else {}) }}"
+                    data-company-name="{{ company.name }}"
+                    data-company-website="{{ company.website or '' }}"
+                    data-company-description="{{ company.description or '' }}"
+                    style="font-size:0.72rem; padding: 2px 10px;">
+              Edit
+            </button>
+            <form action="{{ url_for('admin.update_company_status', company_id=company.id, page=pagination.page if pagination else 1, **active_filters if active_filters else {}) }}" method="POST" class="d-inline m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="{{ 'inactive' if company.is_active else 'active' }}">
+              <input type="hidden" name="q" value="{{ filters.q if filters else '' }}">
+              <input type="hidden" name="filter_status" value="{{ filters.status if filters else '' }}">
+              <input type="hidden" name="page" value="{{ pagination.page if pagination else 1 }}">
+              <input type="hidden" name="per_page" value="{{ pagination.per_page if pagination else 20 }}">
+              {% if company.is_active %}
+                <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap" style="font-size:0.72rem; padding: 2px 10px;" onclick="return confirm('Are you sure you want to deactivate this company?');">Deactivate</button>
+              {% else %}
+                <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" style="font-size:0.72rem; padding: 2px 10px;">Activate</button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+        {% endfor %}
       </div>
+
+      <!-- Pagination Controls -->
+      {% if pagination and pagination.total > 0 %}
+      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top" style="border-color: var(--border-color) !important;">
+        <span class="text-muted small">
+          Showing {{ pagination.start_idx }} to {{ pagination.end_idx }} of {{ pagination.total }} companies
+        </span>
+        {% if pagination.total_pages > 1 %}
+        <nav aria-label="Company pagination">
+          <ul class="pagination pagination-sm justify-content-center mb-0">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('admin.list_companies', page=pagination.prev_page, **active_filters) if pagination.has_prev else '#' }}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+            {% for num in pagination.page_numbers %}
+            <li class="page-item {% if num == pagination.page %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('admin.list_companies', page=num, **active_filters) }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('admin.list_companies', page=pagination.next_page, **active_filters) if pagination.has_next else '#' }}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <!-- Empty States -->
+      {% if filters and (filters.q or filters.status) %}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-search fs-1 mb-2 d-block opacity-50"></i>
+        <h5 class="mt-2 fw-semibold">No companies match your filters</h5>
+        <p class="small text-muted mb-3">Try adjusting your search query or status filter.</p>
+        <a href="{{ url_for('admin.list_companies') }}" class="btn btn-sm btn-outline-primary">Clear Filters</a>
+      </div>
+      {% else %}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-buildings fs-1 mb-2 d-block opacity-50"></i>
+        <h5 class="mt-2 fw-semibold">No companies found</h5>
+        <p class="small text-muted">Create your first company using the Add Company form.</p>
+      </div>
+      {% endif %}
       {% endif %}
     </div>
   </div>
 
   <div class="col-lg-4">
-    <div class="saas-card h-100">
+    <div class="saas-card p-3 p-md-4 h-100">
       <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2"></i>Add Company</h6>
-      <form action="{{ url_for('admin.create_company') }}" method="POST">
+      <form action="{{ url_for('admin.create_company', **active_filters if active_filters else {}) }}" method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="q" value="{{ filters.q if filters else '' }}">
+        <input type="hidden" name="filter_status" value="{{ filters.status if filters else '' }}">
+        <input type="hidden" name="page" value="{{ pagination.page if pagination else 1 }}">
+        <input type="hidden" name="per_page" value="{{ pagination.per_page if pagination else 20 }}">
         <div class="mb-3">
           <label class="form-label text-muted small fw-bold">Company Name <span class="text-danger">*</span></label>
           <input type="text" class="form-control form-control-sm" name="name" required maxlength="255">
@@ -125,4 +271,68 @@
     </div>
   </div>
 </div>
+
+<!-- Reusable Edit Company Modal (Single Modal Pattern) -->
+<div class="modal fade" id="companyEditModal" tabindex="-1" aria-labelledby="companyEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="companyEditForm" action="" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="q" value="{{ filters.q if filters else '' }}">
+        <input type="hidden" name="filter_status" value="{{ filters.status if filters else '' }}">
+        <input type="hidden" name="page" value="{{ pagination.page if pagination else 1 }}">
+        <input type="hidden" name="per_page" value="{{ pagination.per_page if pagination else 20 }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="companyEditModalLabel">Edit Company</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="modalCompanyName" class="form-label text-muted small fw-bold">Company Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="modalCompanyName" name="name" required maxlength="255">
+          </div>
+          <div class="mb-3">
+            <label for="modalCompanyWebsite" class="form-label text-muted small fw-bold">Website</label>
+            <input type="url" class="form-control" id="modalCompanyWebsite" name="website" placeholder="https://..." maxlength="255">
+          </div>
+          <div class="mb-3">
+            <label for="modalCompanyDescription" class="form-label text-muted small fw-bold">Description</label>
+            <textarea class="form-control" id="modalCompanyDescription" name="description" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="saas-btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const editModal = document.getElementById('companyEditModal');
+  if (editModal) {
+    editModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      if (!button) return;
+      const editUrl = button.dataset.editUrl || '';
+      const name = button.dataset.companyName || '';
+      const website = button.dataset.companyWebsite || '';
+      const description = button.dataset.companyDescription || '';
+
+      const form = document.getElementById('companyEditForm');
+      if (form && editUrl) {
+        form.action = editUrl;
+      }
+      const nameInput = document.getElementById('modalCompanyName');
+      if (nameInput) nameInput.value = name;
+      const websiteInput = document.getElementById('modalCompanyWebsite');
+      if (websiteInput) websiteInput.value = website;
+      const descInput = document.getElementById('modalCompanyDescription');
+      if (descInput) descInput.value = description;
+    });
+  }
+});
+</script>
 {% endblock %}

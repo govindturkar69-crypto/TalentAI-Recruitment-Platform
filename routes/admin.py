@@ -80,6 +80,50 @@ def _safe_redirect_dashboard():
     return redirect(url_for("admin.dashboard", **_get_safe_dashboard_params()))
 
 
+def _get_safe_companies_params():
+    """Extract and normalize whitelisted companies list parameters for safe redirection."""
+    params = {}
+    q = (request.args.get("q") or request.form.get("filter_q") or request.form.get("q") or "").strip()[:100]
+    if q:
+        params["q"] = q
+
+    # Note: request.form.get("status") in update_company_status route is the mutation target ('active'/'inactive').
+    # Prefer explicit filter_status from form or status from args.
+    status = (request.args.get("status") or request.form.get("filter_status") or "").strip().lower()
+    if not status and request.endpoint != "admin.update_company_status":
+        raw_status = (request.form.get("status") or "").strip().lower()
+        if raw_status in ("active", "inactive"):
+            status = raw_status
+
+    if status in ("active", "inactive"):
+        params["status"] = status
+
+    page_str = (request.args.get("page") or request.form.get("filter_page") or request.form.get("page") or "").strip()
+    try:
+        p = int(page_str)
+        if p > 0:
+            params["page"] = p
+    except (TypeError, ValueError):
+        pass
+
+    per_page_str = (
+        request.args.get("per_page") or request.form.get("filter_per_page") or request.form.get("per_page") or ""
+    ).strip()
+    try:
+        pp = int(per_page_str)
+        if pp in (20, 50, 100):
+            params["per_page"] = pp
+    except (TypeError, ValueError):
+        pass
+
+    return params
+
+
+def _safe_redirect_companies():
+    """Redirect safely to admin.list_companies preserving whitelisted filter/pagination state."""
+    return redirect(url_for("admin.list_companies", **_get_safe_companies_params()))
+
+
 def _get_platform_analytics(cur):
     """Fetch aggregate platform metrics across users, jobs, applications, interviews, and companies.
 
@@ -547,19 +591,134 @@ def assign_company(user_id):
 @admin_bp.route("/companies")
 @admin_required
 def list_companies():
+    # 1. Parse and normalize query parameters
+    raw_q = request.args.get("q", "").strip()
+    q = raw_q[:100]
+
+    raw_status = request.args.get("status", "").strip().lower()
+    status = raw_status if raw_status in ("active", "inactive") else ""
+
+    try:
+        page = int(request.args.get("page", 1))
+        if page < 1:
+            page = 1
+    except (TypeError, ValueError):
+        page = 1
+
+    try:
+        per_page = int(request.args.get("per_page", 20))
+        if per_page not in (20, 50, 100):
+            per_page = 20
+    except (TypeError, ValueError):
+        per_page = 20
+
+    # 2. Build WHERE clauses and parameters safely
+    where_clauses = []
+    params = []
+
+    if q:
+        escaped_q = _escape_like(q, "=")
+        pattern = f"%{escaped_q}%"
+        where_clauses.append("(c.name LIKE %s ESCAPE '=' OR c.website LIKE %s ESCAPE '=')")
+        params.extend([pattern, pattern])
+
+    if status == "active":
+        where_clauses.append("c.is_active = TRUE")
+    elif status == "inactive":
+        where_clauses.append("c.is_active = FALSE")
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+    select_query = f"""
+        SELECT c.id, c.name, c.description, c.website, c.is_active, c.created_at, c.updated_at,
+               (SELECT COUNT(*) FROM users u
+                WHERE u.company_id = c.id AND u.role = 'recruiter') as recruiter_count
+        FROM companies c
+        {where_sql}
+        ORDER BY c.name ASC, c.id ASC
+        LIMIT %s OFFSET %s
+    """.strip()
+
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
-            cur.execute(
-                """
-                SELECT c.id, c.name, c.description, c.website, c.is_active, c.created_at, c.updated_at,
-                       (SELECT COUNT(*) FROM users u
-                        WHERE u.company_id = c.id AND u.role = 'recruiter') as recruiter_count
-                FROM companies c
-                ORDER BY c.name ASC
-            """
-            )
-            companies = cur.fetchall()
-    return render_template("admin_companies.html", companies=companies)
+            count_query = f"SELECT COUNT(*) AS total FROM companies c {where_sql}".strip()
+            cur.execute(count_query, tuple(params))
+
+            try:
+                count_row = cur.fetchone()
+            except StopIteration:
+                count_row = None
+
+            if count_row is not None and isinstance(count_row, dict) and "total" in count_row:
+                filtered_total = int(count_row["total"])
+            elif count_row is not None and hasattr(count_row, "__getitem__"):
+                try:
+                    filtered_total = int(count_row["total"])
+                except Exception:
+                    filtered_total = None
+            else:
+                filtered_total = None
+
+            if filtered_total is None:
+                offset = (page - 1) * per_page
+                cur.execute(select_query, tuple(params + [per_page, offset]))
+                companies = cur.fetchall() or []
+                filtered_total = len(companies)
+                total_pages = max(1, (filtered_total + per_page - 1) // per_page)
+            elif filtered_total == 0:
+                page = 1
+                total_pages = 1
+                offset = 0
+                companies = []
+            else:
+                total_pages = (filtered_total + per_page - 1) // per_page
+                if page > total_pages:
+                    page = total_pages
+                offset = (page - 1) * per_page
+                cur.execute(select_query, tuple(params + [per_page, offset]))
+                companies = cur.fetchall() or []
+
+    window_start = max(1, page - 2)
+    window_end = min(total_pages, page + 2)
+    page_numbers = list(range(window_start, window_end + 1))
+
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total": filtered_total,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "prev_page": page - 1,
+        "next_page": page + 1,
+        "prev_num": page - 1,
+        "next_num": page + 1,
+        "start_idx": offset + 1 if filtered_total > 0 else 0,
+        "end_idx": min(offset + per_page, filtered_total) if filtered_total > 0 else 0,
+        "page_numbers": page_numbers,
+    }
+
+    filters = {
+        "q": q,
+        "status": status,
+        "per_page": per_page,
+    }
+
+    active_filters = {}
+    if q:
+        active_filters["q"] = q
+    if status:
+        active_filters["status"] = status
+    if per_page != 20 or "per_page" in request.args:
+        active_filters["per_page"] = per_page
+
+    return render_template(
+        "admin_companies.html",
+        companies=companies,
+        pagination=pagination,
+        filters=filters,
+        active_filters=active_filters,
+    )
 
 
 @admin_bp.route("/companies/create", methods=["POST"])
@@ -571,11 +730,11 @@ def create_company():
 
     if not name or len(name) > 255:
         flash("Valid company name is required.", "danger")
-        return redirect(url_for("admin.list_companies"))
+        return _safe_redirect_companies()
 
-    if not is_valid_url(website):
-        flash("Website must be a valid http:// or https:// URL.", "danger")
-        return redirect(url_for("admin.list_companies"))
+    if website and (len(website) > 255 or not is_valid_url(website)):
+        flash("Website must be a valid http:// or https:// URL under 255 characters.", "danger")
+        return _safe_redirect_companies()
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -595,7 +754,7 @@ def create_company():
             )
 
     flash("Company created successfully.", "success")
-    return redirect(url_for("admin.list_companies"))
+    return _safe_redirect_companies()
 
 
 @admin_bp.route("/companies/<int:company_id>/edit", methods=["POST"])
@@ -607,11 +766,11 @@ def edit_company(company_id):
 
     if not name or len(name) > 255:
         flash("Valid company name is required.", "danger")
-        return redirect(url_for("admin.list_companies"))
+        return _safe_redirect_companies()
 
-    if not is_valid_url(website):
-        flash("Website must be a valid http:// or https:// URL.", "danger")
-        return redirect(url_for("admin.list_companies"))
+    if website and (len(website) > 255 or not is_valid_url(website)):
+        flash("Website must be a valid http:// or https:// URL under 255 characters.", "danger")
+        return _safe_redirect_companies()
 
     with closing(get_db_connection()) as conn:
         with closing(conn.cursor()) as cur:
@@ -619,7 +778,7 @@ def edit_company(company_id):
             company = cur.fetchone()
             if not company:
                 flash("Company not found.", "danger")
-                return redirect(url_for("admin.list_companies"))
+                return _safe_redirect_companies()
 
             cur.execute(
                 "UPDATE companies SET name = %s, description = %s, website = %s WHERE id = %s",
@@ -636,7 +795,65 @@ def edit_company(company_id):
             )
 
     flash("Company updated successfully.", "success")
-    return redirect(url_for("admin.list_companies"))
+    return _safe_redirect_companies()
+
+
+@admin_bp.route("/companies/<int:company_id>/status", methods=["POST"])
+@admin_required
+def update_company_status(company_id):
+    raw_status = request.form.get("status", "").strip().lower()
+    if raw_status not in ("active", "inactive"):
+        flash("Invalid status specified.", "danger")
+        return _safe_redirect_companies()
+
+    target_active = raw_status == "active"
+
+    with closing(get_db_connection()) as conn:
+        with closing(conn.cursor()) as cur:
+            cur.execute("SELECT id, name, is_active FROM companies WHERE id = %s", (company_id,))
+            company = cur.fetchone()
+            if not company:
+                flash("Company not found.", "danger")
+                return _safe_redirect_companies()
+
+            previous_active = bool(company["is_active"])
+            if previous_active == target_active:
+                flash(
+                    f"Company '{company['name']}' is already {'active' if target_active else 'inactive'}.",
+                    "info",
+                )
+                return _safe_redirect_companies()
+
+            # Atomic update using current-state predicate
+            cur.execute(
+                "UPDATE companies SET is_active = %s WHERE id = %s AND is_active = %s",
+                (target_active, company_id, previous_active),
+            )
+
+            if cur.rowcount == 0:
+                conn.rollback()
+                flash("Company status was modified concurrently. Please refresh.", "warning")
+                return _safe_redirect_companies()
+
+            conn.commit()
+
+            log_audit_event(
+                actor_user_id=session.get("user_id"),
+                action="update_company_status",
+                target_type="company",
+                target_id=company_id,
+                details={
+                    "is_active_before": previous_active,
+                    "is_active_after": target_active,
+                    "company_name": company["name"],
+                },
+            )
+
+    flash(
+        f"Company '{company['name']}' {'activated' if target_active else 'deactivated'} successfully.",
+        "success",
+    )
+    return _safe_redirect_companies()
 
 
 AUDIT_ACTION_LABELS = {
@@ -645,6 +862,7 @@ AUDIT_ACTION_LABELS = {
     "assign_recruiter_company": "Recruiter Company Assigned",
     "create_company": "Company Created",
     "update_company": "Company Updated",
+    "update_company_status": "Company Status Updated",
     "application_status_changed": "Application Status Changed",
     "application_withdrawn": "Application Withdrawn",
     "interview_scheduled": "Interview Scheduled",

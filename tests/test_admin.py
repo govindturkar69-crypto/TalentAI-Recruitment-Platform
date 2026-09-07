@@ -876,3 +876,40 @@ class TestAdminUserManageUIStructure:
 
         # Verify modal forms contain CSRF token inputs
         assert 'name="csrf_token"' in html
+
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_navbar_user_display_fallback_never_none(self, mock_core_db, mock_admin_db, client):
+        """Navbar displays name, email, or Admin fallback, never literal None."""
+        # Case 1: session['name'] provided
+        _setup_admin_dashboard_mock(mock_core_db, mock_admin_db, client)
+        with client.session_transaction() as sess:
+            sess["name"] = "Alice Admin"
+            sess["email"] = "alice@company.com"
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "Alice Admin" in html
+        assert "> None" not in html
+
+        # Case 2: session['name'] is None, email is provided
+        _setup_admin_dashboard_mock(mock_core_db, mock_admin_db, client)
+        with client.session_transaction() as sess:
+            sess["name"] = None
+            sess["email"] = "admin@company.com"
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "admin@company.com" in html
+        assert "> None" not in html
+
+        # Case 3: session['name'] is None, email is None
+        _setup_admin_dashboard_mock(mock_core_db, mock_admin_db, client)
+        with client.session_transaction() as sess:
+            sess["name"] = None
+            sess["email"] = None
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "Admin" in html
+        assert "> None" not in html

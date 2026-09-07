@@ -68,7 +68,7 @@
 
           <li class="nav-item d-flex align-items-center ms-lg-3 mt-2 mt-lg-0 bg-white bg-opacity-10 rounded-pill px-1 py-1 border border-white border-opacity-10">
             <span class="text-light small fw-semibold px-2 border-end border-light border-opacity-25">
-              <i class="bi bi-person-circle me-1 opacity-75"></i> {{ session.get('name') }}
+              <i class="bi bi-person-circle me-1 opacity-75"></i> {{ (session.get('name') if session.get('name') and session.get('name') != 'None' else None) or (session.get('email') if session.get('email') and session.get('email') != 'None' else None) or 'Admin' }}
             </span>
             <a href="{{ url_for('auth.settings') }}" class="btn btn-sm btn-link text-light text-decoration-none py-0 px-2 border-end border-light border-opacity-25" aria-label="Settings" title="Settings">
               <i class="bi bi-gear"></i>

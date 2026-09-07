@@ -805,3 +805,111 @@ class TestAdminPlatformAnalyticsPhase5C:
         resp = client.get("/admin/dashboard")
         assert resp.status_code == 302
         assert "/login" in resp.headers["Location"]
+
+
+class TestAdminUserManageUIStructure:
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_single_manage_button_and_reusable_modal(self, mock_core_db, mock_admin_db, client):
+        """Verify new UI contract: single Manage button per row, single reusable modal, no inline row forms."""
+        test_users = [
+            {
+                "id": 1,
+                "name": "Admin User",
+                "email": app.config["ADMIN_EMAIL"],
+                "role": "recruiter",
+                "is_active": True,
+                "created_at": None,
+                "company_id": 1,
+                "company_name": "Acme Corp",
+            },
+            {
+                "id": 2,
+                "name": "Candidate User",
+                "email": "cand@test.com",
+                "role": "candidate",
+                "is_active": True,
+                "created_at": None,
+                "company_id": None,
+                "company_name": None,
+            },
+        ]
+        _setup_admin_dashboard_mock(
+            mock_core_db,
+            mock_admin_db,
+            client,
+            filtered_total=50,
+            users=test_users,
+            companies=[{"id": 1, "name": "Acme Corp", "is_active": True}],
+            recent_users=[],
+        )
+
+        resp = client.get("/admin/dashboard?page=2&role=candidate")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+
+        # Exactly ONE reusable modal in the page
+        assert html.count('id="adminUserManageModal"') == 1
+
+        # Exactly 2 Manage buttons (one per rendered user row)
+        assert html.count('data-bs-target="#adminUserManageModal"') == 2
+
+        # Verify no direct row mutation forms exist inside usersTable tbody
+        tbody_start = html.find("<tbody>")
+        tbody_end = html.find("</tbody>")
+        assert tbody_start != -1 and tbody_end != -1
+        tbody_html = html[tbody_start:tbody_end]
+        assert "<form" not in tbody_html
+
+        # Verify data-is-self attribute
+        assert 'data-user-id="1"' in html
+        assert 'data-is-self="true"' in html
+        assert 'data-user-id="2"' in html
+        assert 'data-is-self="false"' in html
+
+        # Verify server-generated URLs preserve query parameters (page=2, role=candidate)
+        assert "/admin/users/2/role?" in html
+        assert "page=2" in html
+        assert "role=candidate" in html
+        assert "/admin/users/2/status?" in html
+        assert "/admin/users/2/company?" in html
+
+        # Verify modal forms contain CSRF token inputs
+        assert 'name="csrf_token"' in html
+
+    @patch("routes.admin.get_db_connection")
+    @patch("core.get_db_connection")
+    def test_navbar_user_display_fallback_never_none(self, mock_core_db, mock_admin_db, client):
+        """Navbar displays name, email, or Admin fallback, never literal None."""
+        # Case 1: session['name'] provided
+        _setup_admin_dashboard_mock(mock_core_db, mock_admin_db, client)
+        with client.session_transaction() as sess:
+            sess["name"] = "Alice Admin"
+            sess["email"] = "alice@company.com"
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "Alice Admin" in html
+        assert "> None" not in html
+
+        # Case 2: session['name'] is None, email is provided
+        _setup_admin_dashboard_mock(mock_core_db, mock_admin_db, client)
+        with client.session_transaction() as sess:
+            sess["name"] = None
+            sess["email"] = "admin@company.com"
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "admin@company.com" in html
+        assert "> None" not in html
+
+        # Case 3: session['name'] is None, email is None
+        _setup_admin_dashboard_mock(mock_core_db, mock_admin_db, client)
+        with client.session_transaction() as sess:
+            sess["name"] = None
+            sess["email"] = None
+        resp = client.get("/admin/dashboard")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "Admin" in html
+        assert "> None" not in html

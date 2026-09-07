@@ -20,15 +20,15 @@
 {% if date_range_inverted %}
 <div class="alert saas-alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2" role="alert">
   <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
-  <div>Start date cannot be after end date. Date filter was ignored.</div>
+  <div>Start date cannot be after end date. Please correct the date range.</div>
 </div>
 {% endif %}
 
 <!-- Filter Card -->
 <div class="saas-card p-3 mb-4">
-  <form method="GET" action="{{ url_for('admin.audit_logs') }}" class="row g-2 align-items-end">
+  <form method="GET" action="{{ url_for('admin.audit_logs') }}" class="audit-filter-grid">
     <!-- Actor Search -->
-    <div class="col-12 col-md-3 col-xl-3">
+    <div>
       <label class="form-label text-muted small fw-bold mb-1" for="actorFilter">Actor</label>
       <div class="input-group input-group-sm">
         <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
@@ -37,7 +37,7 @@
     </div>
 
     <!-- Action Filter -->
-    <div class="col-6 col-md-2 col-xl-2">
+    <div>
       <label class="form-label text-muted small fw-bold mb-1" for="actionFilter">Action</label>
       <select id="actionFilter" name="action" class="form-select form-select-sm">
         <option value="">All Actions</option>
@@ -48,7 +48,7 @@
     </div>
 
     <!-- Target Type Filter -->
-    <div class="col-6 col-md-2 col-xl-2">
+    <div>
       <label class="form-label text-muted small fw-bold mb-1" for="targetTypeFilter">Target</label>
       <select id="targetTypeFilter" name="target_type" class="form-select form-select-sm">
         <option value="">All Targets</option>
@@ -59,36 +59,34 @@
     </div>
 
     <!-- Date From -->
-    <div class="col-6 col-md-2 col-xl-2">
+    <div>
       <label class="form-label text-muted small fw-bold mb-1" for="dateFromFilter">From</label>
       <input type="date" id="dateFromFilter" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from }}">
     </div>
 
     <!-- Date To -->
-    <div class="col-6 col-md-2 col-xl-2">
+    <div>
       <label class="form-label text-muted small fw-bold mb-1" for="dateToFilter">To</label>
       <input type="date" id="dateToFilter" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to }}">
     </div>
 
-    <!-- Per Page & Actions -->
-    <div class="col-12 col-xl-1 d-flex gap-2">
-      <div class="flex-grow-1">
-        <label class="form-label text-muted small fw-bold mb-1" for="perPageSelect">Rows</label>
-        <select id="perPageSelect" name="per_page" class="form-select form-select-sm">
-          <option value="25" {% if filters.per_page == 25 %}selected{% endif %}>25</option>
-          <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50</option>
-          <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100</option>
-        </select>
-      </div>
+    <!-- Rows -->
+    <div>
+      <label class="form-label text-muted small fw-bold mb-1" for="perPageSelect">Rows</label>
+      <select id="perPageSelect" name="per_page" class="form-select form-select-sm">
+        <option value="25" {% if filters.per_page == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100</option>
+      </select>
     </div>
 
-    <!-- Buttons Row -->
-    <div class="col-12 d-flex gap-2 mt-2">
-      <button type="submit" class="btn btn-sm btn-primary">
+    <!-- Buttons Block -->
+    <div class="audit-filter-actions">
+      <button type="submit" class="btn btn-sm btn-primary text-nowrap" style="font-size:0.8rem; padding: 5px 14px;">
         <i class="bi bi-funnel-fill me-1"></i>Apply Filters
       </button>
       {% if filters.actor or filters.action or filters.target_type or filters.date_from or filters.date_to or filters.per_page != 25 %}
-        <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary">
+        <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.8rem; padding: 5px 12px;">
           <i class="bi bi-x-circle me-1"></i>Clear
         </a>
       {% endif %}
@@ -118,14 +116,14 @@
   {% else %}
     <!-- Desktop Table View (>= 768px) -->
     <div class="table-responsive d-none d-md-block">
-      <table class="table table-hover align-middle mb-0">
+      <table class="table table-hover align-middle mb-0" style="table-layout: fixed; width: 100%;">
         <thead>
           <tr>
-            <th style="white-space: nowrap; width: 170px;">Time</th>
-            <th style="white-space: nowrap; min-width: 160px;">Actor</th>
-            <th style="white-space: nowrap; min-width: 170px;">Action</th>
-            <th style="white-space: nowrap; min-width: 140px;">Target</th>
-            <th style="min-width: 250px;">Details</th>
+            <th style="width: 17%; white-space: nowrap;">Time</th>
+            <th style="width: 20%;">Actor</th>
+            <th style="width: 17%; white-space: nowrap;">Action</th>
+            <th style="width: 13%; white-space: nowrap;">Target</th>
+            <th style="width: 33%;">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -133,27 +131,27 @@
             <tr>
               <!-- Time Column -->
               <td style="white-space: nowrap;">
-                <div class="fw-semibold text-dark">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</div>
+                <div class="fw-semibold" style="color: var(--text-primary);">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</div>
                 <div class="text-muted" style="font-size: 0.72rem;">ID: #{{ log.id }}</div>
               </td>
 
               <!-- Actor Column -->
               <td>
-                <div class="fw-semibold text-dark">{{ log.display_actor }}</div>
+                <div class="fw-semibold text-truncate" style="color: var(--text-primary);" title="{{ log.display_actor }}">{{ log.display_actor }}</div>
                 {% if log.display_email %}
-                  <small class="text-muted d-block" style="font-size: 0.75rem;">{{ log.display_email }}</small>
+                  <div class="text-muted text-truncate" style="font-size: 0.75rem;" title="{{ log.display_email }}">{{ log.display_email }}</div>
                 {% endif %}
               </td>
 
               <!-- Action Column -->
-              <td>
+              <td style="white-space: nowrap;">
                 <span class="badge {% if log.action and ('cancelled' in log.action or 'rejected' in log.action) %}bg-danger-subtle text-danger border border-danger-subtle{% elif log.action and ('completed' in log.action or 'hired' in log.action or 'create' in log.action) %}bg-success-subtle text-success border border-success-subtle{% elif log.action and ('status' in log.action or 'updated' in log.action) %}bg-warning-subtle text-warning border border-warning-subtle{% elif log.action and ('withdrawn' in log.action) %}bg-secondary-subtle text-secondary border border-secondary-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %}" style="font-size: 0.75rem; font-weight: 600;">
                   {{ log.action_label }}
                 </span>
               </td>
 
               <!-- Target Column -->
-              <td>
+              <td style="white-space: nowrap;">
                 <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">
                   {{ log.target_label }}
                 </span>
@@ -167,7 +165,7 @@
                 {% if log.details_list %}
                   <div class="d-flex flex-wrap gap-1">
                     {% for d in log.details_list %}
-                      <span class="badge bg-light text-dark border" style="font-weight: 500; font-size: 0.75rem;" title="{{ d.label }}: {{ d.value }}">
+                      <span class="saas-skill-chip" style="background: var(--bg-alt); color: var(--text-primary); border: 1px solid var(--border-color); font-weight: 500; font-size: 0.72rem; padding: 2px 6px;" title="{{ d.label }}: {{ d.value }}">
                         <span class="text-muted">{{ d.label }}:</span> {{ d.value }}
                       </span>
                     {% endfor %}

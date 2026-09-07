@@ -227,11 +227,11 @@
 
 <div class="row g-4">
   <!-- Main Column: User Management -->
-  <div class="col-12 col-xl-9">
+  <div class="col-admin-management">
     <div class="saas-card h-100">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h5 class="fw-bold mb-0 text-nowrap"><i class="bi bi-people me-2"></i>User Management</h5>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
           <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
             <i class="bi bi-clock-history me-1"></i>Audit Logs
           </a>
@@ -242,26 +242,26 @@
       </div>
 
       <!-- Server-Side Filter Form -->
-      <form method="GET" action="{{ url_for('admin.dashboard') }}" class="d-flex flex-wrap gap-2 align-items-center mb-3">
-        <div class="input-group input-group-sm flex-grow-1" style="min-width: 180px;">
+      <form method="GET" action="{{ url_for('admin.dashboard') }}" class="user-filter-grid mb-3">
+        <div class="input-group input-group-sm">
           <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
           <input type="text" name="q" class="form-control" placeholder="Search name or email..." value="{{ filters.q }}">
         </div>
-        <div style="min-width: 120px;">
+        <div>
           <select name="role" class="form-select form-select-sm">
             <option value="" {% if not filters.role %}selected{% endif %}>Role: All</option>
             <option value="candidate" {% if filters.role == 'candidate' %}selected{% endif %}>Candidate</option>
             <option value="recruiter" {% if filters.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
           </select>
         </div>
-        <div style="min-width: 120px;">
+        <div>
           <select name="status" class="form-select form-select-sm">
             <option value="" {% if not filters.status %}selected{% endif %}>Status: All</option>
             <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
             <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
           </select>
         </div>
-        <div style="min-width: 140px;">
+        <div>
           <select name="company_id" class="form-select form-select-sm">
             <option value="" {% if not filters.company_id %}selected{% endif %}>Company: All</option>
             {% for company in companies %}
@@ -269,44 +269,50 @@
             {% endfor %}
           </select>
         </div>
-        <div style="width: 85px;">
+        <div>
           <select name="per_page" class="form-select form-select-sm">
             <option value="20" {% if filters.per_page == 20 %}selected{% endif %}>20 / pg</option>
             <option value="50" {% if filters.per_page == 50 %}selected{% endif %}>50 / pg</option>
             <option value="100" {% if filters.per_page == 100 %}selected{% endif %}>100 / pg</option>
           </select>
         </div>
-        <div class="d-flex gap-2">
+        <div class="user-filter-actions">
           <button type="submit" class="saas-btn-primary btn-sm text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Apply Filters</button>
+          {% if filters.q or filters.role or filters.status or filters.company_id or filters.per_page != 20 %}
           <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.8rem; padding: 4px 12px; white-space: nowrap;">Clear</a>
+          {% endif %}
         </div>
       </form>
 
       <div class="table-responsive">
-        <table class="table saas-table table-sm align-middle mb-0" id="usersTable">
+        <table class="table saas-table table-sm align-middle mb-0" id="usersTable" style="table-layout: fixed; width: 100%;">
           <thead>
             <tr>
-              <th style="min-width: 110px;">User</th>
-              <th style="min-width: 130px;">Email</th>
-              <th style="width: 70px; white-space: nowrap;">Status</th>
-              <th style="width: 80px; white-space: nowrap;">Role</th>
-              <th style="min-width: 90px;">Company</th>
-              <th style="width: 85px; white-space: nowrap;">Joined</th>
-              <th class="text-end" style="min-width: 200px;">Actions</th>
+              <th style="width: 17%;">User</th>
+              <th style="width: 20%;">Email</th>
+              <th style="width: 8%; white-space: nowrap;">Status</th>
+              <th style="width: 9%; white-space: nowrap;">Role</th>
+              <th style="width: 13%;">Company</th>
+              <th style="width: 10%; white-space: nowrap;">Joined</th>
+              <th class="text-end" style="width: 23%;">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for user in users %}
             <tr>
               <td class="fw-semibold">
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 overflow-hidden">
                   <div class="saas-avatar-sm rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;font-size:0.75rem;">
                     {{ user.name[:2] | upper }}
                   </div>
-                  <span class="text-truncate" style="max-width: 140px;" title="{{ user.name }}">{{ user.name }}</span>
+                  <span class="text-truncate" title="{{ user.name }}">{{ user.name }}</span>
                 </div>
               </td>
-              <td><span class="text-muted small d-inline-block text-truncate" style="max-width: 175px; vertical-align: middle;" title="{{ user.email }}">{{ user.email }}</span></td>
+              <td>
+                <div class="text-truncate" title="{{ user.email }}">
+                  <span class="text-muted small">{{ user.email }}</span>
+                </div>
+              </td>
               <td style="white-space: nowrap;">
                 {% if user.is_active %}
                   <span class="saas-skill-chip" style="background:var(--success-tint);color:#166534;border-color:rgba(34,197,94,0.25);padding:2px 6px;font-size:0.7rem;">Active</span>
@@ -327,7 +333,9 @@
               </td>
               <td>
                 {% if user.role == 'recruiter' %}
-                  <span class="text-muted small d-inline-block text-truncate" style="max-width: 130px; vertical-align: middle;" title="{{ user.company_name or 'Unassigned' }}">{{ user.company_name or 'Unassigned' }}</span>
+                  <div class="text-truncate" title="{{ user.company_name or 'Unassigned' }}">
+                    <span class="text-muted small">{{ user.company_name or 'Unassigned' }}</span>
+                  </div>
                 {% else %}
                   <span class="text-muted small">-</span>
                 {% endif %}
@@ -338,44 +346,47 @@
                 </span>
               </td>
               <td class="text-end">
-                <!-- Action Form Container -->
-                <div class="d-flex flex-column align-items-end gap-1">
-                  <div class="d-flex align-items-center justify-content-end gap-1 flex-wrap">
+                <div class="admin-user-actions">
+                  <!-- Row 1: Role select + Save + Activate/Deactivate -->
+                  <div class="admin-action-row">
                     <!-- Role Mutation Form -->
-                    <form action="{{ url_for('admin.update_role', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1">
+                    <form action="{{ url_for('admin.update_role', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1 m-0">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <select name="role" class="form-select form-select-sm" style="width: 90px; font-size: 0.75rem; padding: 2px 4px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
+                      <select name="role" class="form-select form-select-sm" style="width: 86px; font-size: 0.72rem; padding: 2px 4px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
                         <option value="candidate" {% if user.role == 'candidate' %}selected{% endif %}>Candidate</option>
                         <option value="recruiter" {% if user.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
                       </select>
-                      <button type="submit" class="saas-btn-primary text-nowrap" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
+                      <button type="submit" class="saas-btn-primary text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>
                         Save
                       </button>
                     </form>
                     <!-- Status Mutation Form -->
-                    <form action="{{ url_for('admin.update_status', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center">
+                    <form action="{{ url_for('admin.update_status', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center m-0">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       {% if user.is_active %}
                         <input type="hidden" name="status" value="inactive">
-                        <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Deactivate</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Deactivate</button>
                       {% else %}
                         <input type="hidden" name="status" value="active">
-                        <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" style="font-size:0.75rem; padding: 2px 8px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Activate</button>
+                        <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;" {% if user.id == session.get('user_id') %}disabled{% endif %}>Activate</button>
                       {% endif %}
                     </form>
                   </div>
+
+                  <!-- Row 2 for recruiter only: Company select + Assign -->
                   {% if user.role == 'recruiter' %}
-                  <!-- Company Assignment Form -->
-                  <form action="{{ url_for('admin.assign_company', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center justify-content-end gap-1">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <select name="company_id" class="form-select form-select-sm" style="width: 125px; font-size: 0.75rem; padding: 2px 4px;">
-                      <option value="">-- No Company --</option>
-                      {% for company in companies if company.is_active %}
-                      <option value="{{ company.id }}" {% if user.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.75rem; padding: 2px 8px;">Assign</button>
-                  </form>
+                  <div class="admin-action-row">
+                    <form action="{{ url_for('admin.assign_company', user_id=user.id, page=pagination.page, **active_filters) }}" method="POST" class="d-inline-flex align-items-center gap-1 m-0">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <select name="company_id" class="form-select form-select-sm" style="width: 120px; font-size: 0.72rem; padding: 2px 4px; min-height: 28px;">
+                        <option value="">-- No Company --</option>
+                        {% for company in companies if company.is_active %}
+                        <option value="{{ company.id }}" {% if user.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+                        {% endfor %}
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" style="font-size:0.72rem; padding: 2px 7px; min-height: 28px;">Assign</button>
+                    </form>
+                  </div>
                   {% endif %}
                 </div>
               </td>
@@ -445,16 +456,16 @@
   </div>
 
   <!-- Side Column: Recent Registrations -->
-  <div class="col-12 col-xl-3">
+  <div class="col-admin-recent">
     <div class="saas-card h-100">
       <h6 class="fw-bold mb-3 pb-2 border-bottom"><i class="bi bi-clock-history me-2"></i>Recent Registrations</h6>
       
       {% if recent_users %}
-        <div class="list-group list-group-flush">
+        <div class="recent-registrations-grid">
           {% for ru in recent_users %}
-          <div class="list-group-item px-0 py-2 border-bottom">
-            <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
-              <span class="fw-semibold text-truncate" style="font-size:0.85rem;" title="{{ ru.name }}">{{ ru.name }}</span>
+          <div class="recent-reg-item">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <span class="fw-semibold text-truncate" style="font-size:0.83rem;" title="{{ ru.name }}">{{ ru.name }}</span>
               <small class="text-muted text-nowrap" style="font-size:0.7rem;">
                 {{ ru.created_at.strftime('%b %d, %Y') if ru.created_at else '' }}
               </small>
@@ -469,7 +480,7 @@
           {% endfor %}
         </div>
       {% else %}
-        <div class="text-center text-muted mt-4">
+        <div class="text-center text-muted py-3">
           <small>No recent registrations.</small>
         </div>
       {% endif %}

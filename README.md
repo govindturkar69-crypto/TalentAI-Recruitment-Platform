@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=32&pause=1000&color=6366F1&center=true&vCenter=true&width=650&lines=%F0%9F%A4%96+TalentAI;AI-Powered+Recruitment+Platform;Smart+Hiring+for+Modern+Teams" alt="TalentAI" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=32&pause=1000&color=6366F1&center=true&vCenter=true&width=650&lines=%F0%9F%A4%96+TalentAI;AI-Assisted+Recruitment+Platform;Smart+Hiring+for+Modern+Teams" alt="TalentAI" />
 
 <br/>
 
-### Automate your entire hiring pipeline with AI — parse resumes, extract skills, score candidates, and rank them instantly.
+### An AI-assisted recruitment platform automating the hiring lifecycle — from resume parsing and candidate ranking to interview coordination and administrative governance.
 
 <br/>
 
@@ -13,433 +13,352 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
 [![Render](https://img.shields.io/badge/Deployed_on-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com)
+[![CI](https://img.shields.io/badge/CI-GitHub_Actions-22c55e?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/govindturkar69-crypto/TalentAI-Recruitment-Platform/actions)
 
 <br/>
 
-[![Live Demo](https://img.shields.io/badge/🚀_LIVE_DEMO-Click_Here-22c55e?style=for-the-badge)](https://talentai-recruitment-platform.onrender.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-
-<br/>
-
-**[🌐 Live Demo](#-live-demo) · [✨ Features](#-features) · [⚙️ Setup](#%EF%B8%8F-installation) · [📬 Contact](#-contact)**
+**[🌐 Live Demo](https://talentai-recruitment-platform.onrender.com) · [✨ Features](#-features) · [🤖 Resume Analysis](#-resume-parsing--candidate-scoring) · [🏛️ Architecture](#%EF%B8%8F-architecture-overview) · [⚙️ Local Setup](#%EF%B8%8F-local-development-setup) · [🧪 Testing & CI](#-automated-testing--ci) · [📄 Changelog](CHANGELOG.md)**
 
 </div>
 
 ---
 
-## 🌐 Live Demo
+## 🌐 Live Production Demo
 
 > ### 🔗 **[https://talentai-recruitment-platform.onrender.com](https://talentai-recruitment-platform.onrender.com)**
-
-Register with any email to explore as a **Candidate**. The **Recruiter** dashboard is restricted to the admin account only, keeping the platform secure and realistic.
-
-> ⏳ **Note:** The app is hosted on a free tier, so the first load after a period of inactivity may take 30–50 seconds while the server wakes up. Subsequent loads are instant.
+>
+> Experience the deployed application directly in your browser. Register as a **Candidate** to upload resumes and track applications, or explore **Recruiter / Admin** capabilities including candidate ranking, pipeline status transitions, interview management, and audit logs.
+>
+> *Note: Hosted on cloud infrastructure; initial cold-start after periods of inactivity may take ~30–50 seconds while the web service container initializes.*
 
 ---
 
-## 📖 About The Project
+## 📖 Project Overview
 
-Hiring teams waste countless hours manually screening **hundreds of resumes** — a process that's slow, biased, and error-prone. **TalentAI** solves this by using **AI and Machine Learning** to automatically read resumes, extract skills, and score every candidate against a job's requirements — surfacing the best-fit people in seconds.
+**TalentAI** is a recruitment management platform built to streamline the candidate intake, evaluation, and hiring workflow:
+- **Resume Intake & Skill Extraction**: Parses uploaded PDF resumes using `pypdf` and extracts technical skills against a curated 50+ skill taxonomy.
+- **Deterministic Candidate Ranking**: Calculates an objective match score for each applicant based on required skills coverage and TF-IDF text similarity against the job description.
+- **Full Lifecycle Application Tracking**: Manages candidate submissions across structured stages (`applied`, `shortlisted`, `rejected`, `hired`, `withdrawn`).
+- **Coordinated Interview Scheduling**: Allows recruiters to schedule, reschedule, and cancel interviews, with synchronized calendar views for candidates and automatic cancellation when applications reach terminal states.
+- **Governance & Multi-Tenancy**: Centralizes user administration, company tenant assignments, and immutable append-only audit logging.
 
-The platform has two sides:
-- **Candidates** upload their resume, get AI-matched to jobs, and track applications in real time.
-- **Recruiters** post jobs and receive an automatically ranked list of applicants, complete with match scores, analytics, and Excel export.
-
-
+---
 
 ## ✨ Features
 
-### 👤 For Candidates
-- 📄 **Resume Upload** — drag & drop PDF, AI extracts skills automatically
-- 🎯 **Smart Apply** — instant AI match score when applying to any job
-- ⭐ **AI Job Recommendations** — best-fit jobs ranked by resume match %
-- 🔖 **Saved Jobs** — bookmark jobs to apply later
-- ↩️ **Withdraw Applications** — cancel anytime (except hired)
-- 👤 **Profile Page** — bio, experience, LinkedIn / GitHub / portfolio links
-- 🔔 **Real-time Notifications** — get alerts on shortlist / rejection / hire
-- 🔍 **Search & Filter** — find jobs by title, location, or skill
+### 👤 Candidate Portal
+- **PDF Resume Upload**: Client-validated upload with text extraction via `pypdf`.
+- **Skill Extraction**: Automatic identification of technical skills from a 50+ keyword catalog.
+- **Smart Application Flow**: Instant fit score computation and match percentage display upon application.
+- **Job Discovery & Search**: Multi-filter job search across job titles, descriptions, required skills, and locations.
+- **Application Tracking**: Dedicated dashboard to monitor application status in real time.
+- **Self-Service Application Withdrawal**: Candidates can withdraw active applications prior to a terminal decision.
+- **Saved Jobs**: Bookmark job postings to apply later.
+- **Candidate Interview Hub**: View scheduled, completed, and cancelled interviews with logistics and meeting links.
+- **Profile Management**: Maintain personal bio, experience, education, and portfolio/social links.
+- **Optional AI Suggestions**: On-demand resume improvement suggestions when OpenAI is configured.
 
-### 🏢 For Recruiters (Admin Only)
-- 💼 **Post & Manage Jobs** — create, edit, close, reopen, or delete listings
-- 🏆 **AI-Ranked Candidates** — applicants auto-sorted by match score
-- ☑️ **Bulk Actions** — shortlist / reject / hire multiple candidates at once
-- 📥 **Export to Excel** — download the full applicant list as `.xlsx`
-- 📊 **Analytics Dashboard** — 5 interactive charts (skill demand, scores, trends)
-- 🔔 **Application Alerts** — notified instantly when someone applies
+### 🏢 Recruiter Management
+- **Job Requisition Lifecycle**: Create, edit, close, reopen, and delete listings associated with tenant companies.
+- **Automatic Candidate Ranking**: Dynamic sorting of applicants by composite match score.
+- **Batch Processing**: Bulk actions to shortlist, reject, or hire multiple applicants simultaneously.
+- **Candidate Profiles**: View applicant details, contact information, extracted skills, and uploaded resumes.
+- **Interview Scheduling**: Schedule, reschedule, update logistics (date, time, duration, mode), or cancel interviews.
+- **Terminal State Auto-Cancellation**: Moving an application to `rejected`, `hired`, or `withdrawn` atomically cancels any future scheduled interviews.
+- **Excel Data Export**: Download structured `.xlsx` applicant rosters using `openpyxl`.
+- **Notification Alerts**: In-app alerts triggered on new candidate applications and withdrawals.
 
-### 🤖 AI / ML Engine
-- 📑 **PDF Parsing** — extracts raw text from resumes (PyPDF2)
-- 🧠 **Skill Extraction** — matches against a 50+ skills database
-- 📐 **Skill Match Score** — `matched / required × 100` (70% weight)
-- 🔍 **TF-IDF Similarity** — resume vs job cosine similarity (30% weight)
-- 🏅 **Final Score** — `(Skill × 0.7) + (TF-IDF × 0.3)`
+### 🛡️ Admin Console & Governance
+- **Operational Metrics**: Platform-wide telemetry covering user totals, active listings, applications, interviews, and tenant companies.
+- **User Management**: Server-side paginated user management table with role filters, status filters, and search.
+- **Self-Protection Rules**: Enforced safeguards preventing the logged-in administrator from demoting their own role or deactivating their own account.
+- **Company Access Controls**: Recruiter-to-company assignments with validation preventing company assignment to candidate accounts.
+- **Tenant Management**: Interface to create, edit, activate, and deactivate client organizations.
+- **Immutable Audit Trail**: Append-only audit table logging administrative, security, role, company, status, and interview events.
+- **Semantic Audit Formatter**: Structured key-value event detail rendering with human-readable enum mapping and neutral system actor avatars.
 
-### 🎨 Platform & Engineering
-- 🌙 **Dark Mode** — full dark theme with smooth transitions
-- 🔐 **Admin-Only Recruiter** — only the admin email can be a recruiter
-- 🔑 **Forgot Password** — secure token-based password reset
-- 🛡️ **Secure Config** — all secrets stored in environment variables
-- ⚡ **Connection Pooling** — reused DB connections instead of opening a new one per request
-- 🗂️ **Database Indexes** — indexed columns on all frequently queried fields
-- ❤️ **Health Check** — `/healthz` endpoint for uptime monitoring
+### 📊 Recruitment Analytics
+- **Interactive Plotly Charts**: Visual dashboards embedded natively:
+  - Skill demand distribution across active listings.
+  - Candidate match score distribution curves.
+  - Application status conversion funnel.
 
 ---
 
-## 📊 How The Scoring Works
+## 🤖 Resume Parsing & Candidate Scoring
 
-```python
-# Skill Match (70% weight)
-skill_score = len(matched_skills) / len(required_skills) * 100
+TalentAI clearly separates core deterministic local scoring from optional advisory AI services:
 
-# TF-IDF Cosine Similarity (30% weight)
-tfidf_score = cosine_similarity(resume_text, job_description) * 100
+### 1. Local Deterministic Scoring (Core Engine)
+The primary scoring and candidate ranking engine executes 100% locally and does not depend on third-party AI APIs:
+- **PDF Text Extraction**: Uses `pypdf` to extract raw text content from uploaded PDF resumes.
+- **Skill Extraction**: Matches resume text against a predefined database of 50+ technical skills (`models/resume_parser.py`).
+- **Skill Score**: Measures the percentage of required skills satisfied by the candidate:
+  $$\text{Skill Score} = \frac{|\text{Matched Skills}|}{|\text{Total Required Skills}|} \times 100$$
+- **TF-IDF Text Similarity**: Uses scikit-learn's `TfidfVectorizer` (with English stop words) and `cosine_similarity` to measure textual alignment between the resume and the job description:
+  $$\text{TF-IDF Score} = \cos(\mathbf{v}_{\text{resume}}, \mathbf{v}_{\text{job}}) \times 100$$
+- **Composite Final Score**:
+  $$\text{Final Score} = (\text{Skill Score} \times 0.70) + (\text{TF-IDF Score} \times 0.30)$$
+  *(When no job description is provided, the Skill Score is used on its own.)*
 
-# Final Score
-final_score = (skill_score * 0.70) + (tfidf_score * 0.30)
-```
+### 2. Optional Advisory AI (OpenAI Structured Outputs)
+- **Purpose**: Provides candidates with optional, advisory resume improvement recommendations (`services/ai_resume_service.py`).
+- **Configuration**: Activated only when `OPENAI_API_KEY` is present in the application environment.
+- **Advisory Only**: Does not calculate, alter, or override candidate match scores or recruiter rankings.
+- **Privacy Safeguards**: PII (email addresses and phone numbers) is automatically redacted before text is transmitted to the advisory model.
+- **Independent Operation**: If `OPENAI_API_KEY` is not provided, the core application, scoring engine, ranking, and application workflows remain fully operational.
 
-**Example:**
-```
-Job requires : python, flask, mysql, javascript, html   →  5 skills
-Resume has   : python, mysql, html, react               →  3 matched
+---
 
-Skill Score  = 3/5 × 100          = 60.0%
-TF-IDF Score = (auto-calculated)   = 45.0%
-Final Score  = (60×0.7)+(45×0.3)   = 55.5%   →  ⚠️ Review
-```
+## 🔒 Security & Quality Highlights
 
-| Score | Decision |
-|:-----:|:--------:|
-| ≥ 75% | ✅ Shortlist |
-| 50–74% | ⚠️ Review |
-| < 50% | ❌ Reject |
+- **Role-Based Access Control (RBAC)**: Centralized route decorators (`@login_required`, `@recruiter_required`, `@admin_required`) strictly guard endpoint access.
+- **CSRF Protection**: Universal CSRF token validation on all state-modifying POST requests via Flask-WTF.
+- **Cryptographic Password Security**: Passwords hashed using Werkzeug `scrypt` key derivation with cryptographic salts.
+- **Rate Limiting**: Brute-force protection on authentication routes (`/login`, `/register`, `/forgot-password`) using Flask-Limiter.
+- **Administrative Safeguards**: Backend and UI checks prevent administrators from locking themselves out or changing their own administrative role.
+- **SQL Injection Prevention**: All database queries utilize parameterized SQL query strings with DBUtils connection pooling.
+- **Session Hardening**: Cookies configured with `HttpOnly` and `SameSite=Lax` flags.
+- **Audit Immutability**: Dedicated append-only table recording actor, target, timestamp, and structured change payloads.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| **Backend** | Python 3.13, Flask, PyMySQL |
-| **Database** | MySQL 8.4 (hosted on Aiven) |
-| **Connection Pool** | DBUtils `PooledDB` |
-| **AI / ML** | scikit-learn (TF-IDF + Cosine Similarity), PyPDF2 |
-| **Analytics** | Plotly, Pandas |
-| **Frontend** | Bootstrap 5.3, Vanilla JavaScript |
-| **Auth** | Werkzeug (password hashing), Flask sessions |
-| **Export** | openpyxl (Excel) |
-| **Deployment** | Render (web service) + Aiven (MySQL), Gunicorn |
-| **Security** | python-dotenv (.env for secrets), SSL DB connection |
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Backend Framework** | Python 3.13, Flask 2.3 | Modular Blueprints, REST routes, web application logic |
+| **Database & Pooling** | MySQL 8.4, PyMySQL, DBUtils `PooledDB` | Relational storage, connection pool management |
+| **Data Processing & ML** | scikit-learn, `pypdf` | TF-IDF vectorization, cosine similarity, PDF extraction |
+| **Analytics & Visualization** | Pandas, Plotly | Metric aggregation, interactive visualization charts |
+| **Frontend Presentation** | Bootstrap 5.3, Bootstrap Icons, Vanilla JS | Responsive layouts, design tokens, client-side behavior |
+| **Security & Auth** | Werkzeug Security, Flask-WTF, Flask-Limiter | scrypt password hashing, CSRF tokens, rate limiting |
+| **Email Delivery** | Resend API | Transactional password recovery emails |
+| **Export Engine** | openpyxl | Formatted Excel spreadsheet generation |
+| **Production WSGI** | Gunicorn | Production WSGI HTTP server |
+| **Hosting & Infrastructure**| Render, Aiven Cloud MySQL | Web service hosting, managed MySQL with SSL |
+| **CI / Quality** | GitHub Actions, Pytest, Ruff, Black | Automated test execution, linting, formatting checks |
 
 ---
 
-## 📁 Project Structure
+## 🏛️ Architecture Overview
+
+TalentAI follows a decoupled architecture separating presentation, HTTP routing, business services, and database persistence:
 
 ```
-TalentAI/
-├── app.py                     # Main Flask app (30 routes)
-├── requirements.txt           # Python dependencies
-├── Procfile                   # Deployment start command
-├── runtime.txt                # Python version
-├── .env.example               # Environment variable template
-├── .gitignore
+TalentAI Platform
+├── Presentation Layer
+│   ├── templates/               # Jinja2 HTML5 templates (with custom CSS tokens)
+│   └── static/                  # CSS stylesheets, client-side JavaScript, assets
 │
-├── models/
-│   └── resume_parser.py       # PDF parsing + skill extraction + scoring
-├── analytics/
-│   └── dashboard.py           # 5 Plotly chart generators
-├── database/
-│   └── schema.sql             # 8 MySQL tables
+├── Flask Route / Blueprint Layer
+│   ├── routes/auth.py           # Authentication, registration, password recovery
+│   ├── routes/candidate.py      # Candidate dashboard, profile, applications, jobs
+│   ├── routes/recruiter.py      # Requisitions, applicant ranking, interviews
+│   ├── routes/admin.py          # Admin console, user management, companies, audit logs
+│   └── routes/analytics.py      # Analytics dashboards and chart endpoints
 │
-├── templates/                 # 17 Jinja2 HTML templates
-│   ├── base.html              # Navbar, dark mode, notifications
-│   ├── index.html             # Landing page
-│   ├── login.html / register.html
-│   ├── forgot_password.html / reset_password.html
-│   ├── candidate_dashboard.html
-│   ├── candidate_profile.html
-│   ├── upload_resume.html
-│   ├── job_recommendations.html
-│   ├── saved_jobs.html
-│   ├── notifications.html
-│   ├── recruiter_dashboard.html
-│   ├── post_job.html / edit_job.html
-│   ├── view_applicants.html
-│   └── analytics.html
+├── Service / Data-Access Layer
+│   ├── services/candidate_service.py     # Application submission and withdrawal logic
+│   ├── services/recruiter_service.py     # Applicant ranking, batch status transitions
+│   ├── services/interview_service.py     # Interview scheduling and auto-cancellations
+│   ├── services/audit_service.py         # Structured append-only audit trail logging
+│   ├── services/ai_resume_service.py     # Optional OpenAI advisory suggestion service
+│   ├── services/email_service.py         # Transactional email delivery via Resend
+│   ├── services/notification_service.py  # User notification management
+│   └── services/workflow.py              # Application status state machine validation
 │
-├── static/
-│   ├── css/style.css          # Dark mode + animations
-│   └── js/main.js             # Theme toggle + filters
-└── uploads/                   # Uploaded resumes
+├── Model & Parsing Layer
+│   └── models/resume_parser.py  # PDF text extraction, skill matching, TF-IDF scoring
+│
+├── Database & Configuration
+│   ├── core.py                  # Database connection pool (DBUtils PooledDB)
+│   ├── config.py                # Environment configuration loading
+│   └── database/migrations/     # Versioned forward-only SQL migration scripts (001 - 009)
 ```
 
 ---
 
-## ⚙️ Installation
+## 🗃️ Database Schema & Migrations
 
-### Prerequisites
-- Python 3.11+
-- MySQL 8.0+
+The relational schema is managed on MySQL 8.4 across 11 core tables:
+- `users`: User accounts with role-based attributes (`candidate`, `recruiter`, `admin`).
+- `jobs`: Requisitions with status flags, required skills, and company associations.
+- `resumes`: Uploaded resume metadata, extracted text, and skill tags.
+- `applications`: Candidate-to-job mappings with status and composite match scores.
+- `candidate_profiles`: Candidate professional background, education, and links.
+- `companies`: Multi-tenant organization records and active flags.
+- `interviews`: Interview schedule records with status, timing, and meeting details.
+- `audit_logs`: Immutable compliance logs recording platform state transitions.
+- `saved_jobs`: Candidate bookmarked job listings.
+- `notifications`: User notification alerts and read states.
+- `password_resets`: Time-limited password reset tokens.
 
-### Steps
+### Versioned Migration History (001–009)
+1. `001_foundation.sql`: Core baseline tables (users, jobs, applications, resumes, notifications).
+2. `002_candidate_profile.sql`: Extended candidate profile metadata and social links.
+3. `003_reconcile_foundation.sql`: Schema reconciliation and column constraints.
+4. `004_job_lifecycle.sql`: Company association and requisition status tracking.
+5. `005_reconcile_candidate_profile.sql`: Safe profile schema normalization.
+6. `006_reconcile_job_lifecycle.sql`: Requisition integrity constraints.
+7. `007_add_saved_jobs.sql`: Persistent bookmarking queue for candidates.
+8. `008_add_withdrawn_status.sql`: Self-service candidate application withdrawal state.
+9. `009_add_interviews.sql`: Interview coordination, company multi-tenancy, and audit logs.
 
+*Note: Migrations are tracked sequentially in source control and are not intended to be rerun manually against active production environments.*
+
+---
+
+## 📸 UI Highlights
+
+The application interface is styled using a modern SaaS design system with custom CSS tokens, supporting fluid responsiveness and a built-in dark theme:
+
+- **Admin Console (Desktop 1366px)**: Clean layout presenting platform operational metrics, unassigned recruiter indicators, aligned multi-filter toolbars, and server-side paginated user management with exactly one action trigger per row.
+- **Unified Action Modals**: Replaces inline table form controls with single, focused administrative modals for role elevation, company access management, and account activation/deactivation.
+- **Dark Mode**: Token-compliant dark slate theme applied across all pages, controls, cards, and modals with zero contrast bleed.
+- **Audit Logs Activity History**: Structured compliance history displaying actor avatars, neutral system icons, human-readable timestamps, cohesive target pills, and formatted key-value event details.
+- **Mobile Responsive Design (390px Viewport)**: Collapsible navigation bar, single-column metric card stacking, and horizontally contained data tables verified with 0px page-level horizontal overflow.
+
+---
+
+## ⚙️ Local Development Setup
+
+### 1. Prerequisites
+- **Python**: Version 3.11 or higher (Python 3.13 recommended)
+- **MySQL**: Version 8.0 or higher
+- **Git**: Installed and configured
+
+### 2. Clone Repository & Create Virtual Environment
 ```bash
-# 1. Clone the repository
+# Clone the repository
 git clone https://github.com/govindturkar69-crypto/TalentAI-Recruitment-Platform.git
 cd TalentAI-Recruitment-Platform
 
-# 2. Create & activate a virtual environment
+# Create virtual environment
 python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate      # Mac/Linux
 
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Set up environment variables
-cp .env.example .env
-# Edit .env with your MySQL credentials
-
-# 5. Create the database
-mysql -u root -p < database/schema.sql
-
-# 6. Run the app
-python app.py
+# Activate virtual environment
+# On Windows (PowerShell):
+venv\Scripts\Activate.ps1
+# On macOS / Linux:
+source venv/bin/activate
 ```
 
-Open **http://localhost:5000** in your browser.
-
-### Environment Variables (`.env`)
-```env
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password
-MYSQL_DB=recruitment_db
-MYSQL_SSL=False
-FLASK_SECRET_KEY=your_random_secret_key
-FLASK_DEBUG=True
-```
-
----
-
-## 🗃️ Database Schema
-
-| Table | Purpose |
-|-------|---------|
-| `users` | Candidates + Recruiters (role-based) |
-| `jobs` | Job listings (with active/closed flag) |
-| `resumes` | Uploaded PDFs + extracted skills |
-| `applications` | Candidate ↔ Job links (score, status) |
-| `candidate_profiles` | Bio, contact, social links |
-| `notifications` | Real-time alerts |
-| `saved_jobs` | Bookmarked jobs |
-| `password_resets` | Secure reset tokens |
-
-Indexed columns: `users.email`, `applications.candidate_id`, `applications.job_id`, `applications.status`, `jobs.recruiter_id`, `jobs.is_active`, `resumes.user_id`, `saved_jobs.candidate_id`, `notifications(user_id, is_read)`, `password_resets.token`.
-
----
-
-## 🚀 Deployment
-
-The app runs on a **fully free stack** — Render for the web service, Aiven for managed MySQL.
-
-### 1. Database — Aiven
-- Create a free MySQL service at [aiven.io](https://aiven.io)
-- Run `database/schema.sql` to create the 8 tables
-- Note the host, port, user, password, and database name
-
-### 2. Web Service — Render
-- Create a new **Web Service** at [render.com](https://render.com) and connect the GitHub repo
-- **Build Command:** `pip install -r requirements.txt`
-- **Start Command:** `gunicorn app:app`
-- **Instance Type:** Free
-
-### 3. Environment Variables on Render
-```
-MYSQL_HOST       = <your-aiven-host>.aivencloud.com
-MYSQL_PORT       = <your-aiven-port>
-MYSQL_USER       = avnadmin
-MYSQL_PASSWORD   = <your-aiven-password>
-MYSQL_DB         = <your-database-name>
-MYSQL_SSL        = True
-FLASK_SECRET_KEY = <random-secret-string>
-FLASK_DEBUG      = False
-
-### 4. Password Reset Email Configuration (Resend)
-To enable production password-reset email delivery:
-1. Verify your sender domain in [Resend](https://resend.com).
-2. Generate an API Key in the Resend dashboard.
-3. Configure the following environment variables in Render:
-```env
-RESEND_API_KEY   = <your-real-resend-api-key>
-MAIL_FROM        = <verified-sender-email-address>
-APP_BASE_URL     = https://talentai-recruitment-platform.onrender.com
-```
-*Note: The real `RESEND_API_KEY` must never be committed to GitHub or added to `.env.example`. Ensure `APP_BASE_URL` exactly matches your production URL.*
-
-> Aiven requires an SSL connection, which is why `MYSQL_SSL=True` is needed in production.
-
----
-
-## 🗺️ Roadmap
-
-- [x] AI resume parsing & skill extraction
-- [x] Smart scoring (Skill Match + TF-IDF)
-- [x] Automatic candidate ranking
-- [x] Job posting & management (edit / close / delete)
-- [x] Application tracking & withdrawal
-- [x] Real-time notifications
-- [x] Analytics dashboard (5 charts)
-- [x] Candidate profile page
-- [x] AI job recommendations
-- [x] Saved / bookmarked jobs
-- [x] Bulk status actions
-- [x] Export applicants to Excel
-- [x] Forgot password (token-based)
-- [x] Dark mode
-- [x] Search & filter jobs
-- [x] Admin-only recruiter access
-- [x] Database connection pooling & indexes
-- [x] Health-check endpoint
-- [x] Deployed live on Render + Aiven
-- [ ] Email notifications (SMTP)
-- [ ] Full UI redesign with a unified design system
-- [ ] Admin panel for user management
-- [ ] Resume improvement AI suggestions
-
----
-
-## 📬 Contact
-
-<div align="center">
-
-**Govind Turkar**
-
-[![GitHub](https://img.shields.io/badge/GitHub-govindturkar69--crypto-181717?style=for-the-badge&logo=github)](https://github.com/govindturkar69-crypto)
-[![Email](https://img.shields.io/badge/Email-govindturkar69@gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:govindturkar69@gmail.com)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/govind-turkar-1487a0430/)
-
-</div>
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — free to use, modify, and distribute.
-
----
-
-<div align="center">
-
-### ⭐ If you found this project helpful, please give it a star!
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=6366f1&height=120&section=footer&text=Thanks%20for%20visiting!&fontSize=24&fontColor=ffffff" width="100%" />
-
-</div>
-
-## 🛠️ Continuous Integration (CI)
-
-This project uses **GitHub Actions** for Continuous Integration (CI). 
-
-Whenever you push to the repository or open a Pull Request, the CI pipeline automatically runs:
-1. **Syntax Validation**: Uses `compileall` to check all Python source files.
-2. **Automated Tests**: Runs the `pytest` suite to verify business logic and workflows without connecting to a real database.
-
-
-### Running CI Checks Locally
-
-Before pushing your code, you can run the same validation steps locally:
-
-**1. Install Development Dependencies**
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-**2. Run Ruff (Linter)**
+### 4. Configure Environment Variables
+Copy `.env.example` to `.env` in the repository root:
 ```bash
+cp .env.example .env
+```
+Populate `.env` using your local configuration values (placeholders shown below):
+```env
+# Database Settings
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=your_mysql_username
+MYSQL_PASSWORD=your_mysql_password
+MYSQL_DB=recruitment_db
+MYSQL_SSL=False
+
+# Application Security
+FLASK_SECRET_KEY=your_random_secret_key_here
+FLASK_DEBUG=True
+ADMIN_EMAIL=admin@example.com
+APP_ENV=development
+APP_BASE_URL=http://localhost:5000
+
+# Transactional Emails (Optional)
+RESEND_API_KEY=your_resend_api_key
+MAIL_FROM=noreply@example.com
+
+# Error Monitoring (Optional)
+SENTRY_DSN=your_sentry_dsn
+
+# Advisory AI Service (Optional)
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-5.6-luna
+```
+
+### 5. Initialize Database Schema
+Ensure MySQL is running, create the database, and apply `database/schema.sql`:
+```bash
+mysql -u your_mysql_username -p -e "CREATE DATABASE IF NOT EXISTS recruitment_db;"
+mysql -u your_mysql_username -p recruitment_db < database/schema.sql
+```
+
+### 6. Run Application
+```bash
+python app.py
+```
+Open **[http://localhost:5000](http://localhost:5000)** in your browser.
+
+---
+
+## 🧪 Automated Testing & CI
+
+### Running the Test Suite
+```bash
+# Run the automated test suite
+pytest -v tests/ --ignore=tests/test_schema_contract.py --ignore=tests/test_phase4a.py --ignore=tests/test_phase4b.py
+```
+*Current verified pre-release test execution result: **267 passed, 1 skipped** in 9.25s.*
+
+### Code Quality Checks
+```bash
+# Check code formatting with Black
+black --check app.py core.py config.py routes/ services/ models/ tests/
+
+# Run Ruff linter
 ruff check .
-# To automatically fix safe violations: ruff check --fix .
-```
 
-**3. Run Black (Formatter)**
-```bash
-black --check .
-# To automatically format: black .
-```
-
-**4. Run Syntax Validation**
-```bash
+# Syntax compilation check
 python -m compileall -q app.py core.py config.py routes/ services/ models/
 ```
 
-**5. Run Pytest**
-```bash
-pytest -v tests/
-```
-
-
-## 5. Production Monitoring
-
-This application supports optional error tracking via **Sentry**.
-
-### Health Check
-A lightweight health endpoint is available at `/healthz`. It performs a fast `SELECT 1` query to verify database connectivity.
-- **Healthy:** HTTP `200 OK`
-- **Unhealthy:** HTTP `503 Service Unavailable`
-
-### Error Tracking
-To enable Sentry error tracking in your deployed environment, configure the following environment variable:
-```bash
-# Provide your actual Sentry DSN from your Sentry project settings
-SENTRY_DSN=https://your-dsn@sentry.io/project
-```
-- If `SENTRY_DSN` is empty or missing, error tracking remains completely disabled.
-- Tracebacks and sensitive PII (like cookies/headers) are scrubbed automatically.
-
-### Logs
-Structured console logging includes request paths, methods, and user IDs (when available).
-
-## 6. Production Database Backup & Recovery
-
-The production database is hosted on **Aiven Cloud**. 
-
-### Managed Automated Backups
-Aiven provides native, fully automated daily backups and continuous Point-in-Time Recovery (PITR). 
-> **Action Required**: The project maintainer must verify within the Aiven Console that automated backups and PITR are actively enabled and configured for the correct retention period.
-
-### Recovery Strategy
-To ensure production safety during a disaster recovery scenario:
-1. **Never restore directly over the live production database.**
-2. Use the Aiven Console to restore the backup to a **new, forked staging database**.
-3. Verify data integrity and application compatibility against the staging database.
-4. Only after successful verification, update the `MYSQL_HOST` environment variable in the production deployment (Render) to point to the newly restored database.
-
-*Note: No manual backup scripts or backup endpoints are included in the application code to prevent unauthorized access and data exposure.*
-
-## 7. Production Deployment Checklist
-
-Before taking the application live, verify the following:
-
-- [ ] **Environment Variables**: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DB`, `FLASK_SECRET_KEY` are all set.
-- [ ] **Debug Mode Disabled**: `FLASK_DEBUG=False` is set.
-- [ ] **Aiven Database Configuration**: Ensure the database is accessible and `MYSQL_SSL=True` is enabled.
-- [ ] **Render Deployment**: Confirm `gunicorn app:app` is configured as the start command.
-- [ ] **Health Check**: Verify `/healthz` returns HTTP 200 OK.
-- [ ] **Sentry Configuration**: Ensure `SENTRY_DSN` is correctly configured in production for error tracking.
-- [ ] **Admin Email**: `ADMIN_EMAIL` is configured to the correct recruiter email.
-- [ ] **CI Status**: Verify all GitHub Actions (Ruff, Black, Pytest) are passing.
-- [ ] **Backups**: Confirm in the Aiven Console that automated backups and PITR are actively running.
-- [ ] **Security Smoke Test**: Manually verify that `/api/jobs` rejects anonymous users and candidate features function properly.
-
-## 8. Security & Code Quality
-
-The codebase has undergone a comprehensive, automated quality assurance and security audit:
-- **Test Coverage**: 93 automated tests covering routes, auth, security (IDOR, CSRF, Rate Limiting), and AI parsing.
-- **Code Quality**: Enforced by `ruff` (linter) and `black` (formatter) with zero violations.
-- **Security**: Passed static analysis for hardcoded secrets, SQL injection, and debug leaks.
-- **Dependencies**: Streamlined and fully verified against production requirements.
+### Continuous Integration
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on pushes and pull requests to enforce:
+1. Syntax validation via `compileall`.
+2. PEP 8 compliance via `ruff`.
+3. Code formatting via `black`.
+4. Automated test execution via `pytest`.
 
 ---
-```
+
+## 🚀 Production Deployment Notes
+
+- **Hosting**: Deployed on **Render** as a web service running Gunicorn.
+- **Managed Database**: Hosted on **Aiven Cloud MySQL 8.4** with required SSL connection encryption (`MYSQL_SSL=True`).
+- **Health Monitoring**: Monitored via the `/healthz` endpoint returning database connectivity status without modifying state.
+- **Email Delivery**: Integrated with Resend for secure, tokenized password recovery.
+
+---
+
+## 🗺️ Roadmap
+
+### Completed in v1.0.0
+- [x] Modular architecture with Flask Blueprints and Service layer.
+- [x] Resume parsing and deterministic skill extraction via `pypdf`.
+- [x] TF-IDF cosine similarity candidate match scoring via scikit-learn.
+- [x] Candidate job search, application lifecycle, and self-service withdrawal.
+- [x] Candidate interview dashboard and recruiter scheduling workflow.
+- [x] Terminal-state automatic interview cancellation.
+- [x] Recruiter applicant ranking, batch status updates, and Excel export.
+- [x] Admin console with server-side pagination, user filters, and role mutation guards.
+- [x] Multi-tenant company management and recruiter access controls.
+- [x] Append-only audit logging and semantic detail formatting.
+- [x] Responsive SaaS UI with dark theme support and zero horizontal overflow.
+- [x] Production deployment on Render + Aiven Cloud MySQL with CI/CD.
+
+### Future Work
+Potential future enhancements may be evaluated separately.
+
+---
+
+## 📄 License
+
+License: not specified.

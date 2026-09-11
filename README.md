@@ -181,29 +181,35 @@ TalentAI Platform
 
 ## 🗃️ Database Schema & Migrations
 
-The relational schema is managed on MySQL 8.4 across 11 core tables:
-- `users`: User accounts with role-based attributes (`candidate`, `recruiter`, `admin`).
-- `jobs`: Requisitions with status flags, required skills, and company associations.
-- `resumes`: Uploaded resume metadata, extracted text, and skill tags.
-- `applications`: Candidate-to-job mappings with status and composite match scores.
-- `candidate_profiles`: Candidate professional background, education, and links.
-- `companies`: Multi-tenant organization records and active flags.
-- `interviews`: Interview schedule records with status, timing, and meeting details.
-- `audit_logs`: Immutable compliance logs recording platform state transitions.
-- `saved_jobs`: Candidate bookmarked job listings.
-- `notifications`: User notification alerts and read states.
-- `password_resets`: Time-limited password reset tokens.
+The relational schema is managed on MySQL 8.4 across 14 canonical tables defined in `database/schema.sql`:
+- `users`: User accounts with role-based attributes (`candidate`, `recruiter`), active status flags, and tenant company associations.
+- `companies`: Multi-tenant client organizations with active flags and profile metadata.
+- `audit_logs`: Immutable, append-only compliance logs recording platform state mutations and security events.
+- `jobs`: Requisitions posted by recruiters with required skills, descriptions, and active status tracking.
+- `resumes`: Uploaded resume file references, extracted plain text, and identified skills.
+- `applications`: Candidate-to-job submissions with pipeline status and composite match scores.
+- `interviews`: Coordinated interview rounds with status (`scheduled`, `completed`, `cancelled`), timing, and logistics.
+- `candidate_profiles`: Candidate professional background, bio, contact details, social URLs, and curated skills.
+- `candidate_education`: Academic qualifications, institutions, degrees, and study dates.
+- `candidate_experience`: Professional employment history, job titles, descriptions, and current employer flags.
+- `candidate_projects`: Candidate technical portfolio projects and repository/live URLs.
+- `candidate_certifications`: Professional certifications, issuing organizations, and credential links.
+- `candidate_achievements`: Honors, awards, and notable professional accomplishments.
+- `saved_jobs`: Candidate bookmarked job listings with unique save constraints.
+
+> [!NOTE]
+> **Auxiliary Runtime Tables**: Runtime code also references auxiliary `notifications` and `password_resets` tables; their DDL is not represented in the canonical schema/migration set currently tracked in this repository.
 
 ### Versioned Migration History (001–009)
-1. `001_foundation.sql`: Core baseline tables (users, jobs, applications, resumes, notifications).
-2. `002_candidate_profile.sql`: Extended candidate profile metadata and social links.
-3. `003_reconcile_foundation.sql`: Schema reconciliation and column constraints.
-4. `004_job_lifecycle.sql`: Company association and requisition status tracking.
-5. `005_reconcile_candidate_profile.sql`: Safe profile schema normalization.
-6. `006_reconcile_job_lifecycle.sql`: Requisition integrity constraints.
-7. `007_add_saved_jobs.sql`: Persistent bookmarking queue for candidates.
-8. `008_add_withdrawn_status.sql`: Self-service candidate application withdrawal state.
-9. `009_add_interviews.sql`: Interview coordination, company multi-tenancy, and audit logs.
+1. `001_foundation.sql`: Creates `companies` and `audit_logs` tables; adds `is_active`, `company_id`, foreign key `fk_user_company`, and index to `users`.
+2. `002_candidate_profile.sql`: Adds `skills` to `candidate_profiles`; creates candidate portfolio sub-tables (`candidate_education`, `candidate_experience`, `candidate_projects`, `candidate_certifications`, `candidate_achievements`).
+3. `003_reconcile_foundation.sql`: Idempotent production reconciliation for Phase 1A foundation objects (`companies`, `users.is_active`, `users.company_id`, `audit_logs`).
+4. `004_job_lifecycle.sql`: Adds canonical `is_active` boolean column with default `TRUE` to `jobs`.
+5. `005_reconcile_candidate_profile.sql`: Idempotent production reconciliation for Phase 1B candidate profile structural additions and sub-tables.
+6. `006_reconcile_job_lifecycle.sql`: Backfills `NULL` values in `jobs.is_active` to `1` (TRUE) and modifies column to `TINYINT(1) NOT NULL DEFAULT 1`.
+7. `007_add_saved_jobs.sql`: Creates `saved_jobs` table for persistent candidate job bookmarks with unique constraint `(candidate_id, job_id)`.
+8. `008_add_withdrawn_status.sql`: Modifies `applications.status` enum definition to include the `'withdrawn'` candidate self-service state.
+9. `009_add_interviews.sql`: Creates `interviews` table with application reference, schedule logistics, status constraints, and composite indexes.
 
 *Note: Migrations are tracked sequentially in source control and are not intended to be rerun manually against active production environments.*
 
@@ -224,7 +230,7 @@ The application interface is styled using a modern SaaS design system with custo
 ## ⚙️ Local Development Setup
 
 ### 1. Prerequisites
-- **Python**: Version 3.11 or higher (Python 3.13 recommended)
+- **Python**: Version 3.11 or higher supported (Python 3.13 recommended for local development; `python-3.11.9` specified in `runtime.txt` for production hosting)
 - **MySQL**: Version 8.0 or higher
 - **Git**: Installed and configured
 
@@ -306,7 +312,7 @@ Open **[http://localhost:5000](http://localhost:5000)** in your browser.
 # Run the automated test suite
 pytest -v tests/ --ignore=tests/test_schema_contract.py --ignore=tests/test_phase4a.py --ignore=tests/test_phase4b.py
 ```
-*Current verified pre-release test execution result: **267 passed, 1 skipped** in 9.25s.*
+*Latest verified release test result: **267 passed, 1 skipped** in 9.25s. Tests were not executed during this documentation-only audit.*
 
 ### Code Quality Checks
 ```bash

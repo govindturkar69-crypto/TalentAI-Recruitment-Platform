@@ -43,7 +43,7 @@
                 <span class="badge bg-light text-dark border fw-normal">+{{ skills|length - 3 }}</span>
               {% endif %}
             </div>
-            
+
             {% if job.id in applied_job_ids %}
               <div class="mb-2"><span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle"></i> Applied</span></div>
             {% elif job.id in saved_job_ids %}

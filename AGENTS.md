@@ -234,6 +234,3 @@ A change to this repository is complete only when:
 
 > [!IMPORTANT]
 > **Advisory AI Independence**: The OpenAI integration is strictly advisory. Never couple core applicant scoring or candidate ranking to third-party AI APIs. Core scoring must remain 100% deterministic, local, and cost-free.
-
-> [!WARNING]
-> **Legacy Setup Guide Precedence**: `SETUP_GUIDE.md` is an unmaintained legacy setup guide referencing superseded packages (`PyPDF2`, `Flask-MySQLdb`) and manual configuration patterns. It must not be edited or followed. Active implementation source code, `config.py`, and `README.md` strictly take precedence.

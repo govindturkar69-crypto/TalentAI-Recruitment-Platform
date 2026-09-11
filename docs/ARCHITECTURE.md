@@ -85,7 +85,6 @@ TalentAI-Recruitment-Platform/
 ├── .env.example               # Safe environment variable configuration template
 ├── CHANGELOG.md               # Versioned changelog following Keep a Changelog
 ├── README.md                  # High-level project documentation
-├── SETUP_GUIDE.md             # Local deployment setup guide
 │
 ├── routes/                    # HTTP presentation layer (Flask Blueprints)
 │   ├── __init__.py
@@ -179,33 +178,33 @@ TalentAI-Recruitment-Platform/
 ```mermaid
 graph TD
     Client[Web Browser] -->|HTTP / HTTPS| App[app.py Entrypoint]
-    
+
     App -->|Security Headers & CSRF| Middleware[Flask Middleware]
     Middleware -->|Routing| Blueprints[Flask Blueprints]
-    
+
     Blueprints --> AuthBP[routes/auth.py]
     Blueprints --> CandBP[routes/candidate.py]
     Blueprints --> RecBP[routes/recruiter.py]
     Blueprints --> AdminBP[routes/admin.py]
     Blueprints --> AnalyticsBP[routes/analytics.py]
-    
+
     CandBP --> CandSvc[services/candidate_service.py]
     RecBP --> RecSvc[services/recruiter_service.py]
     RecBP --> IntSvc[services/interview_service.py]
     AdminBP --> AuditSvc[services/audit_service.py]
-    
+
     CandSvc --> Parser[models/resume_parser.py]
     CandSvc --> IntSvc
     RecSvc --> IntSvc
     CandSvc --> NotifSvc[services/notification_service.py]
     RecSvc --> NotifSvc
-    
+
     CandSvc --> CoreDB[core.py DB_POOL]
     RecSvc --> CoreDB
     IntSvc --> CoreDB
     AuditSvc --> CoreDB
     AuthBP --> CoreDB
-    
+
     CoreDB -->|PyMySQL DictCursor| MySQL[(MySQL 8.4 Database)]
 ```
 
@@ -231,7 +230,7 @@ sequenceDiagram
     alt Rate limit exceeded
         Limiter-->>User: HTTP 429 Too Many Requests
     end
-    
+
     alt Method == POST
         Flask->>CSRF: Validate CSRF Token
         alt Invalid CSRF
@@ -302,11 +301,11 @@ flowchart TD
     QueryUser --> CheckActive{is_active == True?}
     CheckActive -- No --> DeactivateSession[Clear Session & Redirect to /login]
     CheckActive -- Yes --> CheckDecoratorType{Decorator Type}
-    
+
     CheckDecoratorType -- "@admin_required" --> CheckAdminEmail{user email == ADMIN_EMAIL?}
     CheckAdminEmail -- Yes --> AllowAdmin[Execute Admin Handler]
     CheckAdminEmail -- No --> DenyAdmin[Flash 'Access denied' & Redirect to /]
-    
+
     CheckDecoratorType -- "@login_required(role)" --> CheckRole{Endpoint role specified?}
     CheckRole -- No role --> AllowGeneral[Execute Route Handler]
     CheckRole -- Role specified --> MatchRole{session role == required role?}
@@ -383,7 +382,7 @@ sequenceDiagram
 ## Data Flow
 
 ```
-[Uploaded Resume PDF] 
+[Uploaded Resume PDF]
          │ (pypdf text extraction)
          ▼
     [raw_text] ──────────► [Regex Skill Matcher] ──► [Detected Skills]

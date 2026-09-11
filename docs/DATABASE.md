@@ -301,11 +301,11 @@ erDiagram
     USERS ||--o{ CANDIDATE_ACHIEVEMENTS : "has achievements"
     USERS ||--o{ SAVED_JOBS : "bookmarks"
     USERS ||--o{ AUDIT_LOGS : "acts as"
-    
+
     JOBS ||--o{ APPLICATIONS : "receives"
     JOBS ||--o{ SAVED_JOBS : "saved in"
     RESUMES ||--o{ APPLICATIONS : "attached to"
-    
+
     APPLICATIONS ||--o{ INTERVIEWS : "scheduled for"
 
     USERS {
@@ -422,7 +422,7 @@ The database migration suite resides in `database/migrations/` and follows a seq
 ```sql
 SELECT a.*, u.name AS candidate_name, u.email,
        a.score, a.matched_skills, a.missing_skills, a.status
-FROM applications a 
+FROM applications a
 JOIN users u ON a.candidate_id = u.id
 WHERE a.job_id = %s
 ORDER BY a.score DESC;
@@ -438,7 +438,7 @@ SELECT skills FROM resumes WHERE user_id = %s ORDER BY created_at DESC LIMIT 1;
 
 ### 3. Future Scheduled Interview Auto-Cancellation (`services/interview_service.py`)
 ```sql
-SELECT id, scheduled_at 
+SELECT id, scheduled_at
 FROM interviews
 WHERE application_id = %s
   AND status = 'scheduled'

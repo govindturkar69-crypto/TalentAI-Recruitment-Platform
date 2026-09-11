@@ -26,7 +26,7 @@
     font-weight: 600;
     margin-bottom: 22px;
   }
-  
+
   .analysis-settings-section-label {
     font-size: 11px;
     text-transform: uppercase;
@@ -35,13 +35,13 @@
     letter-spacing: 0.5px;
     margin-bottom: 12px;
   }
-  
+
   .analysis-resume-status {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  
+
   .analysis-resume-icon {
     width: 38px;
     height: 38px;
@@ -59,7 +59,7 @@
     background-color: rgba(32, 201, 151, 0.15);
     color: #20c997;
   }
-  
+
   .analysis-resume-icon.warning {
     background-color: rgba(255, 193, 7, 0.1);
     color: #ffc107;
@@ -68,7 +68,7 @@
   [data-bs-theme="dark"] .analysis-resume-icon.warning {
     background-color: rgba(255, 193, 7, 0.15);
   }
-  
+
   .analysis-resume-text h6 {
     margin: 0;
     font-size: 14px;
@@ -79,11 +79,11 @@
   [data-bs-theme="dark"] .analysis-resume-text h6 {
     color: #20c997;
   }
-  
+
   .analysis-resume-text h6.warning {
     color: #ffc107;
   }
-  
+
   .analysis-resume-text p {
     margin: 0;
     font-size: 13px;
@@ -104,7 +104,7 @@
     justify-content: space-between;
     margin-bottom: 8px;
   }
-  
+
   .analysis-optional-badge {
     font-size: 11px;
     padding: 3px 8px;
@@ -153,7 +153,7 @@
     justify-content: center;
     font-weight: 500;
   }
-  
+
   [data-theme="dark"] #localResult,
   [data-bs-theme="dark"] #localResult {
     background: var(--bg-alt) !important;
@@ -166,9 +166,9 @@
   <div class="col-lg-4">
     <div class="analysis-settings-card">
       <div class="analysis-settings-title">Analysis Settings</div>
-      
+
       <div class="analysis-settings-section-label">RESUME</div>
-      
+
       {% if has_resume %}
         <div class="analysis-resume-status">
           <div class="analysis-resume-icon">
@@ -197,7 +197,7 @@
         <div class="analysis-settings-section-label mb-0">TARGET JOB</div>
         <div class="analysis-optional-badge">Optional</div>
       </div>
-      
+
       <select id="targetJob" name="targetJob" class="analysis-target-select">
         <option value="">General Analysis (No specific job)</option>
         {% for job in jobs %}
@@ -223,7 +223,7 @@
       </div>
       <h5 id="emptyStateTitle" class="fw-bold mb-2">Ready for Personalized Suggestions</h5>
       <p id="emptyStateDesc" class="text-muted mb-4 mx-auto" style="max-width: 400px;">Generate personalized suggestions to improve your resume based on the resume analysis and selected target job.</p>
-      
+
       <div class="w-100 mx-auto" style="max-width: 350px;">
         <button id="generateAiBtn" class="saas-btn-primary w-100 py-2 mb-2" disabled>
           <i class="bi bi-stars me-2"></i> Generate Personalized Suggestions
@@ -243,7 +243,7 @@
     <div id="errorAlert" class="alert alert-danger mt-3 d-none small"></div>
 
     <div id="resultsContainer" class="d-none" style="overflow-wrap: break-word; word-break: break-word;">
-      
+
       <!-- Summary -->
       <div class="saas-card mb-4 border-primary">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -263,7 +263,7 @@
             <ul id="resStrengths" class="mb-0 ps-3" style="line-height: 1.6;"></ul>
           </div>
         </div>
-        
+
         <!-- Priority Improvements -->
         <div class="col-md-6">
           <div class="saas-card h-100 border-danger">
@@ -317,12 +317,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function appendListItems(containerId, items) {
     const container = document.getElementById(containerId);
-    container.innerHTML = ''; 
+    container.innerHTML = '';
     if (items && items.length > 0) {
       items.forEach(item => {
         const li = document.createElement('li');
         li.className = 'mb-2';
-        li.textContent = item; 
+        li.textContent = item;
         container.appendChild(li);
       });
     } else {
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
     emptyState.classList.remove('d-none');
     emptyState.classList.add('d-flex');
     errorAlert.classList.add('d-none');
-    
+
     emptyStateTitle.innerHTML = 'Ready for Personalized Suggestions';
     emptyStateDesc.textContent = 'Generate personalized suggestions to improve your resume based on the resume analysis and selected target job.';
     generateAiHelp.textContent = 'Analyze your resume first.';
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
     analyzeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing...';
     errorAlert.classList.add('d-none');
     localResult.classList.add('d-none');
-    
+
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}";
       const payload = { job_id: targetJob.value || null };
@@ -391,11 +391,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="small"><strong>Detected Skills:</strong><br>${data.detected_skills.join(' &middot; ') || 'None'}</div>
         `;
       }
-      
+
       emptyStateTitle.innerHTML = '<i class="bi bi-check-circle-fill text-success me-2"></i>Analysis complete';
       emptyStateDesc.textContent = 'Your resume analysis is ready. Generate personalized improvement suggestions based on this analysis and your selected target job.';
       generateAiHelp.textContent = 'Uses your latest analyzed resume.';
-      
+
       generateAiBtn.disabled = false;
     } catch (error) {
       errorAlert.textContent = error.message;
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}";
       const payload = { job_id: targetJob.value || null };
-      
+
       const response = await fetch("{{ url_for('candidate.analyze_resume_api') }}", {
         method: 'POST',
         headers: {

@@ -106,10 +106,10 @@ jobs:
       run: |
         # Reset database
         mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE test_db; CREATE DATABASE test_db;"
-        
+
         # Load pre-repair Phase 1B schema from fixture
         mysql -h 127.0.0.1 -u root -proot test_db < tests/fixtures/pre_003_004_schema.sql
-        
+
         # Insert safe dummy existing records
         mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO users (id, name, email, password, role) VALUES (1, 'Test User', 'test@example.com', 'hash', 'candidate');"
         mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO jobs (id, recruiter_id, job_title, required_skills, description, location) VALUES (1, 1, 'Title', 'skill', 'Desc', 'Loc');"
@@ -140,10 +140,10 @@ jobs:
       run: |
         # Reset database
         mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE test_db; CREATE DATABASE test_db;"
-        
+
         # Load actual production drift schema from fixture
         mysql -h 127.0.0.1 -u root -proot test_db < tests/fixtures/current_production_drift_schema.sql
-        
+
         # Insert safe dummy existing records including candidate profile with NULL is_active for job
         mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO users (id, name, email, password, role) VALUES (1, 'Test User', 'test@example.com', 'hash', 'candidate');"
         mysql -h 127.0.0.1 -u root -proot test_db -e "INSERT INTO jobs (id, recruiter_id, job_title, required_skills, description, location, is_active) VALUES (1, 1, 'Title', 'skill', 'Desc', 'Loc', NULL);"

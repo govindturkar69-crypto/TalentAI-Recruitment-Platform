@@ -9,18 +9,18 @@
         <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Job Closed</span>
       {% endif %}
     </div>
-    
+
     <div class="card saas-card shadow-sm mb-4">
       <div class="card-body p-4">
         <h2 class="fw-bold mb-1">{{ job.job_title }}</h2>
         <h5 class="text-muted mb-3">{{ job.company_name }}</h5>
-        
+
         <div class="d-flex flex-wrap gap-3 text-muted small mb-4">
           <span><i class="bi bi-geo-alt"></i> {{ job.location or 'Remote' }}</span>
           <span><i class="bi bi-briefcase"></i> {{ job.experience or 'Any' }}</span>
           <span><i class="bi bi-clock"></i> Posted on {{ job.created_at.strftime('%b %d, %Y') if job.created_at else 'Unknown' }}</span>
         </div>
-        
+
         {% if application %}
           <div class="alert saas-alert-info d-flex align-items-center mb-4">
             <i class="bi bi-info-circle-fill me-2"></i>
@@ -30,19 +30,19 @@
             </div>
           </div>
         {% endif %}
-        
+
         <h5 class="fw-bold mt-4">Description</h5>
         <div class="text-secondary" style="white-space: pre-wrap;">{{ job.description }}</div>
-        
+
         <h5 class="fw-bold mt-4">Required Skills</h5>
         <div>
           {% for skill in job.required_skills.split(',') %}
             <span class="badge bg-secondary text-light fw-normal me-1 mb-1">{{ skill | trim }}</span>
           {% endfor %}
         </div>
-        
+
       </div>
-      
+
       {% if job.is_active %}
         <div class="card-footer bg-transparent border-top p-4 d-flex justify-content-end gap-2">
           {% if is_saved %}
@@ -56,7 +56,7 @@
               <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-bookmark"></i> Save Job</button>
             </form>
           {% endif %}
-          
+
           {% if not application %}
             <form method="POST" action="{{ url_for('candidate.apply_job', job_id=job.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -67,12 +67,12 @@
       {% endif %}
     </div>
   </div>
-  
+
   <div class="col-lg-4">
     <div class="card saas-card shadow-sm sticky-top" style="top: 20px;">
       <div class="card-body p-4">
         <h5 class="fw-bold mb-3">Your AI Match</h5>
-        
+
         {% if not has_skills %}
           <div class="text-center py-3">
             <p class="text-muted small">Add profile skills or upload a resume to see your match.</p>
@@ -83,7 +83,7 @@
             <h1 class="display-4 fw-bold text-primary mb-0">{{ match_data.score | round | int }}%</h1>
             <span class="text-muted small">Match Score</span>
           </div>
-          
+
           {% if match_data.matched %}
             <h6 class="fw-bold text-success mb-2"><i class="bi bi-check-circle"></i> Matched Skills</h6>
             <div class="mb-3">
@@ -92,7 +92,7 @@
               {% endfor %}
             </div>
           {% endif %}
-          
+
           {% if match_data.missing %}
             <h6 class="fw-bold text-danger mb-2"><i class="bi bi-x-circle"></i> Missing Skills</h6>
             <div>

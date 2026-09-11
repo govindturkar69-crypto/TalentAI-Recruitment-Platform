@@ -14,6 +14,9 @@ __pycache__/
 *.pyo
 .pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+.mypy_cache/
 
 # Uploaded resumes (user data, shouldn't be in version control)
 uploads/*
@@ -37,5 +40,9 @@ docker-compose.override.yml
 *.sql
 !database/schema.sql
 !database/migrations/*.sql
+!tests/fixtures/*.sql
 *.dump
 backups/
+
+# Visual verification / screenshots
+ui_screenshots/

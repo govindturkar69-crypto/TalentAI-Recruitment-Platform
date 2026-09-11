@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="recruiter-workspace">
-  
+
   <div class="ats-workspace-hero">
     <div class="ats-workspace-hero-content">
       <div class="ats-hero-eyebrow">Recruiter Workspace</div>
@@ -63,7 +63,7 @@
   {% if jobs %}
     {% for job in jobs %}
     <div class="ats-pipeline-row {% if not job.is_active %}opacity-75{% endif %}">
-      
+
       <div class="ats-pipeline-info">
         <div class="ats-pipeline-title-row">
           <h3 class="ats-pipeline-title">{{ job.job_title }}</h3>

@@ -17,16 +17,16 @@
     <div class="ats-form-panel">
       <form method="POST" action="{{ url_for('recruiter.edit_job', job_id=job.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        
+
         <div class="ats-form-section">
           <h5 class="ats-form-title">Job Details</h5>
-          
+
           <div class="mb-4">
             <label class="form-label fw-semibold">Job Title *</label>
             <input type="text" name="job_title" class="form-control saas-input border" style="border-color: var(--border-color) !important;"
                    value="{{ job.job_title }}" required>
           </div>
-          
+
           <div class="mb-0">
             <label class="form-label fw-semibold">Job Description</label>
             <textarea name="description" class="form-control saas-input border" style="border-color: var(--border-color) !important;" rows="4">{{ job.description or '' }}</textarea>
